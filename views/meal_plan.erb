@@ -1,22 +1,31 @@
-<table>
-  <tr>
-    <th>Meal</th>
-    <th>Food</th>
-  </tr>
-  <tr>
-    <td>Breakfast</td>
-    <td><%= @meal_plan.fetch(:breakfast) %></td>
-  </tr>
-  <tr>
-    <td>Lunch</td>
-    <td><%= @meal_plan.fetch(:lunch) %></td>
-  </tr>
-  <tr>
-    <td>Dinner</td>
-    <td><%= @meal_plan.fetch(:dinner) %></td>
-  </tr>
-  <tr>
-    <td>Snacks</td>
-    <td><%= @meal_plan.fetch(:snacks).join(", ") %></td>
-  </tr>
+<table id="calendar">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Sun</th>
+            <th>Mon</th>
+            <th>Tue</th>
+            <th>Wed</th>
+            <th>Thu</th>
+            <th>Fri</th>
+            <th>Sat</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="weekday">Breakfast</td>
+            <td>Oatmeal</td>
+            <td>Cereal</td>
+            <td>Pancakes</td>
+            <td>Eggs</td>
+            <td>Toast</td>
+            <td>Bagel</td>
+            <td>Waffles</td>
+        </tr>
+        <tr>
+            <td class="weekday">Lunch</td>
+            <!-- Repeat for lunch -->
+        </tr>
+        <!-- Repeat for each meal -->
+    </tbody>
 </table>

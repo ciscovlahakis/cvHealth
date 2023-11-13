@@ -1,0 +1,65 @@
+<div class="meal-events">
+    <h1>Meal Events</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Parent Meal Event</th>
+                <th>Min Foods</th>
+                <th>Max Foods</th>
+                <!-- More columns as needed -->
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Meal event rows go here -->
+            <tr>
+                <td>Brunch</td>
+                <td>None</td>
+                <td>2</td>
+                <td>4</td>
+            </tr>
+            <!-- More rows as needed -->
+        </tbody>
+    </table>
+    <button id="create-button">Create Meal Event</button>
+</div>
+
+<!-- This div would initially be hidden, then shown when the user clicks on the button -->
+<div class="modal" id="meal-event-modal">
+    <div class="modal-content">
+        <h2>Create Meal Event</h2>
+        <form class="meal-event-form">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name">
+
+            <label for="parent-meal-event">Parent Meal Event:</label>
+            <select id="parent-meal-event" name="parent-meal-event">
+                <!-- Options go here -->
+            </select>
+
+            <label for="min-foods">Min Foods:</label>
+            <input type="number" id="min-foods" name="min-foods">
+            <label for="max-foods">Max Foods:</label>
+            <input type="number" id="max-foods" name="max-foods">
+
+            <label for="recurrence">Recurrence:</label>
+            <input type="number" id="recurrence" name="recurrence"> day(s)
+            <input type="number" id="recurrence-weekly" name="recurrence-weekly"> week(s) on
+            <div class="days-of-week">
+                <label><input type="checkbox" name="days" value="Mon"> Mon</label>
+                <label><input type="checkbox" name="days" value="Tue"> Tue</label>
+                <label><input type="checkbox" name="days" value="Wed"> Wed</label>
+                <label><input type="checkbox" name="days" value="Thu"> Thu</label>
+                <label><input type="checkbox" name="days" value="Fri"> Fri</label>
+                <label><input type="checkbox" name="days" value="Sat"> Sat</label>
+                <label><input type="checkbox" name="days" value="Sun"> Sun</label>
+            </div>
+
+            <label for="cuisine">Type of Cuisine:</label>
+            <input type="text" id="cuisine" name="cuisine">
+
+            <input type="submit" value="Submit">
+        </form>
+        <button id="cancel-button">Cancel</button>
+    </div>
+</div>

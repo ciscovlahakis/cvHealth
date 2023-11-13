@@ -1,6 +1,19 @@
 require "sinatra"
 require "sinatra/reloader"
 require_relative 'config/initialize_firestore'
+require_relative 'models/meal_plan_generator'
+
+helpers do
+  def current_user
+    if session.fetch("user_id", nil)
+      user_id = session.fetch("user_id", nil)
+      if user_id
+        matching_users = User.where({ :id => user_id })
+        @current_user = matching_users.at(0)
+      end
+    end
+  end
+end
 
 get("/") do
   erb(:home)
@@ -23,8 +36,13 @@ get("/food-categories") do
   erb(:food_categories)
 end
 
-get("/meal-structures") do
-  erb(:meal_structures)
+get('/meal-events') do
+  meal_events_ref = $firestore.col('meal_events')
+  @meal_events = meal_events_ref.get do |meal_event|
+    meal_event.data
+  end
+
+  erb(:meal_events)
 end
 
 get("/recipes") do

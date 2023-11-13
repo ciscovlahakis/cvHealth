@@ -7,7 +7,7 @@ Google::Cloud::Firestore.configure do |config|
     :type => ENV.fetch('GOOGLE_TYPE'),
     :project_id => ENV.fetch('GOOGLE_PROJECT_ID'),
     :private_key_id => ENV.fetch('GOOGLE_PRIVATE_KEY_ID'),
-    :private_key => ENV.fetch('GOOGLE_PRIVATE_KEY'),
+    :private_key => ENV.fetch('GOOGLE_PRIVATE_KEY').gsub('\n', "\n"),
     :client_email => ENV.fetch('GOOGLE_CLIENT_EMAIL'),
     :client_id => ENV.fetch('GOOGLE_CLIENT_ID'),
     :auth_uri => ENV.fetch('GOOGLE_AUTH_URI'),
@@ -17,5 +17,8 @@ Google::Cloud::Firestore.configure do |config|
   }
 end
 
-# Initialize the Firestore client
-firestore = Google::Cloud::Firestore.new
+begin
+  $firestore = Google::Cloud::Firestore.new
+rescue Exception => e
+  puts "Error while initializing Firestore: #{e.message}"
+end
