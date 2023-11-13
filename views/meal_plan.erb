@@ -1,0 +1,22 @@
+<table>
+  <tr>
+    <th>Meal</th>
+    <th>Food</th>
+  </tr>
+  <tr>
+    <td>Breakfast</td>
+    <td><%= @meal_plan.fetch(:breakfast) %></td>
+  </tr>
+  <tr>
+    <td>Lunch</td>
+    <td><%= @meal_plan.fetch(:lunch) %></td>
+  </tr>
+  <tr>
+    <td>Dinner</td>
+    <td><%= @meal_plan.fetch(:dinner) %></td>
+  </tr>
+  <tr>
+    <td>Snacks</td>
+    <td><%= @meal_plan.fetch(:snacks).join(", ") %></td>
+  </tr>
+</table>

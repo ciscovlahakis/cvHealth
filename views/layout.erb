@@ -1,12 +1,29 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Sinatra Template</title>
+    <title>cvHealth</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   </head>
-
+    
   <body>
-    <%= yield %>
+    <div class="d-flex">
+      <%= erb :_sidebar %>
+      <div id="page-content-container">
+        <!-- Your page content goes here -->
+        <%= yield %>
+      </div>
+    </div>
   </body>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+  <!-- JS (comes after the body) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </html>
