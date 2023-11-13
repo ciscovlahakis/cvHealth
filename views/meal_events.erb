@@ -1,65 +1,93 @@
 <div class="meal-events">
-    <h1>Meal Events</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Parent Meal Event</th>
-                <th>Min Foods</th>
-                <th>Max Foods</th>
-                <!-- More columns as needed -->
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Meal event rows go here -->
-            <tr>
-                <td>Brunch</td>
-                <td>None</td>
-                <td>2</td>
-                <td>4</td>
-            </tr>
-            <!-- More rows as needed -->
-        </tbody>
-    </table>
-    <button id="create-button">Create Meal Event</button>
+  <h1>Meal Events</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Parent Meal Event</th>
+        <th>Min Foods</th>
+        <th>Max Foods</th>
+        <!-- More columns as needed -->
+      </tr>
+    </thead>
+    <tbody>
+      <% @meal_events.each do |meal_event| %>
+        <tr>
+          <td><%= meal_event.fetch('name', '') %></td>
+          <td><%= meal_event.fetch('parent_meal_event', '') %></td>
+          <td><%= meal_event.fetch('min_foods', '') %></td>
+          <td><%= meal_event.fetch('max_foods', '') %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <button id="create-button">Create Meal Event</button>
 </div>
 
-<!-- This div would initially be hidden, then shown when the user clicks on the button -->
 <div class="modal" id="meal-event-modal">
-    <div class="modal-content">
-        <h2>Create Meal Event</h2>
-        <form class="meal-event-form">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name">
+  <div class="modal-content">
+    <h2>Create Meal Event</h2>
+    <div class="form-container">
+      <!--<form class="meal-event-form" action="/create-meal-event" method="post">-->
+      <form class="meal-event-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name">
 
-            <label for="parent-meal-event">Parent Meal Event:</label>
-            <select id="parent-meal-event" name="parent-meal-event">
-                <!-- Options go here -->
-            </select>
+        <label for="parent-meal-event">Parent Meal Event:</label>
+        <select id="parent-meal-event" name="parent-meal-event">
+          <!-- Options go here -->
+        </select>
 
-            <label for="min-foods">Min Foods:</label>
-            <input type="number" id="min-foods" name="min-foods">
-            <label for="max-foods">Max Foods:</label>
-            <input type="number" id="max-foods" name="max-foods">
+        <label for="min-foods">Min Foods:</label>
+        <input type="number" id="min-foods" name="min-foods">
 
-            <label for="recurrence">Recurrence:</label>
-            <input type="number" id="recurrence" name="recurrence"> day(s)
-            <input type="number" id="recurrence-weekly" name="recurrence-weekly"> week(s) on
-            <div class="days-of-week">
-                <label><input type="checkbox" name="days" value="Mon"> Mon</label>
-                <label><input type="checkbox" name="days" value="Tue"> Tue</label>
-                <label><input type="checkbox" name="days" value="Wed"> Wed</label>
-                <label><input type="checkbox" name="days" value="Thu"> Thu</label>
-                <label><input type="checkbox" name="days" value="Fri"> Fri</label>
-                <label><input type="checkbox" name="days" value="Sat"> Sat</label>
-                <label><input type="checkbox" name="days" value="Sun"> Sun</label>
+        <label for="max-foods">Max Foods:</label>
+        <input type="number" id="max-foods" name="max-foods">
+
+        <span>Is this a recurrent event?</span>
+        <input type="checkbox" id="is-recurrent" name="is-recurrent" class="large-checkbox">
+        <div id="recurrence-wrapper">
+          <div class="dropdown" id="first-dropdown">
+            <button class="dropdown-button">Select:</button>
+            <div class="dropdown-content">
+              <p data-value="Every">Every</p>
+              <p data-value="For">For</p>
             </div>
+            <input type="hidden" id="recurrence1" name="recurrence1">
+          </div>
+          <div class="dropdown" id="second-dropdown" style="display: none;">
+            <button class="dropdown-button">Select:</button>
+            <div class="dropdown-content">
+              <!-- Options will be added dynamically -->
+            </div>
+            <input type="hidden" id="recurrence2" name="recurrence2">
+          </div>
+          <div class="dropdown" id="third-dropdown" style="display: none;">
+            <button class="dropdown-button">Select:</button>
+            <div class="dropdown-content">
+              <!-- Options will be added dynamically -->
+            </div>
+            <input type="hidden" id="recurrence3" name="recurrence3">
+          </div>
 
-            <label for="cuisine">Type of Cuisine:</label>
-            <input type="text" id="cuisine" name="cuisine">
+          <div class="dropdown" id="fourth-dropdown" style="display: none;">
+            <button class="dropdown-button">Select:</button>
+            <div class="dropdown-content">
+              <!-- Options will be added dynamically -->
+            </div>
+            <input type="hidden" id="recurrence4" name="recurrence4">
+          </div>
+        </div>
 
-            <input type="submit" value="Submit">
-        </form>
-        <button id="cancel-button">Cancel</button>
+        <label for="food-categories">Food Categories</label>
+        <input type="text" id="food-categories" name="food-categories">
+
+        <div class="button-group">
+          <button type="button" id="cancel-button">Cancel</button>
+          <input type="submit" value="Submit">
+        </div>
+
+      </form>
     </div>
+  </div>
 </div>

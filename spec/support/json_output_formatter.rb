@@ -1,20 +1,22 @@
-RSpec::Support.require_rspec_core "formatters/json_formatter"
-require "oj"
+# frozen_string_literal: true
+
+RSpec::Support.require_rspec_core 'formatters/json_formatter'
+require 'oj'
 
 class JsonOutputFormatter < RSpec::Core::Formatters::JsonFormatter
   RSpec::Core::Formatters.register self, :dump_summary
 
   def dump_summary(summary)
-    total_points = summary.
-      examples.
-      map { |example| example.metadata[:points].to_i }.
-      sum
+    total_points = summary
+                   .examples
+                   .map { |example| example.metadata[:points].to_i }
+                   .sum
 
-    earned_points = summary.
-      examples.
-      select { |example| example.execution_result.status == :passed }.
-      map { |example| example.metadata[:points].to_i }.
-      sum
+    earned_points = summary
+                    .examples
+                    .select { |example| example.execution_result.status == :passed }
+                    .map { |example| example.metadata[:points].to_i }
+                    .sum
 
     score = (earned_points.to_f / total_points).round(4)
     score = 0 if score.nan?
@@ -25,24 +27,24 @@ class JsonOutputFormatter < RSpec::Core::Formatters::JsonFormatter
       errors_outside_of_examples_count: summary.errors_outside_of_examples_count,
       failure_count: summary.failure_count,
       pending_count: summary.pending_count,
-      total_points: total_points,
-      earned_points: earned_points,
-      score: score,
+      total_points:,
+      earned_points:,
+      score:
     }
     result = (@output_hash[:summary][:score] * 100).round(2)
 
-    if summary.errors_outside_of_examples_count.positive?
-      result = "An error occurred while running tests"
-    else
-      result = result.to_s + "%"
-    end
+    result = if summary.errors_outside_of_examples_count.positive?
+               'An error occurred while running tests'
+             else
+               "#{result}%"
+             end
 
     @output_hash[:summary_line] = [
-      "#{summary.example_count} #{summary.example_count == 1 ? "test" : "tests"}",
+      "#{summary.example_count} #{summary.example_count == 1 ? 'test' : 'tests'}",
       "#{summary.failure_count} failures",
       "#{earned_points}/#{total_points} points",
-      result,
-    ].join(", ")
+      result
+    ].join(', ')
   end
 
   def close(_notification)
@@ -60,7 +62,7 @@ class JsonOutputFormatter < RSpec::Core::Formatters::JsonFormatter
       points: example.metadata[:points],
       file_path: example.metadata[:file_path],
       line_number: example.metadata[:line_number],
-      run_time: example.execution_result.run_time,
+      run_time: example.execution_result.run_time
     }
   end
 end

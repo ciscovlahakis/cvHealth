@@ -33,52 +33,19 @@ body {
   margin-right: 15px;
 }
 
-/* .meal-plan {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-gap: 20px;
-  line-height: 1.6;
-  color: #333;
-}
-
-.day {
-  border: 1px solid #ccc;
-  padding: 20px;
-}
-
- .meal-plan h1, .meal-plan h2, .meal-plan h3 {
-  color: #446CB3;
-  font-family: 'Arial', sans-serif;
-}
-
-.meal-plan .meal {
-  background-color: #EAF2F8;
-  border: 1px solid black;
-  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
-  border-radius: 5px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
 .meal-plan .meal:hover {
   background-color: #D4EFDF;
   border-color: #1ABC9C;
 }
 
-.monday {
-  background-color: #E6B0AA;
-}
-.tuesday {
-  background-color: #D7BDE2;
-} */
-/* ... and so on for each day of the week */
 #calendar {
   width: 100%;
   border-collapse: collapse;
   font-family: Arial, sans-serif;
 }
 
-#calendar th, #calendar td {
+#calendar th,
+#calendar td {
   border: 1px solid #000;
   text-align: center;
   padding: 10px;
@@ -100,7 +67,8 @@ body {
   margin-bottom: 20px;
 }
 
-.meal-events th, .meal-events td {
+.meal-events th,
+.meal-events td {
   border: 1px solid #ccc;
   text-align: left;
   padding: 8px;
@@ -111,54 +79,147 @@ body {
 }
 
 .modal {
-  display: none; /* Start off hidden */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-  padding-top: 60px; /* Location of the box */
-}
-
-.meal-event-form {
-  background-color: #fefefe;
-  margin: auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
-}
-
-#meal-event-modal {
-  display: none; /* Hidden by default */
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
   position: fixed;
-  left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-  padding: 20px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: auto;
 }
 
 .modal-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   background-color: white;
-  margin: 0 auto;
   padding: 20px;
+  border-radius: 10px;
   width: 80%;
   max-width: 500px;
+  margin: auto;
+  max-height: 90vh;
+  overflow: visible;
 }
 
-#create-button {
-  background-color: #4CAF50; /* Green */
+.meal-event-form label {
+  display: block;
+  margin-top: 10px;
+}
+
+.meal-event-form input[type="text"],
+.meal-event-form input[type="number"],
+.meal-event-form select {
+  width: 100%;
+  padding: 5px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* .meal-event-form input[type="submit"], */
+#cancel-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
   border: none;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* .meal-event-form input[type="submit"] {
+  background-color: #007BFF;
   color: white;
-  padding: 15px 32px;
-  text-align: center;
-  text-decoration: none;
+} */
+
+/* .meal-event-form input[type="submit"]:hover,
+.meal-event-form input[type="submit"]:focus {
+  background-color: #0056b3;
+} */
+
+#cancel-button {
+  background-color: transparent;
+  color: #007BFF;
+  border: none;
+  box-shadow: none;
+}
+
+#cancel-button:hover,
+#cancel-button:focus {
+  background-color: #f2f2f2;
+  color: #007BFF;
+}
+
+#recurrence-wrapper {
+  display: block;
+}
+
+.recurrence-select {
+  display: none;
+  /* Hide dropdowns initially */
+  /* Removed the flex-shrink and max-width properties */
+}
+
+#phrase1-width {
+  visibility: hidden;
+  /* Hide the span for measuring the width */
+  white-space: nowrap;
+  /* Prevent the text from wrapping */
+}
+
+.large-checkbox {
+  height: 20px;
+  width: 20px;
+  vertical-align: middle;
+}
+
+.dropdown {
+  position: relative;
   display: inline-block;
+}
+
+.dropdown-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #000;
+  color: #fff;
   font-size: 16px;
-  margin: 4px 2px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dropdown-button:hover {
+  background-color: #444;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  z-index: 9999;
+  /* Add this line */
+}
+
+.dropdown-content p {
+  padding: 10px 20px;
+  margin: 0;
+  background-color: #fff;
+  color: #000;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.dropdown-content p:hover,
+.dropdown-content p.selected {
+  background-color: #ccc;
 }
