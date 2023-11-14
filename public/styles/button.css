@@ -1,0 +1,19 @@
+.button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--border-radius); /* match the border-radius of the table */
+  background-color: #343a40; /* match the background color of the table headers */
+  font-size: 18px; /* same font size as table headers */
+  font-weight: bold; /* same font weight as table headers */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); /* same box-shadow as table */
+}
+
+.button:hover {
+  background-color: #444;
+}
+
+.button, .button i {
+  color: #fff;
+}

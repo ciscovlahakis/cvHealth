@@ -1,12 +1,7 @@
-<div class="meal-events">
+<h3><%= @title %></h3>
+<p class="description"><%= @description %></p>
 
-  <h3><%= @title %></h3>
-  <p class="description"><%= @description %></p>
-
-  <button id="create-button"><%= @create_button_title %></button>
-  
-  <%= erb :"shared/table" %>
-</div>
+<%= erb :"shared/table" %>
 
 <div class="modal" id="meal-event-modal">
   <div class="modal-content">

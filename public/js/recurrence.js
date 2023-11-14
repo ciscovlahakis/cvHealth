@@ -20,7 +20,7 @@ window.onload = function () {
   function createDropdownHTML(index) {
     return `
       <div class="dropdown" id="dropdown${index}" style="display: none;">
-        <button class="dropdown-button">Select:</button>
+        <button class="button">Select:</button>
         <div class="dropdown-content"></div>
         <input type="hidden" id="recurrence${index}" name="recurrence${index}">
       </div>
@@ -59,7 +59,7 @@ window.onload = function () {
   // Initialize the dropdowns
   var dropdowns = [];
   for (let i = 1; i <= dropdownsCount; i++) {
-    dropdowns.push(createDropdown(`dropdown${i}`, ".dropdown-button", ".dropdown-content", `recurrence${i}`));
+    dropdowns.push(createDropdown(`dropdown${i}`, ".button", ".dropdown-content", `recurrence${i}`));
   }
 
   // Set the initial options for the first dropdown
@@ -91,7 +91,7 @@ window.onload = function () {
         if (dropdown.input.value !== previousValue) {
           var currentDropdown = dropdown.dropdown.nextElementSibling;
           while (currentDropdown) {
-            var currentButton = currentDropdown.querySelector(".dropdown-button");
+            var currentButton = currentDropdown.querySelector(".button");
             var currentInput = currentDropdown.querySelector('input[type="hidden"]');
             currentDropdown.style.display = 'none';
             currentButton.textContent = 'Select:';
@@ -107,7 +107,7 @@ window.onload = function () {
             nextDropdown.style.display = 'inline-block';
             updateDropdownOptions({
               dropdown: nextDropdown,
-              button: nextDropdown.querySelector(".dropdown-button"),
+              button: nextDropdown.querySelector(".button"),
               content: nextDropdownContent,
               input: nextDropdown.querySelector('input[type="hidden"]')
             }, nextOptions);
@@ -121,7 +121,7 @@ window.onload = function () {
     if (dropdown.dropdown.nextElementSibling) {
       var currentDropdown = dropdown.dropdown.nextElementSibling;
       while (currentDropdown) {
-        var currentButton = currentDropdown.querySelector(".dropdown-button");
+        var currentButton = currentDropdown.querySelector(".button");
         var currentInput = currentDropdown.querySelector('input[type="hidden"]');
         currentDropdown.style.display = 'none';
         currentButton.textContent = 'Select:';
