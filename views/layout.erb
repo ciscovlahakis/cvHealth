@@ -6,13 +6,16 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+    <link rel="stylesheet" type="text/css" href="/recurrence.css">
+    <link rel="stylesheet" type="text/css" href="/table.css">
   </head>
     
   <body>
     <div class="d-flex">
-      <%= erb :_sidebar %>
+      <%= erb :"shared/sidebar" %>
       <div id="page-content-container">
         <!-- Your page content goes here -->
         <%= yield %>
@@ -25,5 +28,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="/main.js"></script>
+    <script src="/recurrence.js"></script>
   </body>
 </html>

@@ -59,34 +59,3 @@
     <input type="submit" value="Create Meal Time">
   </div>
 </form>
-
-
-
-
-
-
-<select id="phrase1" name="phrase1" class="recurrence-select">
-  <option value="" selected>--Select--</option>
-  <option value="every">Every</option>
-  <option value="from">From</option>
-  <option value="to">To</option>
-</select>
-<span id="phrase1-width"></span> <!-- New span for measuring the width -->
-<select id="phrase2" name="phrase2" class="recurrence-select" style="display: none;">
-  <option value="" selected>--Select--</option>
-  <option value="monday">Monday</option>
-</select>
-<!-- Additional dropdowns as per your requirements -->
-</div>
-
-Phrase 1 = “Every”, “From”, “Starting [Date]”, “For”, “On”
-
-Phrase 2 = “Monday”, “Tuesday”, …, “Day”, “Week”, “Month”, “Year”, 1, 2, 3, 4 … 30, 12 AM, 1 AM, …, 1/1, 1/2, …, last
-
-Phrase 3 = “-st”, “-rd”, “-th”, “at”, “until”, “from”, “occurences”, “days”, “weeks”, “months”, “years”, “day”, “Monday”, “Tuesday”
-
-Phrase 4 = “12 AM, 1 AM, …, “Monday”, “Tuesday, …, 1/1, 1/2, …”
-
-Phrase 5 = “Until”
-
-Phrase 6 = “12 AM, 1 AM, …”

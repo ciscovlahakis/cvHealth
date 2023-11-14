@@ -1,0 +1,24 @@
+<table>
+  <thead>
+    <tr>
+      <% Array(@columns).each do |x| %>
+      <% pp x %>
+        <th><%= x[:name] %></th>
+      <% end %>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% Array(@data).each do |x| %>
+      <tr>
+        <% Array(@columns).each do |y| %>
+          <td><%= x.fetch(y[:id], '') %></td>
+        <% end %>
+        <td>
+          <a href="/edit-meal-event?id=1"><i class="fas fa-edit"></i></a>
+          <a href="/delete-meal-event?id=1"><i class="fas fa-trash"></i></a>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
