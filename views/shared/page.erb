@@ -1,30 +1,105 @@
+<style>
+  .grid-table {
+    width: 100%;
+    display: grid;
+    grid-template-columns: <%= "repeat(#{Array(@columns).count}, 1fr) auto auto;" %>;
+    gap: 1px;
+    background-color: #ccc;
+    margin: 30px 0px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+  }
+
+  .grid-table > div {
+    background-color: #fff;
+    padding: 10px;
+    text-align: left;
+    transition: all 0.3s;
+  }
+
+  .grid-table > .header {
+    text-align: left;
+    padding-left: 10px;
+    background-color: #343a40;
+    color: #fff;
+    font-size: 18px;
+    cursor: default;
+  }
+
+  .grid-table > .icon-column:hover {
+    background-color: #ddd;
+    cursor: pointer;
+  }
+
+  .grid-table > .content-cell:hover {
+    background-color: #ddd;
+    cursor: pointer;
+  }
+
+  .grid-table i {
+    color: #343a40;
+    font-size: 1.5em;
+    margin: 0 10px;
+  }
+
+  .button-table-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .table-button {
+    align-self: flex-end;
+  }
+</style>
+
 <h3><%= @title %></h3>
 <p class="description"><%= @description %></p>
 
-<%= erb :"shared/table" %>
-
-<div class="modal" id="meal-event-modal">
+<div class="modal" id="modal">
   <div class="modal-content">
-    <h2>Create Meal Event</h2>
+    <h2><%= @create_button_title %></h2>
     <div class="form-container">
-      <form class="meal-event-form" action="/create-meal-event" method="post">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name">
-
-        <label for="min-foods">Min Foods:</label>
-        <input type="number" id="min-foods" name="min-foods">
-
-        <label for="max-foods">Max Foods:</label>
-        <input type="number" id="max-foods" name="max-foods">
+      <form class="<%= @resource %>-form" action="/create/<%= @resource %>" method="post">
+        <% @columns.each do |column| %>
+          <label for="<%= column[:id] %>"><%= column[:name] %>:</label>
+          <% if column[:type] == Integer %>
+            <input type="number" id="<%= column[:id] %>" name="<%= column[:id] %>">
+          <% else %>
+            <input type="text" id="<%= column[:id] %>" name="<%= column[:id] %>">
+          <% end %>
+        <% end %>
 
         <%= erb :"shared/recurrence" %>
-
+        
         <div class="button-group">
           <button type="button" id="cancel-button">Cancel</button>
           <input type="submit" value="Submit">
         </div>
-
       </form>
     </div>
+  </div>
+</div>
+
+<div class="button-table-container">
+  <button id="create-btn" class="button table-button rounded-shadow font"><i class="fas fa-plus-circle"></i> <%= @create_button_title %></button>
+  <div class="grid-table rounded-shadow">
+    <% Array(@columns).each do |x| %>
+      <div class="header"><%= x[:name] %></div>
+    <% end %>
+    <div class="header icon-header"></div>
+    <div class="header icon-header"></div>
+    <% Array(@data).each do |x| %>
+      <% Array(@columns).each do |y| %>
+        <div class="content-cell">
+          <%= x.fetch(y[:id], '') %>
+        </div>
+      <% end %>
+      <div class="icon-column">
+        <a href="/edit-meal-event?id=1"><i class="fas fa-edit"></i></a>
+      </div>
+      <div class="icon-column">
+        <a href="/delete-meal-event?id=1"><i class="fas fa-trash"></i></a>
+      </div>
+    <% end %>
   </div>
 </div>

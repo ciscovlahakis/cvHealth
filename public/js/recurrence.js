@@ -1,21 +1,4 @@
 window.onload = function () {
-  var modal = document.getElementById('meal-event-modal');
-  var createButton = document.getElementById('create-button');
-  createButton.addEventListener('click', function () {
-    modal.style.display = 'flex';
-  });
-
-  let cancelButton = document.getElementById('cancel-button');
-
-  cancelButton.addEventListener('click', function () {
-    modal.style.display = 'none';
-  });
-
-  window.onclick = function (event) {
-    if (event.target == modal) {
-      modal.style.display = 'none';
-    }
-  }
 
   function createDropdownHTML(index) {
     return `

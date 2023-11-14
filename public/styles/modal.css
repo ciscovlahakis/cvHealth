@@ -1,4 +1,3 @@
-
 .modal {
   display: none;
   justify-content: center;
@@ -26,7 +25,6 @@
   overflow: visible;
 }
 
-
 .button-group {
   display: flex;
   justify-content: flex-end;
@@ -34,7 +32,6 @@
   margin-top: 20px;
 }
 
-/* .meal-event-form input[type="submit"], */
 #cancel-button {
   padding: 8px 16px;
   border-radius: 4px;
@@ -43,23 +40,8 @@
   transition: all 0.2s ease-in-out;
   border: none;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-/* .meal-event-form input[type="submit"] {
-  background-color: #007BFF;
-  color: white;
-} */
-
-/* .meal-event-form input[type="submit"]:hover,
-.meal-event-form input[type="submit"]:focus {
-  background-color: #0056b3;
-} */
-
-#cancel-button {
   background-color: transparent;
   color: #007BFF;
-  border: none;
-  box-shadow: none;
 }
 
 #cancel-button:hover,
@@ -68,14 +50,14 @@
   color: #007BFF;
 }
 
-.meal-event-form label {
+form label {
   display: block;
   margin-top: 10px;
 }
 
-.meal-event-form input[type="text"],
-.meal-event-form input[type="number"],
-.meal-event-form select {
+form input[type="text"],
+form input[type="number"],
+form select {
   width: 100%;
   padding: 5px;
 }
