@@ -1,24 +1,71 @@
-<table>
-  <thead>
-    <tr>
-      <% Array(@columns).each do |x| %>
-      <% pp x %>
-        <th><%= x[:name] %></th>
-      <% end %>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% Array(@data).each do |x| %>
-      <tr>
-        <% Array(@columns).each do |y| %>
-          <td><%= x.fetch(y[:id], '') %></td>
-        <% end %>
-        <td>
-          <a href="/edit-meal-event?id=1"><i class="fas fa-edit"></i></a>
-          <a href="/delete-meal-event?id=1"><i class="fas fa-trash"></i></a>
-        </td>
-      </tr>
+<style>
+  .grid-table {
+    display: grid;
+    grid-template-columns: <%= "repeat(#{Array(@columns).count}, 1fr) auto auto;" %>
+    gap: 1px;
+    background-color: #ccc; /* Visible gap between cells */
+    margin: 30px 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+  }
+
+  .grid-table > div {
+    background-color: #fff; /* Cell background color */
+    padding: 10px;
+    text-align: left; /* Align text to the left */
+    transition: all 0.3s;
+  }
+
+  /* Header cells */
+  .grid-table > .header {
+    text-align: center;
+    background-color: #343a40;
+    color: #fff;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: default;
+  }
+
+  /* Icon columns */
+  .grid-table > .icon-column:hover {
+    background-color: #ddd;
+    cursor: pointer;
+  }
+
+  /* Content cells */
+  .grid-table > .content-cell:hover {
+    background-color: #ddd;
+    cursor: pointer;
+  }
+
+  /* Icon styling */
+  .grid-table i {
+    color: #343a40;
+    font-size: 1.5em; /* Adjust as needed */
+    margin: 0 10px; /* Add margin around icons */
+  }
+</style>
+
+<div class="grid-table">
+  <% Array(@columns).each do |x| %>
+    <div class="header"><%= x[:name] %></div>
+  <% end %>
+  <div class="header icon-header"></div>
+  <div class="header icon-header"></div>
+
+  <% Array(@data).each do |x| %>
+    <% Array(@columns).each do |y| %>
+      <div class="content-cell">
+        <%= x.fetch(y[:id], '') %>
+      </div>
     <% end %>
-  </tbody>
-</table>
+    <div class="icon-column">
+      <a href="/edit-meal-event?id=1"><i class="fas fa-edit"></i></a>
+    </div>
+    <div class="icon-column">
+      <a href="/delete-meal-event?id=1"><i class="fas fa-trash"></i></a>
+    </div>
+  <% end %>
+</div>

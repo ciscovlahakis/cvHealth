@@ -1,0 +1,22 @@
+body {
+  background: #f8f9fa;
+}
+
+
+#page-content-container {
+  flex: 1;
+}
+
+.meal-events td:last-child {
+  text-align: right;
+}
+
+.meal-events {
+  font-family: Arial, sans-serif;
+  padding: 50px;
+  text-align: right; /* aligns all direct children to the right */
+}
+
+.meal-events h3, .meal-events table, .description {
+  text-align: left;
+}

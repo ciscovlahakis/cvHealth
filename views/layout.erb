@@ -4,13 +4,16 @@
     <title>cvHealth</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+
     <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <% css_files = Dir.glob('./public/styles/*.css').map { |path| path.split('/').last } %>
+    <% css_files.each do |file| %>
+      <link rel="stylesheet" type="text/css" href="/styles/<%= file %>">
+    <% end %>
 
-    <link rel="stylesheet" type="text/css" href="/styles.css">
-    <link rel="stylesheet" type="text/css" href="/recurrence.css">
-    <link rel="stylesheet" type="text/css" href="/table.css">
   </head>
     
   <body>
@@ -21,13 +24,15 @@
         <%= yield %>
       </div>
     </div>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 
-    <!-- JS (comes after the body) -->
+    <!-- JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script src="/main.js"></script>
-    <script src="/recurrence.js"></script>
+    <% js_files = Dir.glob('./public/js/*.js').map { |path| path.split('/').last } %>
+    <% js_files.each do |file| %>
+      <script src="/js/<%= file %>"></script>
+    <% end %>
+
   </body>
 </html>

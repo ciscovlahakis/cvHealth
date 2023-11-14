@@ -30,23 +30,22 @@ end
 def navigate_to_page(ref, columns)
   @data = get_data(ref)
   @columns = columns
-  erb(:"shared/page")
+  erb :"shared/page"
 end
 
 get("/") do
-  erb(:home)
+  erb :home
 end
 
 get("/meal-plan") do
   @meal_plan = MealPlanGenerator.new(current_user).generate
-  erb(:meal_plan)
+  erb :meal_plan
 end
 
 get("/nutritional-components") do
   @title = "Nutritional Components"
   @description = "Calories, Protein, Sodium..."
   @create_button_title = "Create Nutritional Component"
-
   nutritional_components_ref = $firestore.col("nutritionalComponents")
   nutritional_components_columns = [
     { id: "name", name: "Name", type: String },
@@ -56,19 +55,19 @@ get("/nutritional-components") do
     { id: "target", name: "Target", type: Integer },
     { id: "progress", name: "Progress", type: Integer }
   ]
-
   navigate_to_page(nutritional_components_ref, nutritional_components_columns)
 end
 
 get("/foods") do
-  erb(:"shared/page")
+  erb :"shared/page"
 end
 
 get("/food-categories") do
-  erb(:"shared/page")
+  erb :"shared/page"
 end
 
 meal_events_ref = $firestore.col("meal_events")
+
 get("/meal-events") do
   @title = "Meal Events"
   @description = "Manage your meal times, types, and constraints."
@@ -81,6 +80,7 @@ get("/meal-events") do
   ]
   navigate_to_page(meal_events_ref, meal_event_columns)
 end
+
 post("/create-meal-event") do
   new_meal_event = {
     "name" => params.fetch("name"),
@@ -93,9 +93,9 @@ post("/create-meal-event") do
 end
 
 get("/recipes") do
-  erb(:"shared/page")
+  erb :"shared/page"
 end
 
 get("/statistics") do
-  erb(:"shared/page")
+  erb :"shared/page"
 end

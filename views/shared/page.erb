@@ -2,9 +2,10 @@
 
   <h3><%= @title %></h3>
   <p class="description"><%= @description %></p>
-  <%= erb :"shared/table" %>
 
   <button id="create-button"><%= @create_button_title %></button>
+  
+  <%= erb :"shared/table" %>
 </div>
 
 <div class="modal" id="meal-event-modal">
