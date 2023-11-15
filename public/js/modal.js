@@ -9,10 +9,11 @@ $(document).ready(function () {
   var cancelButton = document.getElementById("cancel-button");
 
   // When the user clicks the button, open the modal 
+
   btn.onclick = function () {
     modal.style.display = "flex";
     $('#modal-form').attr('action', '/create/' + $('#modal-form').data('resource'));
-    $('#modal-title').text('Create ' + $('#modal-form').data('resource'));
+    $('#modal-title').text($('#create-btn').text());
     $('#modal-form input[type=submit]').val('Create');
   }
 
@@ -49,7 +50,12 @@ $(document).ready(function () {
     });
 
     $('#modal-form').attr('action', '/update/' + $('#modal-form').data('resource'));
-    $('#modal-title').text('Update ' + $('#modal-form').data('resource'));
+
+    // Here we adjust the modal title for the update action
+    var createBtnText = $('#create-btn').text();
+    var title = createBtnText.replace('Create ', ''); // Remove 'Create ' from the title
+    $('#modal-title').text('Update ' + title);
+
     $('#modal-form input[type=submit]').val('Edit')
     modal.style.display = "flex";
   });

@@ -6,13 +6,13 @@ require_relative "config/initialize_firestore"
 require_relative "models/meal_plan_generator"
 
 SIDEBAR_LINKS = {
-  "meal-plan" => { :title => "Meal Plan", :icon => "fas fa-calendar", :create_button => false },
-  "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_button => true },
-  "foods" => { :title => "Foods", :icon => "fas fa-apple-alt", :create_button => true },
-  "food-categories" => { :title => "Food Categories", :icon => "fas fa-list-ul", :create_button => false },
-  "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_button => true },
-  "recipes" => { :title => "Recipes", :icon => "fas fa-clipboard-list", :create_button => false },
-  "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_button => false },
+  "meal-plan" => { :title => "Meal Plan", :icon => "fas fa-calendar", :create_title => false },
+  "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_title => true },
+  "foods" => { :title => "Foods", :icon => "fas fa-apple-alt", :create_title => true },
+  "food-categories" => { :title => "Food Categories", :icon => "fas fa-list-ul", :create_title => true },
+  "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_title => true },
+  "recipes" => { :title => "Recipes", :icon => "fas fa-clipboard-list", :create_title => true },
+  "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_title => false },
 }
 
 NUTRITIONAL_COMPONENT_ATTRIBUTES = [
@@ -22,6 +22,14 @@ NUTRITIONAL_COMPONENT_ATTRIBUTES = [
   { :id => "max", :name => "Max", :type => Integer },
   { :id => "target", :name => "Target", :type => Integer },
   { :id => "progress", :name => "Progress", :type => Integer },
+  { :id => "unit", :name => "Unit", :type => Integer }
+]
+
+FOOD_ATTRIBUTES = [
+  { :id => "index", :name => "Index", :type => Integer },
+  { :id => "name", :name => "Name", :type => String },
+  { :id => "id", :name => "ID", :type => String },
+  # Add more attributes here if needed
 ]
 
 MEAL_EVENT_ATTRIBUTES = [
@@ -36,9 +44,11 @@ helpers do
     case resource
     when "nutritional-components"
       NUTRITIONAL_COMPONENT_ATTRIBUTES
+    when "foods"
+      FOOD_ATTRIBUTES
     when "meal-events"
       MEAL_EVENT_ATTRIBUTES
-      # add more cases here for other resources
+    # Add more cases here for other resources
     end
   end
 
@@ -53,8 +63,8 @@ helpers do
     @title = sidebar_link_hash.fetch(:title, "")
     @icon = sidebar_link_hash.fetch(:icon, "")
     @description = sidebar_link_hash.fetch(:description, "")
-    if sidebar_link_hash.fetch(:create_button, false)
-      @create_button_title = "Create #{@title}".chop
+    if sidebar_link_hash.fetch(:create_title, false)
+      @create_title = "Create #{@title.chop}"
     end
 
     ref = $firestore.col(path)
@@ -83,6 +93,11 @@ helpers do
       data = doc.data
       data_with_id = data.merge({ 'id' => doc.document_id })
       string_data = data_with_id.transform_keys(&:to_s) # Convert all keys to Strings
+
+
+      puts "Data: #{string_data.inspect}"
+
+
       output << string_data
     end
     return output
@@ -114,6 +129,11 @@ end
 
 get("/:resource") do
   resource, attributes = resource_and_attributes()
+
+  puts "Columns: #{@columns.inspect}"
+
+
+
   render_page(resource, attributes)
 end
 
