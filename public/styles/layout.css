@@ -66,10 +66,9 @@ body {
 }
 
 .search-bar input {
+  flex: 1;
   border: none;
   padding: 10px;
-  font-size: 16px;
-  width: 100%;
   outline: none;
   border-radius: 15px;
   font-size: 1rem;
