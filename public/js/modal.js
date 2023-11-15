@@ -16,7 +16,7 @@ $(document).ready(function () {
     $('#modal-form input[type=submit]').val('Create');
   }
 
-  cancelButton.onclick = function() {
+  cancelButton.onclick = function () {
     modal.style.display = "none";
     // Clear form fields
     $('#modal-form input[type=text]').val('');
@@ -32,33 +32,22 @@ $(document).ready(function () {
       // Clear form fields
       $('#modal-form input[type=text]').val('');
       $('#modal-form input[type=number]').val('');
+      // Clear data attributes
       $('.content-cell').data({});
     }
   }
 
-  $('.edit-link').on('click', function(event) {
+  $('.edit-link').on('click', function (event) {
     event.preventDefault();
     var id = $(this).data('id');
     $('#modal-form input[name=id]').val(id);
-  
-    // Find the row that the edit button was clicked on
-    var row = $('.row[data-id="' + id + '"]');
 
-  
-    $('#modal-form input[type=text]').each(function() {
+    $('#modal-form input[type=text], #modal-form input[type=number]').each(function () {
       var fieldName = $(this).attr('name');
-      // Get the data from the corresponding cell in the row
-      var value = row.find('.content-cell[data-' + fieldName + ']').text();
+      var value = $('.content-cell[data-' + fieldName + '][data-row-id="' + id + '"]').text().trim();
       $(this).val(value);
     });
-  
-    $('#modal-form input[type=number]').each(function() {
-      var fieldName = $(this).attr('name');
-      // Get the data from the corresponding cell in the row
-      var value = row.find('.content-cell[data-' + fieldName + ']').text();
-      $(this).val(value);
-    });
-  
+
     $('#modal-form').attr('action', '/update/' + $('#modal-form').data('resource'));
     $('#modal-title').text('Update ' + $('#modal-form').data('resource'));
     $('#modal-form input[type=submit]').val('Edit')

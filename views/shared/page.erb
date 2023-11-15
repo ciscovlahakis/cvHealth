@@ -98,12 +98,12 @@
     <div class="header icon-header"></div>
     <% Array(@data).each do |x| %>
       <% Array(@columns).each do |y| %>
-        <div class="content-cell" data-<%= y[:id] %>="<%= x.fetch(y[:id], '') %>">
+        <div class="content-cell" data-<%= y[:name] %>="<%= x.fetch(y[:id], '') %>" data-row-id="<%= x.fetch('id') %>">
           <%= x.fetch(y[:id], '') %>
         </div>
       <% end %>
       <div class="icon-column">
-        <a class="edit-link" data-id="<%= x.fetch('id') %>"><i class="fas fa-edit"></i></a>
+        <a class="edit-link" data-id="<%= x.fetch('id') %>" data-row-id="<%= x.fetch('id') %>"><i class="fas fa-edit"></i></a>
       </div>
       <div class="icon-column">
         <form action="/delete/<%= @resource %>" method="post">
