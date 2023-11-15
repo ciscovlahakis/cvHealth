@@ -7,10 +7,10 @@ require_relative "models/meal_plan_generator"
 
 SIDEBAR_LINKS = {
   "meal-plan" => { :title => "Meal Plan", :icon => "fas fa-calendar", :create_title => false },
-  "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_title => true },
+  "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_title => true, :enable_move => true },
   "foods" => { :title => "Foods", :icon => "fas fa-apple-alt", :create_title => true },
   "food-categories" => { :title => "Food Categories", :icon => "fas fa-list-ul", :create_title => true },
-  "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_title => true },
+  "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_title => true, :enable_move => true },
   "recipes" => { :title => "Recipes", :icon => "fas fa-clipboard-list", :create_title => true },
   "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_title => false },
 }
@@ -63,12 +63,13 @@ helpers do
     @title = sidebar_link_hash.fetch(:title, "")
     @icon = sidebar_link_hash.fetch(:icon, "")
     @description = sidebar_link_hash.fetch(:description, "")
+    @enable_move = sidebar_link_hash.fetch(:enable_move, false)
     if sidebar_link_hash.fetch(:create_title, false)
       @create_title = "Create #{@title.chop}"
     end
 
     ref = $firestore.col(path)
-    @data = get_data(ref)
+    @data = get_data(ref, path)
     @columns = columns
     erb :"shared/page"
   end
@@ -87,31 +88,65 @@ helpers do
     redirect "/#{collection_name}"
   end
 
-  def get_data(ref)
+  def sort_and_assign_positions(data, resource)
+    # Start from position 1
+    position = 1
+  
+    # Sort the data by the existing 'position' attribute
+    sorted_data = data.sort_by { |d| d.fetch('position', 0) }
+  
+    # Assign new positions to all items
+    sorted_data.each do |d|
+      # Update the position in the data
+      d['position'] = position
+  
+      # Update the position in the database
+      ref = $firestore.col(resource).doc(d['id'])
+  
+      # Start a transaction
+      $firestore.transaction do |tx|
+        # Add this operation to the transaction
+        tx.set(ref, { :position => position }, merge: true)
+      end
+
+      # Increment the position for the next item
+      position += 1
+    end
+
+    # Return the sorted data
+    return sorted_data
+  end
+
+  def get_data(ref, resource)
     output = []
     ref.get do |doc|
       data = doc.data
       data_with_id = data.merge({ 'id' => doc.document_id })
       string_data = data_with_id.transform_keys(&:to_s) # Convert all keys to Strings
-
-
-      puts "Data: #{string_data.inspect}"
-
-
       output << string_data
     end
+    
+    # Sort the output array based on the 'position' field
+    output = output.sort_by { |item| item.fetch('position') }
     return output
   end
 
   def current_user
     return unless session.fetch("user_id", nil)
-
     user_id = session.fetch("user_id", nil)
     return unless user_id
-
     matching_users = User.where({ id: user_id })
     @current_user = matching_users.at(0)
   end
+end
+
+post("/update_position") do
+  id = params.fetch("id")
+  new_position = params.fetch("position").to_i
+  resource = params.fetch("resource")
+  ref = $firestore.col(resource).doc(id)
+  ref.set({ :position => new_position }, merge: true)
+  return { :status => "success" }.to_json
 end
 
 get("/") do
@@ -129,11 +164,6 @@ end
 
 get("/:resource") do
   resource, attributes = resource_and_attributes()
-
-  puts "Columns: #{@columns.inspect}"
-
-
-
   render_page(resource, attributes)
 end
 
