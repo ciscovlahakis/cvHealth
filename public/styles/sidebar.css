@@ -1,27 +1,57 @@
 #sidebar-container {
-  min-width: 280px;
-  max-width: 280px;
+  width: 25vw;
+  height: 100vh;
   min-height: 100vh;
+  background-color: #343a40;
+  color: #fff;
 }
 
 #sidebar-container .sidebar-heading {
-  font-size: var(--font-size);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 10px;
-}
-
-#sidebar-container .list-group-item-action.active,
-#sidebar-container .list-group-item-action:hover {
-  background-color: black !important;
-  color: white;
-  border: 0px;
-}
-
-#sidebar-container .list-group-item-action {
+  font-size: 1.5em;
+  border-bottom: 0.5px solid #EEEEEE;
+  margin-bottom: 0;
+  padding: 0.75rem 1.25rem;
   display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
-#sidebar-container .list-group-item-action i {
+#sidebar-container .list-group-item {
+  padding: 1rem;
+  border: none;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+  background-color: #343a40;
+  transition: background-color 0.3s;
+}
+
+#sidebar-container .list-group-item:hover,
+#sidebar-container .list-group-item.active {
+  background-color: #000;
+}
+
+#sidebar-container .list-group-item.no-hover:hover {
+  background-color: #343a40;
+}
+
+#sidebar-container .list-group-item.no-hover {
+  border-bottom: 0.5px solid #EEEEEE;
+  padding-bottom: 10px;
+}
+
+#sidebar-container .list-group-item i {
   margin-right: 15px;
+}
+
+#sidebar-container .list-group-item.no-hover input[type='checkbox'] {
+  margin-right: 14px;
+  width: 15px;
+  height: 15px;
+}
+
+#sidebar-container .list-group-item.no-hover label {
+  margin-top: 10px;
+  font-size: 1rem;
 }

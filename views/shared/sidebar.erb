@@ -1,13 +1,17 @@
-<div class="d-flex">
-  <div id="sidebar-container" class="bg-dark border-right">
-    <div class="sidebar-heading text-light p-3">cvHealth</div>
-    <div class="list-group list-group-flush">
-      <% SIDEBAR_LINKS.each do |path, details| %>
-        <a href="/<%= path %>" class="list-group-item list-group-item-action bg-dark text-white sidebar-link">
-          <i class="<%= details.fetch(:icon) %>"></i>
-          <%= details.fetch(:title) %>
-        </a>
-      <% end %>
-    </div>
+<div id="sidebar-container" data-sidebar-links='<%= SIDEBAR_LINKS.to_json %>'>
+  <div class="sidebar-heading">
+    cvHealth
+  </div>
+  <div class="list-group-item no-hover">
+    <input type="checkbox" id="adminMenuCheckbox">
+    <label for="adminMenuCheckbox">Admin Menu</label>
+  </div>
+  <div id="menuContainer">
+    <% SIDEBAR_LINKS.each do |path, details| %>
+      <a href="/<%= path %>" class="list-group-item sidebar-link">
+        <i class="<%= details.fetch(:icon) %>"></i>
+        <%= details.fetch(:title) %>
+      </a>
+    <% end %>
   </div>
 </div>

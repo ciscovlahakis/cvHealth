@@ -17,7 +17,7 @@
   .grid-row .content-cell {
     background-color: #fff;
     padding: 10px;
-    text-align: left;
+    text-align: center;
     transition: all 0.3s;
     min-width: 100px; /* adjust based on your needs */
     min-height: 50px; /* adjust based on your needs */
@@ -29,7 +29,7 @@
   }
 
   .grid-row .header {
-    text-align: left;
+    text-align: center;
     padding: 10px; /* adjust based on your needs */
     background-color: #343a40;
     color: #fff;
@@ -56,7 +56,7 @@
 
   .grid-table i {
     color: #343a40;
-    font-size: 1.5em;
+    font-size: 1.2em;
     margin: 0 10px;
   }
 
@@ -95,6 +95,7 @@
 </div>
 
 <div class="button-table-container">
+  <input type="hidden" id="enableMove" value="<%= @enable_move %>">
   <button id="create-btn" class="button table-button rounded-shadow font"><i class="fas fa-plus-circle"></i> <%= @create_title %></button>
   <div class="grid-table rounded-shadow">
     <div class="grid-row">

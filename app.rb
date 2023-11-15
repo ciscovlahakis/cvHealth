@@ -7,11 +7,14 @@ require_relative "models/meal_plan_generator"
 
 SIDEBAR_LINKS = {
   "meal-plan" => { :title => "Meal Plan", :icon => "fas fa-calendar", :create_title => false },
+  "food-log" => { :title => "Food Log", :icon => "fas fa-calendar", :create_title => false },
   "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_title => true, :enable_move => true },
+  "food-types" => { :title => "Food Types", :icon => "fas fa-list-ul", :create_title => true },
   "foods" => { :title => "Foods", :icon => "fas fa-apple-alt", :create_title => true },
-  "food-categories" => { :title => "Food Categories", :icon => "fas fa-list-ul", :create_title => true },
+  "recipes" => { :title => "Recipes", :icon => "fas fa-apple-alt", :create_title => true },
+  "pantry" => { :title => "Pantry", :icon => "fas fa-clipboard-list", :create_title => true },
   "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_title => true, :enable_move => true },
-  "recipes" => { :title => "Recipes", :icon => "fas fa-clipboard-list", :create_title => true },
+  "recurrences" => { :title => "Recurrences", :icon => "fas fa-clipboard-list", :create_title => true },
   "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_title => false },
 }
 
@@ -22,14 +25,14 @@ NUTRITIONAL_COMPONENT_ATTRIBUTES = [
   { :id => "max", :name => "Max", :type => Integer },
   { :id => "target", :name => "Target", :type => Integer },
   { :id => "progress", :name => "Progress", :type => Integer },
-  { :id => "unit", :name => "Unit", :type => Integer }
+  { :id => "unit", :name => "Unit", :type => Integer },
 ]
 
 FOOD_ATTRIBUTES = [
   { :id => "index", :name => "Index", :type => Integer },
   { :id => "name", :name => "Name", :type => String },
   { :id => "id", :name => "ID", :type => String },
-  # Add more attributes here if needed
+# Add more attributes here if needed
 ]
 
 MEAL_EVENT_ATTRIBUTES = [
@@ -41,6 +44,7 @@ MEAL_EVENT_ATTRIBUTES = [
 
 helpers do
   def get_attributes(resource)
+    puts "Resource: #{resource}"
     case resource
     when "nutritional-components"
       NUTRITIONAL_COMPONENT_ATTRIBUTES
@@ -48,7 +52,9 @@ helpers do
       FOOD_ATTRIBUTES
     when "meal-events"
       MEAL_EVENT_ATTRIBUTES
-    # Add more cases here for other resources
+      # Add more cases here for other resources
+    else
+      []
     end
   end
 
@@ -91,18 +97,18 @@ helpers do
   def sort_and_assign_positions(data, resource)
     # Start from position 1
     position = 1
-  
+
     # Sort the data by the existing 'position' attribute
-    sorted_data = data.sort_by { |d| d.fetch('position', 0) }
-  
+    sorted_data = data.sort_by { |d| d.fetch("position", 0) }
+
     # Assign new positions to all items
     sorted_data.each do |d|
       # Update the position in the data
-      d['position'] = position
-  
+      d["position"] = position
+
       # Update the position in the database
-      ref = $firestore.col(resource).doc(d['id'])
-  
+      ref = $firestore.col(resource).doc(d["id"])
+
       # Start a transaction
       $firestore.transaction do |tx|
         # Add this operation to the transaction
@@ -121,13 +127,13 @@ helpers do
     output = []
     ref.get do |doc|
       data = doc.data
-      data_with_id = data.merge({ 'id' => doc.document_id })
+      data_with_id = data.merge({ "id" => doc.document_id })
       string_data = data_with_id.transform_keys(&:to_s) # Convert all keys to Strings
       output << string_data
     end
-    
+
     # Sort the output array based on the 'position' field
-    output = output.sort_by { |item| item.fetch('position') }
+    output = output.sort_by { |item| item.fetch("position", 0) }
     return output
   end
 
