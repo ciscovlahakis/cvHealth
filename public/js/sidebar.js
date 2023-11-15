@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const sidebarLinks = document.querySelectorAll('.sidebar-link');
 
   sidebarLinks.forEach((link) => {
+    link.classList.remove('active');  // Remove this line
     if (link.getAttribute('href') === currentPath) {
       link.classList.add('active');
     }
@@ -21,16 +22,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
       var a = document.createElement('a');
       a.href = '/' + path;
       a.className = 'list-group-item list-group-item-action bg-dark text-white sidebar-link';
+      if (a.getAttribute('href') === currentPath) { // Add this line
+        a.classList.add('active');
+      }
       a.innerHTML = '<i class="' + details.icon + '"></i>' + details.title;
       menuContainer.appendChild(a);
     }
   }
   
   var SIDEBAR_LINKS = JSON.parse(document.getElementById('sidebar-container').dataset.sidebarLinks);
-  var ADMIN_LINKS = {
-    'pages': {title: 'Pages', icon: 'fas fa-file-alt'},
-    'collections': {title: 'Collections', icon: 'fas fa-boxes'},
-    'admin-page-3': {title: 'Admin Page 3', icon: 'fas fa-cogs'}
-    // Add more links here if needed
-  };
+  var ADMIN_LINKS = JSON.parse(document.getElementById('sidebar-container').dataset.adminLinks);
+
 });

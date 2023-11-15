@@ -6,35 +6,60 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
     <!-- CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
-    
+
     <% css_files = Dir.glob('./public/styles/*.css').map { |path| path.split('/').last } %>
     <% css_files.each do |file| %>
       <link rel="stylesheet" type="text/css" href="/styles/<%= file %>">
     <% end %>
 
   </head>
-    
+
   <body>
-    <div class="d-flex">
+    <div class="app-container">
       <%= erb :"shared/sidebar" %>
       <div class="page-content">
+        <div class="header">
+          <div class="search-tag-container">
+            <div class="search-bar">
+              <div class="breadcrumb-container">
+                <span class="breadcrumb">
+                  <img src="https://via.placeholder.com/150" alt="Thumbnail" style="width: 20px; height: 20px; margin-right: 5px;">cvHealth
+                </span>
+                <span class="breadcrumb">
+                  <img src="https://via.placeholder.com/150" alt="Thumbnail" style="width: 20px; height: 20px; margin-right: 5px;">Nutrition
+                </span>
+              </div>
+              <input type="search" name="search" placeholder="Search...">
+
+            </div>
+            <div class="tag-container">
+              <span class="tag"><img src="https://via.placeholder.com/150" alt="Thumbnail" style="width: 20px; height: 20px; margin-right: 5px;">
+                Create Nutritional Component
+              </span>
+              <span class="tag"><img src="https://via.placeholder.com/150" alt="Thumbnail" style="width: 20px; height: 20px; margin-right: 5px;">Tag 2</span>
+            </div>
+
+          </div>
+          <div id="user-icon" data-signed-in="<%= session.fetch("user_id", nil) ? "true" : "false" %>">
+            <img id="user-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width: 50px; height: 50px;">
+          </div>
+
+        </div>
         <!-- Your page content goes here -->
         <%= yield %>
       </div>
-    </div>
 
-    <!-- JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+      <%= erb :"shared/user_modal" %>
 
-    <% js_files = Dir.glob('./public/js/*.js').map { |path| path.split('/').last } %>
-    <% js_files.each do |file| %>
-      <script src="/js/<%= file %>"></script>
-    <% end %>
+      <!-- JS -->
+      <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+      <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 
-  </body>
-</html>
+      <% js_files = Dir.glob('./public/js/*.js').map { |path| path.split('/').last } %>
+      <% js_files.each do |file| %>
+        <script src="/js/<%= file %>"></script>
+      <% end %>
+
+    </body>
+  </html>

@@ -18,6 +18,12 @@ SIDEBAR_LINKS = {
   "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_title => false },
 }
 
+ADMIN_LINKS = {
+  "admin/pages" => { :title => "Pages", :icon => "fas fa-file-alt" },
+  "admin/collections" => { :title => "Collections", :icon => "fas fa-boxes" }
+  # Add more links here if needed
+}
+
 NUTRITIONAL_COMPONENT_ATTRIBUTES = [
   { :id => "name", :name => "Name", :type => String },
   { :id => "eaten", :name => "Eaten", :type => Integer },
@@ -144,6 +150,10 @@ helpers do
     matching_users = User.where({ id: user_id })
     @current_user = matching_users.at(0)
   end
+
+  def ensure_admin!
+    redirect to("/") unless current_user && current_user.admin?
+  end
 end
 
 post("/update_position") do
@@ -200,4 +210,65 @@ post("/delete/:resource") do
   ref = $firestore.col(resource).doc(id)
   ref.delete
   redirect "/#{resource}"
+end
+
+get("/admin/pages") do
+  @current_user = current_user
+  ensure_admin!
+  @admin_links = ADMIN_LINKS
+  erb :"admin/pages"
+end
+
+get("/admin/collections") do
+  @current_user = current_user
+  ensure_admin!
+  @admin_links = ADMIN_LINKS
+  erb :"admin/collections"
+end
+
+# Log in form
+get "/login" do
+  erb :login
+end
+
+# Log in action
+post "/login" do
+  username = params.fetch("username")
+  password = params.fetch("password")
+
+  # Find the user with the submitted username
+  users_ref = $firestore.col("users")
+  users_ref.get do |user|
+    if user.data[:username] == username && user.data[:password] == password
+      # If the user exists and the password is correct, log them in
+      session.store("user_id", user.document_id)
+      redirect to("/")
+    else
+      erb :login, locals: { error: "Invalid username or password." }
+    end
+  end
+end
+
+# Log out action
+get "/logout" do
+  session.store("user_id", nil)
+  redirect to("/login")
+end
+
+# Sign up action
+post "/sign_up" do
+  username = params.fetch("username")
+  password = params.fetch("password") # In a real application, make sure to hash and salt the password
+
+  # Create a new user with the submitted username and password
+  new_user = { :username => username, :password => password }
+
+  # Save the new user to the Firestore database
+  users_ref = $firestore.col("users")
+  added_user_ref = users_ref.add(new_user)
+
+  # Log the user in by setting the session user_id
+  session.store("user_id", added_user_ref.document_id)
+
+  redirect to("/")
 end

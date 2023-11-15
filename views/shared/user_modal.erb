@@ -1,0 +1,21 @@
+<div id="user-modal" class="modal">
+  <div class="modal-content">
+    <h2 id="user-modal-title">Sign In</h2>
+    <div class="form-container">
+      <form id="user-modal-form" action="/login" method="post">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password">
+        <div class="button-group">
+          <button type="button" id="user-cancel-button">Cancel</button>
+          <input type="submit" value="Sign In">
+        </div>
+      </form>
+      <button id="sign-up-button" style="display: none;">Sign Up</button>
+      <form id="sign-out-form" style="display: none;" action="/logout" method="post">
+        <input type="submit" value="Sign Out">
+      </form>
+    </div>
+  </div>
+</div>
