@@ -52,14 +52,22 @@
   }
 </style>
 
-<h3><%= @title %></h3>
-<p class="description"><%= @description %></p>
+<div style="display: flex;">
+  <i class="<%= @icon %> fa-2x" style="margin-right: 10px;"></i>
+  <div>
+    <h3><%= @title %></h3>
+    <% if @description && !@description.empty? %>
+      <p class="description" style="margin-top: 0;"><%= @description %></p>
+    <% end %>
+  </div>
+</div>
 
 <div class="modal" id="modal">
   <div class="modal-content">
-    <h2><%= @create_button_title %></h2>
+    <h2 id="modal-title"><%= @create_button_title %></h2>
     <div class="form-container">
-      <form class="<%= @resource %>-form" action="/create/<%= @resource %>" method="post">
+      <form id="modal-form" class="<%= @resource %>-form" action="" method="post" data-resource="<%= @resource %>">
+        <input type="hidden" name="id" value="">
         <% @columns.each do |column| %>
           <label for="<%= column[:id] %>"><%= column[:name] %>:</label>
           <% if column[:type] == Integer %>
@@ -70,10 +78,10 @@
         <% end %>
 
         <%= erb :"shared/recurrence" %>
-        
+
         <div class="button-group">
           <button type="button" id="cancel-button">Cancel</button>
-          <input type="submit" value="Submit">
+          <input type="submit" value="Create">
         </div>
       </form>
     </div>
@@ -90,15 +98,18 @@
     <div class="header icon-header"></div>
     <% Array(@data).each do |x| %>
       <% Array(@columns).each do |y| %>
-        <div class="content-cell">
+        <div class="content-cell" data-<%= y[:id] %>="<%= x.fetch(y[:id], '') %>">
           <%= x.fetch(y[:id], '') %>
         </div>
       <% end %>
       <div class="icon-column">
-        <a href="/edit-meal-event?id=1"><i class="fas fa-edit"></i></a>
+        <a class="edit-link" data-id="<%= x.fetch('id') %>"><i class="fas fa-edit"></i></a>
       </div>
       <div class="icon-column">
-        <a href="/delete-meal-event?id=1"><i class="fas fa-trash"></i></a>
+        <form action="/delete/<%= @resource %>" method="post">
+          <input type="hidden" name="id" value="<%= x.fetch('id') %>">
+          <button type="submit"><i class="fas fa-trash"></i></button>
+        </form>
       </div>
     <% end %>
   </div>

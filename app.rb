@@ -79,9 +79,10 @@ helpers do
 
   def get_data(ref)
     output = []
-    ref.get do |x|
-      data = x.data
-      string_data = data.transform_keys(&:to_s) # Convert all keys to Strings
+    ref.get do |doc|
+      data = doc.data
+      data_with_id = data.merge({ 'id' => doc.document_id })
+      string_data = data_with_id.transform_keys(&:to_s) # Convert all keys to Strings
       output << string_data
     end
     return output
@@ -119,4 +120,28 @@ end
 post("/create/:resource") do
   resource, attributes = resource_and_attributes()
   create_item(resource, attributes)
+end
+
+post("/update/:resource") do
+  resource, attributes = resource_and_attributes()
+  id = params.fetch("id")  # Fetch the existing document's id from params
+  updated_item = attributes.each_with_object({}) do |attribute, hash|
+    attribute_id = attribute.fetch(:id)
+    if attribute.fetch(:type) == Integer
+      hash[attribute_id] = params.fetch(attribute_id, "").to_i
+    else
+      hash[attribute_id] = params.fetch(attribute_id, "")
+    end
+  end
+  collection_ref = $firestore.col(resource).doc(id)  # Pass the existing document's id to doc(id)
+  collection_ref.set(updated_item)
+  redirect "/#{resource}"
+end
+
+post("/delete/:resource") do
+  resource = params.fetch("resource")
+  id = params.fetch("id")
+  ref = $firestore.col(resource).doc(id)
+  ref.delete
+  redirect "/#{resource}"
 end
