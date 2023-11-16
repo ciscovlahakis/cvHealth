@@ -1,4 +1,6 @@
-// Get the user modal
+
+$(document).ready(function () {
+  // Get the user modal
 var userModal = document.getElementById("user-modal");
 
 // Get the user icon
@@ -23,6 +25,13 @@ userIcon.onclick = function () {
   signOutForm.style.display = "none";
   $('#user-modal-title').text('Sign In');
   $('#user-modal-form input[type=submit]').val('Sign In');
+
+  if (isUserSignedIn === "true") {
+    var username = this.getAttribute("data-username");
+    var profile_picture = this.getAttribute("data-profile-picture");
+    var userImage = document.getElementById("user-image");
+    userImage.src = "/uploads/" + username + "/" + profile_picture;
+  }
 }
 
 // When the user clicks the cancel button, close the modal
@@ -38,6 +47,7 @@ signUpButton.onclick = function () {
   signInForm.action = "/sign_up";
   $('#user-modal-title').text('Sign Up');
   $('#user-modal-form input[type=submit]').val('Sign Up');
+  signInForm.submit();
 }
 
 // When the user clicks anywhere outside of the modal, close it
@@ -53,3 +63,5 @@ window.onclick = function (event) {
     $('#user-modal-form input[type=password]').val('');
   }
 }
+
+});

@@ -5,10 +5,12 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby '3.2.1'
 
-gem 'google-cloud-firestore'
+
 gem 'rubocop', require: false
 gem 'sinatra'
 gem 'sinatra-contrib'
+gem 'google-cloud-firestore'
+gem "google-cloud-storage", "~> 1.35"
 
 # Use Puma as the app server
 gem 'puma', '~> 5.0'

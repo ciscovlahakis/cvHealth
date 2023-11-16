@@ -41,8 +41,16 @@
             </div>
 
           </div>
-          <div id="user-icon" data-signed-in="<%= session.fetch("user_id", nil) ? "true" : "false" %>">
-            <img id="user-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width: 50px; height: 50px;">
+          <div id="user-icon" data-username="<%= @current_user ? @current_user[:username] : '' %>" data-profile-picture="<%= @current_user ? @current_user[:profile_picture] : '' %>" data-signed-in="<%= session.fetch("user_id", nil) ? "true" : "false" %>">
+            <% if @current_user %>
+              <% bucket = "cisco-vlahakis.appspot.com" %>
+              <img id="user-image" src="https://storage.googleapis.com/#{bucket}/uploads/<%= @current_user[:username] %>/<%= @current_user[:profile_picture] %>" style="width: 50px; height: 50px;">
+              <% if @current_user.admin %>
+                <img id="admin-gear" src="https://cdn-icons-png.flaticon.com/512/179/179617.png" style="width: 15px; height: 15px; position: absolute; bottom: 0; right: 0;">
+              <% end %>
+            <% else %>
+              <img id="user-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width: 50px; height: 50px;">
+            <% end %>
           </div>
 
         </div>

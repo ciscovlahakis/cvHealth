@@ -2,6 +2,7 @@
 
 require "sinatra"
 require "sinatra/reloader"
+require_relative 'config/initialize_google_cloud_storage'
 require_relative "config/initialize_firestore"
 require_relative "models/meal_plan_generator"
 
@@ -147,8 +148,9 @@ helpers do
     return unless session.fetch("user_id", nil)
     user_id = session.fetch("user_id", nil)
     return unless user_id
-    matching_users = User.where({ id: user_id })
+    matching_users = User.where({ :id => user_id })
     @current_user = matching_users.at(0)
+    @current_user[:profile_picture] = User.where({ :id => user_id }).at(0)[:profile_picture]
   end
 
   def ensure_admin!
@@ -231,18 +233,20 @@ get "/login" do
   erb :login
 end
 
-# Log in action
 post "/login" do
   username = params.fetch("username")
   password = params.fetch("password")
 
-  # Find the user with the submitted username
   users_ref = $firestore.col("users")
   users_ref.get do |user|
     if user.data[:username] == username && user.data[:password] == password
-      # If the user exists and the password is correct, log them in
       session.store("user_id", user.document_id)
-      redirect to("/")
+      @current_user = {
+        :username => username,
+        :profile_picture => user.data[:profile_picture],
+        :admin => user.data[:admin]
+      }
+      redirect to(request.referer || "/")
     else
       erb :login, locals: { error: "Invalid username or password." }
     end
@@ -252,13 +256,14 @@ end
 # Log out action
 get "/logout" do
   session.store("user_id", nil)
-  redirect to("/login")
+  redirect to(request.referer || "/")
 end
 
 # Sign up action
 post "/sign_up" do
   username = params.fetch("username")
-  password = params.fetch("password") # In a real application, make sure to hash and salt the password
+  password = params.fetch("password")
+  profile_picture = params.fetch("profile_picture")
 
   # Create a new user with the submitted username and password
   new_user = { :username => username, :password => password }
@@ -270,5 +275,20 @@ post "/sign_up" do
   # Log the user in by setting the session user_id
   session.store("user_id", added_user_ref.document_id)
 
-  redirect to("/")
+  # Create a Google Cloud Storage client
+  storage = Google::Cloud::Storage.new
+
+  # Get the Google Cloud Storage bucket
+  bucket = storage.bucket "cisco-vlahakis.appspot.com"
+
+  # Create a unique filename for the profile picture
+  profile_picture_filename = "uploads/#{added_user_ref.document_id}/#{profile_picture[:filename]}"
+
+  # Upload the profile picture to the bucket
+  bucket.create_file profile_picture[:tempfile], profile_picture_filename
+
+  # Update the user with the profile picture filename
+  added_user_ref.update({ :profile_picture => profile_picture_filename })
+
+  redirect to(request.referer || "/")
 end
