@@ -16,6 +16,7 @@ GEM
     appdev_support (0.2.1)
       tabulo
     ast (2.4.2)
+    bcrypt (3.1.19)
     better_errors (2.9.1)
       coderay (>= 1.0.0)
       erubi (>= 1.0.0)
@@ -266,6 +267,7 @@ PLATFORMS
 
 DEPENDENCIES
   appdev_support
+  bcrypt
   better_errors
   binding_of_caller
   capybara

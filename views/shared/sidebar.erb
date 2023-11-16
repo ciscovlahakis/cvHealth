@@ -2,7 +2,7 @@
   <div class="sidebar-heading">
     cvHealth
   </div>
-  <% if @current_user && @current_user.admin? %>
+  <% if @current_user && @current_user[:admin] %>
     <div class="list-group-item no-hover">
       <input type="checkbox" id="adminMenuCheckbox">
       <label for="adminMenuCheckbox">Admin Menu</label>

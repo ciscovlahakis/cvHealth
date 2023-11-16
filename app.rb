@@ -5,6 +5,12 @@ require "sinatra/reloader"
 require_relative 'config/initialize_google_cloud_storage'
 require_relative "config/initialize_firestore"
 require_relative "models/meal_plan_generator"
+require 'bcrypt'
+
+# Add these lines to your existing code
+set :session_secret, '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad' # replace with your actual secret string
+set :sessions, key: 'my_app_key', expire_after: 1440, secret: '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad'
+
 
 SIDEBAR_LINKS = {
   "meal-plan" => { :title => "Meal Plan", :icon => "fas fa-calendar", :create_title => false },
@@ -51,7 +57,6 @@ MEAL_EVENT_ATTRIBUTES = [
 
 helpers do
   def get_attributes(resource)
-    puts "Resource: #{resource}"
     case resource
     when "nutritional-components"
       NUTRITIONAL_COMPONENT_ATTRIBUTES
@@ -145,16 +150,25 @@ helpers do
   end
 
   def current_user
+    puts "Current session: #{session}"
     return unless session.fetch("user_id", nil)
     user_id = session.fetch("user_id", nil)
     return unless user_id
-    matching_users = User.where({ :id => user_id })
-    @current_user = matching_users.at(0)
-    @current_user[:profile_picture] = User.where({ :id => user_id }).at(0)[:profile_picture]
+    users_ref = $firestore.col("users")
+    user = users_ref.doc(user_id).get
+    if user.exists?
+      puts "Found user: #{user.data}"
+      @current_user = user.data.dup # Create a duplicate of user.data that is not frozen
+      @current_user[:id] = user.document_id
+      @current_user[:profile_picture] = user.data[:profile_picture]
+      puts "Profile Picture Path: #{@current_user[:profile_picture]}" # Add this line
+    end
+    return @current_user
   end
 
   def ensure_admin!
-    redirect to("/") unless current_user && current_user.admin?
+    user = current_user()
+    redirect to("/") unless user && user[:admin]
   end
 end
 
@@ -167,12 +181,20 @@ post("/update_position") do
   return { :status => "success" }.to_json
 end
 
+before do
+  current_user()
+  if session.fetch("error", nil)
+    @error = session.fetch("error")
+    session.store("error", nil) # Clear the error message from the session
+  end
+end
+
 get("/") do
   erb :home
 end
 
 get("/meal-plan") do
-  @meal_plan = MealPlanGenerator.new(current_user).generate
+  @meal_plan = MealPlanGenerator.new(@current_user).generate
   erb :meal_plan
 end
 
@@ -222,15 +244,48 @@ get("/admin/pages") do
 end
 
 get("/admin/collections") do
-  @current_user = current_user
   ensure_admin!
   @admin_links = ADMIN_LINKS
   erb :"admin/collections"
 end
 
-# Log in form
-get "/login" do
-  erb :login
+post "/sign_up" do
+  username = params.fetch("username")
+  password = params.fetch("password")
+  profile_picture = params.fetch("profile_picture", nil)
+
+  hashed_password = BCrypt::Password.create(password)
+
+  # Create a new user with the submitted username and hashed password
+  new_user = { :username => username, :password => hashed_password }
+
+  # Save the new user to the Firestore database
+  users_ref = $firestore.col("users")
+  added_user_ref = users_ref.add(new_user)
+
+  # Log the user in by setting the session user_id
+  session.store("user_id", added_user_ref.document_id)
+  puts "Stored user_id in session: #{session.fetch("user_id")}"
+
+  # Create a Google Cloud Storage client
+  storage = Google::Cloud::Storage.new
+
+  # Get the Google Cloud Storage bucket
+  bucket = storage.bucket "cisco-vlahakis.appspot.com"
+
+  # Only upload the profile picture if one was provided
+  if profile_picture
+    # Create a unique filename for the profile picture
+    profile_picture_filename = "uploads/#{added_user_ref.document_id}/#{profile_picture[:filename]}"
+
+    # Upload the profile picture to the bucket
+    bucket.create_file profile_picture[:tempfile], profile_picture_filename, acl: "publicRead"
+
+    # Update the user with the profile picture filename
+    added_user_ref.update({ :profile_picture => profile_picture[:filename] }) # Only store the filename
+  end
+
+  redirect to(request.referer || "/")
 end
 
 post "/login" do
@@ -239,56 +294,25 @@ post "/login" do
 
   users_ref = $firestore.col("users")
   users_ref.get do |user|
-    if user.data[:username] == username && user.data[:password] == password
+    if user.data[:username] == username && BCrypt::Password.new(user.data[:password]) == password
       session.store("user_id", user.document_id)
       @current_user = {
         :username => username,
         :profile_picture => user.data[:profile_picture],
-        :admin => user.data[:admin]
+        :admin => user.data[:admin],
+        :super_admin => user.data[:super_admin]
       }
       redirect to(request.referer || "/")
     else
-      erb :login, locals: { error: "Invalid username or password." }
+      # Store the error message in the session
+      session.store("error", "Invalid username or password.")
+      redirect to(request.referer || "/")
     end
   end
 end
 
 # Log out action
-get "/logout" do
-  session.store("user_id", nil)
-  redirect to(request.referer || "/")
-end
-
-# Sign up action
-post "/sign_up" do
-  username = params.fetch("username")
-  password = params.fetch("password")
-  profile_picture = params.fetch("profile_picture")
-
-  # Create a new user with the submitted username and password
-  new_user = { :username => username, :password => password }
-
-  # Save the new user to the Firestore database
-  users_ref = $firestore.col("users")
-  added_user_ref = users_ref.add(new_user)
-
-  # Log the user in by setting the session user_id
-  session.store("user_id", added_user_ref.document_id)
-
-  # Create a Google Cloud Storage client
-  storage = Google::Cloud::Storage.new
-
-  # Get the Google Cloud Storage bucket
-  bucket = storage.bucket "cisco-vlahakis.appspot.com"
-
-  # Create a unique filename for the profile picture
-  profile_picture_filename = "uploads/#{added_user_ref.document_id}/#{profile_picture[:filename]}"
-
-  # Upload the profile picture to the bucket
-  bucket.create_file profile_picture[:tempfile], profile_picture_filename
-
-  # Update the user with the profile picture filename
-  added_user_ref.update({ :profile_picture => profile_picture_filename })
-
+post "/logout" do
+  session.clear
   redirect to(request.referer || "/")
 end

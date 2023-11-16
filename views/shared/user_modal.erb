@@ -1,6 +1,9 @@
 <div id="user-modal" class="modal">
   <div class="modal-content">
     <h2 id="user-modal-title">Sign In</h2>
+    <% if @error %>
+      <p style="color: red;"><%= @error %></p>
+    <% end %>
     <div class="form-container">
       <form id="user-modal-form" action="/login" method="post" enctype="multipart/form-data">
         <label for="username">Username:</label>
