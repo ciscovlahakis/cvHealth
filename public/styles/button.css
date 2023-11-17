@@ -2,7 +2,7 @@
   padding: 10px 20px;
   border: none;
   border-radius: var(--border-radius); /* match the border-radius of the table */
-  background-color: #343a40; /* match the background color of the table headers */
+  background-color: black;
   font-size: 18px; /* same font size as table headers */
   font-weight: bold; /* same font weight as table headers */
   cursor: pointer;

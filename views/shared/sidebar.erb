@@ -1,11 +1,11 @@
 <div id="sidebar-container" data-sidebar-links='<%= SIDEBAR_LINKS.to_json %>' data-admin-links='<%= ADMIN_LINKS.to_json %>'>
   <div class="sidebar-heading">
-    cvHealth
+    cvNutrition
   </div>
   <% if @current_user && @current_user[:admin] %>
     <div class="list-group-item no-hover">
       <input type="checkbox" id="adminMenuCheckbox">
-      <label for="adminMenuCheckbox">Admin Menu</label>
+      <label for="adminMenuCheckbox"> Admin Menu </label>
     </div>
   <% end %>
   <div id="menuContainer">

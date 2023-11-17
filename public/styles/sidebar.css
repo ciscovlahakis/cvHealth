@@ -2,12 +2,12 @@
   width: 20vw;
   height: 100vh;
   min-height: 100vh;
-  background-color: #343a40;
+  background-color: black;
   color: #fff;
 }
 
 #sidebar-container .sidebar-heading {
-  font-size: var(--font-size);
+  font-size: calc(1.275rem + .3vw)!important;
   border-bottom: 1px solid #EEEEEE;
 }
 
@@ -17,6 +17,7 @@
   color: white;
   transition: background-color 0.3s;
   border: none;
+  font-size: 1rem;
 }
 
 #sidebar-container .sidebar-heading,
@@ -26,12 +27,12 @@
 
 #sidebar-container .list-group-item:hover,
 #sidebar-container .list-group-item.active {
-  background-color: #000;
+  background-color: #343a40;
 }
 
 #sidebar-container .list-group-item,
 #sidebar-container .list-group-item.no-hover:hover {
-  background-color: #343a40;
+  background-color: black;
 }
 
 #sidebar-container .list-group-item.no-hover {
@@ -39,16 +40,16 @@
 }
 
 #sidebar-container .list-group-item i {
-  font-size: 18px;
+  font-size: 1.2em;
 }
 
 #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
   margin: 0px;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 #sidebar-container .list-group-item i,
 #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
-  margin-right: 15px;
+  margin-right: 12px;
 }
