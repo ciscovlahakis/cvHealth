@@ -8,24 +8,20 @@
 
 #sidebar-container .sidebar-heading {
   font-size: var(--font-size);
-  border-bottom: 0.5px solid #EEEEEE;
-  margin-bottom: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 1.25rem;
-  padding-left: 1rem;
+  border-bottom: 1px solid #EEEEEE;
 }
 
 #sidebar-container .list-group-item {
-  padding: 1rem;
-  border: none;
   display: flex;
-  align-items: center;
   text-decoration: none;
   color: white;
-  background-color: #343a40;
   transition: background-color 0.3s;
+  border: none;
+}
+
+#sidebar-container .sidebar-heading,
+#sidebar-container .list-group-item {
+  padding: 1.25rem;
 }
 
 #sidebar-container .list-group-item:hover,
@@ -33,27 +29,26 @@
   background-color: #000;
 }
 
+#sidebar-container .list-group-item,
 #sidebar-container .list-group-item.no-hover:hover {
   background-color: #343a40;
 }
 
 #sidebar-container .list-group-item.no-hover {
-  border-bottom: 0.5px solid black;
-  padding-bottom: 10px;
+  border-bottom: 1px solid #EEEEEE;
 }
 
 #sidebar-container .list-group-item i {
-  margin-right: 15px;
   font-size: 18px;
 }
 
 #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
-  margin-right: 14px;
-  width: 15px;
-  height: 15px;
+  margin: 0px;
+  width: 18px;
+  height: 18px;
 }
 
-#sidebar-container .list-group-item.no-hover label {
-  margin-top: 10px;
-  font-size: 1rem;
+#sidebar-container .list-group-item i,
+#sidebar-container .list-group-item.no-hover input[type='checkbox'] {
+  margin-right: 15px;
 }
