@@ -13,24 +13,24 @@ set :session_secret, '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2
 set :sessions, key: 'my_app_key', expire_after: 1440, secret: '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad'
 
 
-SIDEBAR_LINKS = {
-  "meal-plan" => { :title => "Meal Plan", :icon => "fas fa-calendar", :create_title => false },
-  "food-log" => { :title => "Food Log", :icon => "fas fa-calendar", :create_title => false },
-  "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_title => true, :enable_move => true },
-  "food-types" => { :title => "Food Types", :icon => "fas fa-list-ul", :create_title => true },
-  "foods" => { :title => "Foods", :icon => "fas fa-apple-alt", :create_title => true },
-  "recipes" => { :title => "Recipes", :icon => "fas fa-apple-alt", :create_title => true },
-  "pantry" => { :title => "Pantry", :icon => "fas fa-clipboard-list", :create_title => true },
-  "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_title => true, :enable_move => true },
-  "recurrences" => { :title => "Recurrences", :icon => "fas fa-clipboard-list", :create_title => true },
-  "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_title => false },
-}
+SIDEBAR_LINKS = [
+  { path: "meal-plan", title: "Meal Plan", icon: "fas fa-calendar", create_title: false }
+  # path: "food-log" => { :title => "Food Log", :icon => "fas fa-calendar", :create_title => false },
+  # path: "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_title => true, :enable_move => true },
+  # path: "food-types" => { :title => "Food Types", :icon => "fas fa-list-ul", :create_title => true },
+  # path: "foods" => { :title => "Foods", :icon => "fas fa-apple-alt", :create_title => true },
+  # path: "recipes" => { :title => "Recipes", :icon => "fas fa-apple-alt", :create_title => true },
+  # path: "pantry" => { :title => "Pantry", :icon => "fas fa-clipboard-list", :create_title => true },
+  # path: "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_title => true, :enable_move => true },
+  # path: "recurrences" => { :title => "Recurrences", :icon => "fas fa-clipboard-list", :create_title => true },
+  # path: "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_title => false },
+]
 
-ADMIN_LINKS = {
-  "admin/pages" => { :title => "Pages", :icon => "fas fa-file-alt" },
-  "admin/collections" => { :title => "Collections", :icon => "fas fa-boxes" }
+ADMIN_LINKS = [
+  { path: "admin/pages", title: "Pages", icon: "fas fa-file-alt" },
+  { path: "admin/collections", title: "Collections", icon: "fas fa-boxes" }
   # Add more links here if needed
-}
+]
 
 NUTRITIONAL_COMPONENT_ATTRIBUTES = [
   { :id => "name", :name => "Name", :type => String },
@@ -318,20 +318,25 @@ post("/upload") do
   file = params.fetch("file")
 
   # Create a unique filename
-  filename = "#{SecureRandom.uuid}.html"
+  filename = "sidebar.erb"
 
   storage = Google::Cloud::Storage.new
   bucket = storage.bucket "cisco-vlahakis.appspot.com"
 
+  # Specify the Cache-Control metadata
+  cache_control = "no-cache, no-store, must-revalidate"
+
   # Upload the file to GCS
-  gcs_file = bucket.create_file(file[:tempfile], filename, acl: "publicRead")
+  gcs_file = bucket.create_file(file[:tempfile], filename, cache_control: cache_control, acl: "publicRead")
 
   # Get the public URL of the file
   url = gcs_file.public_url
 
   # Add a new document to Firestore with the URL
-  doc_ref = $firestore.doc("pages/#{filename}")
-  doc_ref.set({ url: url })
+  # x = "components"
+  # # x = "pages"
+  # doc_ref = $firestore.doc("#{x}/#{filename}")
+  # doc_ref.set({ url: url })
 
   # Redirect to the home page
   redirect "/"
@@ -355,11 +360,13 @@ helpers do
       html_template = response.to_s
 
       # Get the properties for this component
-      properties = component.fetch(:properties)
+      properties = component.fetch(:properties, {})
+
+      properties["current_user"] = current_user()
 
       # Look for placeholders in the HTML template and replace them
       # with the HTML content of the nested components
-      Array(properties).each do |key, value|
+      properties.each do |key, value|
         if value.is_a?(Hash) && value.has_key?(:url)
           # This is a nested component
           nested_html = fetch_html_from_gcs([value])
@@ -369,10 +376,17 @@ helpers do
 
       # Render the HTML template with the properties
       html_content = ERB.new(html_template).result_with_hash(properties)
+      
 
       html_content
     end.compact.join("\n") # Join the HTML strings with line breaks
   end
+end
+
+get("/components") do
+  ensure_admin!
+  @admin_links = ADMIN_LINKS
+  erb :"admin/collections"
 end
 
 get("/*") do
