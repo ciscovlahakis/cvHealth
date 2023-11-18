@@ -339,9 +339,18 @@ end
 
 helpers do
   def fetch_html_from_gcs(components)
-    components.map do |component|
+    Array(components).map do |component|
       # Fetch the HTML template from GCS
       url = component.fetch(:url)
+      
+      # Continue to next iteration if url is not present
+      next unless url
+
+      # Check if the url starts with http:// or https://
+      unless url.start_with?('http://', 'https://')
+        next
+      end
+
       response = HTTP.get(url)
       html_template = response.to_s
 
@@ -350,7 +359,7 @@ helpers do
 
       # Look for placeholders in the HTML template and replace them
       # with the HTML content of the nested components
-      properties.each do |key, value|
+      Array(properties).each do |key, value|
         if value.is_a?(Hash) && value.has_key?(:url)
           # This is a nested component
           nested_html = fetch_html_from_gcs([value])
@@ -362,7 +371,7 @@ helpers do
       html_content = ERB.new(html_template).result_with_hash(properties)
 
       html_content
-    end.join("\n") # Join the HTML strings with line breaks
+    end.compact.join("\n") # Join the HTML strings with line breaks
   end
 end
 
