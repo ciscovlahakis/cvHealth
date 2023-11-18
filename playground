@@ -1,0 +1,190 @@
+get("/*") do
+  # Get the route from the URL
+  route = request.path_info[1..] # Remove the leading slash
+
+  # Fetch the corresponding Page record from Firestore
+  pages_col = $firestore.col("pages")
+  matching_pages = pages_col.where({ :route => route }).get
+  page = matching_pages.at(0)
+
+  # If the page is not found, redirect to a 404 page
+  if page.nil?
+    redirect "/404"
+  else
+    # Get the GCS URLs from the Page document
+    gcs_urls = page.fetch(:components)
+
+    # Fetch the HTML content from GCS
+    html_content = fetch_html_from_gcs(gcs_urls)
+
+    # Render the HTML content
+    # The :page template should be set up to display the raw HTML content
+    erb :page, :locals => { :html_content => html_content }
+  end
+end
+
+helpers do
+  def fetch_html_from_gcs(components)
+    components.map do |component|
+      # Fetch the HTML template from GCS
+      url = component.fetch(:url)
+      response = HTTP.get(url)
+      html_template = response.to_s
+
+      # Get the properties for this component
+      properties = component.fetch(:properties)
+
+      # Look for placeholders in the HTML template and replace them
+      # with the HTML content of the nested components
+      properties.each do |key, value|
+        if value.is_a?(Hash) && value.has_key?(:url)
+          # This is a nested component
+          nested_html = fetch_html_from_gcs([value])
+          html_template.gsub!("<%= #{key} %>", nested_html)
+        end
+      end
+
+      # Render the HTML template with the properties
+      html_content = ERB.new(html_template).result_with_hash(properties)
+
+      html_content
+    end.join("\n") # Join the HTML strings with line breaks
+  end
+end
+
+helpers do
+  def render_components(components)
+    components.map do |component|
+      # Get the component type and properties
+      type = component.fetch(:type)
+      properties = component.fetch(:properties, {})
+
+      # Check if this component contains nested components
+      if properties.key?(:components)
+        # Render the nested components and add their HTML to the properties
+        properties[:nested_html] = render_components(properties[:components])
+      end
+
+      # Render the corresponding template with the properties
+      erb :"components/#{type}", :locals => properties
+    end.join("\n") # Join the HTML strings with line breaks
+  end
+end
+
+<!-- Include jQuery from a CDN -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<!-- Your textarea for entering HTML -->
+<textarea id="htmlInput"></textarea>
+
+<!-- An iframe for previewing the HTML -->
+<iframe id="htmlPreview"></iframe>
+
+<!-- JavaScript to update the iframe content whenever the textarea changes -->
+<script>
+  $('#htmlInput').on('input', function() {
+    var htmlContent = $(this).val();
+    $('#htmlPreview').contents().find('body').html(htmlContent);
+  });
+</script>
+
+get("/components") do
+  # Fetch all components from Firestore
+  components_col = $firestore.col("components")
+  @components = components_col.get.to_a
+
+  # Render the components index page
+  erb :"components/index"
+end
+
+<h1>Components</h1>
+<table>
+  <% @components.each do |component| %>
+    <tr data-url="<%= component.fetch(:url) %>">
+      <td><%= component.fetch(:name) %></td>
+    </tr>
+  <% end %>
+</table>
+
+<!-- The modal for displaying the selected component -->
+<div id="componentModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div id="componentContainer"></div>
+  </div>
+</div>
+
+// Get all table rows
+var rows = document.getElementsByTagName("tr");
+
+// Add a click event listener to each row
+for (var i = 0; i < rows.length; i++) {
+  rows[i].addEventListener("click", function() {
+    // Get the GCS URL from the data attribute
+    var url = this.dataset.url;
+
+    // Fetch the HTML content from GCS
+    fetch(url)
+      .then(response => response.text())
+      .then(html => {
+        // Display the HTML content in the modal
+        document.getElementById("componentContainer").innerHTML = html;
+        document.getElementById("componentModal").style.display = "block";
+      });
+  });
+}
+
+// Get the modal
+var modal = document.getElementById("componentModal");
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = function() {
+  modal.style.display = "none";
+}
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+
+<div class="parent">
+  <h1><%= headerTitle %></h1>
+  <% nestedComponentUrl = "gs://my-bucket/nested.html" %>
+  <%= fetch_and_render(nestedComponentUrl) %>
+</div>
+
+def fetch_and_render(url)
+  # Fetch the HTML content from GCS
+  response = HTTP.get(url)
+  html_content = response.to_s
+
+  # Return the HTML content
+  return html_content
+end
+
+{
+  "route": "/",
+  "components": [
+    {
+      "url": "gs://my-bucket/parent.html",
+      "properties": {
+        "headerTitle": "Welcome!",
+        "components": [
+          {
+            "url": "gs://my-bucket/nested.html",
+            "properties": {
+              "nestedProperty": "Hello from nested component!"
+            }
+          }
+        ]
+      }
+    },
+    // More components...
+  ]
+}

@@ -6,6 +6,7 @@ require_relative 'config/initialize_google_cloud_storage'
 require_relative "config/initialize_firestore"
 require_relative "models/meal_plan_generator"
 require 'bcrypt'
+require 'http'
 
 # Add these lines to your existing code
 set :session_secret, '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad' # replace with your actual secret string
@@ -77,7 +78,7 @@ helpers do
   end
 
   def render_page(path, columns)
-    sidebar_link_hash = SIDEBAR_LINKS.fetch(path)
+    sidebar_link_hash = SIDEBAR_LINKS.fetch(path, { :title => "", :icon => "", :description => "", :enable_move => false, :create_title => false })
     @title = sidebar_link_hash.fetch(:title, "")
     @icon = sidebar_link_hash.fetch(:icon, "")
     @description = sidebar_link_hash.fetch(:description, "")
@@ -168,6 +169,7 @@ helpers do
     user = current_user()
     redirect to("/") unless user && user[:admin]
   end
+
 end
 
 post("/update_position") do
@@ -187,18 +189,14 @@ before do
   end
 end
 
-get("/") do
-  erb :home
-end
-
 get("/meal-plan") do
   @meal_plan = MealPlanGenerator.new(@current_user).generate
   erb :meal_plan
 end
 
-get("/statistics") do
-  erb :home
-end
+# get("/statistics") do
+#   erb :home
+# end
 
 get("/:resource") do
   resource, attributes = resource_and_attributes()
@@ -313,4 +311,82 @@ end
 post "/logout" do
   session.clear
   redirect to(request.referer || "/")
+end
+
+post("/upload") do
+  # Get the file from the request
+  file = params.fetch("file")
+
+  # Create a unique filename
+  filename = "#{SecureRandom.uuid}.html"
+
+  storage = Google::Cloud::Storage.new
+  bucket = storage.bucket "cisco-vlahakis.appspot.com"
+
+  # Upload the file to GCS
+  gcs_file = bucket.create_file(file[:tempfile], filename, acl: "publicRead")
+
+  # Get the public URL of the file
+  url = gcs_file.public_url
+
+  # Add a new document to Firestore with the URL
+  doc_ref = $firestore.doc("pages/#{filename}")
+  doc_ref.set({ url: url })
+
+  # Redirect to the home page
+  redirect "/"
+end
+
+helpers do
+  def fetch_html_from_gcs(components)
+    components.map do |component|
+      # Fetch the HTML template from GCS
+      url = component.fetch(:url)
+      response = HTTP.get(url)
+      html_template = response.to_s
+
+      # Get the properties for this component
+      properties = component.fetch(:properties)
+
+      # Look for placeholders in the HTML template and replace them
+      # with the HTML content of the nested components
+      properties.each do |key, value|
+        if value.is_a?(Hash) && value.has_key?(:url)
+          # This is a nested component
+          nested_html = fetch_html_from_gcs([value])
+          html_template.gsub!("<%= #{key} %>", nested_html)
+        end
+      end
+
+      # Render the HTML template with the properties
+      html_content = ERB.new(html_template).result_with_hash(properties)
+
+      html_content
+    end.join("\n") # Join the HTML strings with line breaks
+  end
+end
+
+get("/*") do
+  # Get the route from the URL
+  route = request.path_info[1..] # Remove the leading slash
+
+  # Fetch the corresponding Page record from Firestore
+  pages_col = $firestore.col("pages")
+  matching_pages = pages_col.where("route", "=", route).get
+  page = matching_pages.first
+
+  # If the page is not found, redirect to a 404 page
+  if page.nil?
+    redirect "/404"
+  else
+    # Get the GCS URLs from the Page document
+    gcs_urls = page.data.fetch(:components)
+
+    # Fetch the HTML content from GCS
+    html_content = fetch_html_from_gcs(gcs_urls)
+
+    # Render the HTML content
+    # The :page template should be set up to display the raw HTML content
+    erb :page, :locals => { :html_content => html_content }
+  end
 end

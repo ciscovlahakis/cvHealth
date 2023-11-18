@@ -44,6 +44,7 @@ GEM
     diff-lcs (1.5.0)
     digest-crc (0.6.5)
       rake (>= 12.0.0, < 14.0.0)
+    domain_name (0.6.20231109)
     draft_matchers (0.0.2)
       capybara
       color_namer
@@ -54,6 +55,10 @@ GEM
       ruby2_keywords (>= 0.0.4)
     faraday-net_http (3.0.2)
     faraday-retry (1.0.3)
+    ffi (1.16.3)
+    ffi-compiler (1.0.1)
+      ffi (>= 1.0.0)
+      rake
     gapic-common (0.20.0)
       faraday (>= 1.9, < 3.a)
       faraday-retry (>= 1.0, < 3.a)
@@ -128,12 +133,23 @@ GEM
       google-protobuf (~> 3.24)
       googleapis-common-protos-types (~> 1.0)
     hashdiff (1.0.1)
+    http (5.1.1)
+      addressable (~> 2.8)
+      http-cookie (~> 1.0)
+      http-form_data (~> 2.2)
+      llhttp-ffi (~> 0.4.0)
+    http-cookie (1.0.5)
+      domain_name (~> 0.5)
+    http-form_data (2.3.0)
     httpclient (2.8.3)
     i18n (1.12.0)
       concurrent-ruby (~> 1.0)
     json (2.6.3)
     jwt (2.7.1)
     language_server-protocol (3.17.0.3)
+    llhttp-ffi (0.4.0)
+      ffi-compiler (~> 1.0)
+      rake (~> 13.0)
     matrix (0.4.2)
     method_source (1.0.0)
     mini_mime (1.1.2)
@@ -275,6 +291,7 @@ DEPENDENCIES
   google-cloud-firestore
   google-cloud-storage (~> 1.35)
   grade_runner
+  http
   i18n
   pry
   puma (~> 5.0)
