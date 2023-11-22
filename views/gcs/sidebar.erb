@@ -9,7 +9,7 @@
     </div>
   <% end %>
   <div id="menuContainer">
-    <% sidebar_links.each do |link| %>
+    <% Array(sidebar_links).each do |link| %>
       <a href="/<%= link.fetch(:path,'') %>" class="list-group-item sidebar-link">
         <i class="<%= link.fetch(:icon,'') %>"></i>
         <%= link.fetch(:title,'') %>

@@ -57,6 +57,9 @@ MEAL_EVENT_ATTRIBUTES = [
 ]
 
 helpers do
+
+  
+
   def get_attributes(resource)
     case resource
     when "nutritional-components"
@@ -168,6 +171,67 @@ helpers do
   def ensure_admin!
     user = current_user()
     redirect to("/") unless user && user[:admin]
+  end
+
+  def ensure_properties(hash)
+    hash.default_proc = proc { |h, k| h[k] = {} }
+    hash.each do |key, value|
+      if value.is_a?(Hash)
+        ensure_properties(value)
+      end
+    end
+  end
+
+  def fetch_and_render(url, locals = {})
+    response = HTTP.get(url)
+    html_content = response.to_s
+
+    # Create a new object that includes all the properties
+    context = OpenStruct.new(locals)
+
+    # Use the new object as the context when rendering the template
+    erb_template = ERB.new(html_content)
+    rendered_content = erb_template.result(context.instance_eval { binding })
+
+    return rendered_content
+  end
+
+  def fetch_html_from_gcs(component)
+    return '' if component.nil?
+    
+    # Fetch the HTML template from GCS
+    url = component.fetch(:url, '')
+  
+    # Return early if the URL is blank
+    return '' if url.strip.empty?
+
+    properties = component.fetch(:properties, {})
+
+    ensure_properties(properties)
+        
+    # Get the properties for this component
+    @properties.transform_values do |value|
+      case value
+      when Hash
+        fetch_html_from_gcs(value) # Recursive call for nested components
+      when String
+        value # If a value is a string, we leave it as it is.
+      else
+        '' # For any other type, we set it to an empty string.
+      end
+    end
+  
+    # Add session data and current user to the properties
+    @properties["session"] = session
+    @properties["current_user"] = current_user()
+        
+    # Fetch the HTML template and render it with the properties
+    html_template = fetch_and_render(url, @properties)
+    puts "HTML Template: #{html_template}"
+    html_content = ERB.new(html_template).result_with_hash(@properties)
+    puts "HTML Content: #{html_content}"
+        
+    html_content # Return the final HTML content
   end
 
 end
@@ -318,7 +382,7 @@ post("/upload") do
   file = params.fetch("file")
 
   # Create a unique filename
-  filename = "sidebar.erb"
+  filename = file[:filename]
 
   storage = Google::Cloud::Storage.new
   bucket = storage.bucket "cisco-vlahakis.appspot.com"
@@ -333,54 +397,12 @@ post("/upload") do
   url = gcs_file.public_url
 
   # Add a new document to Firestore with the URL
-  # x = "components"
-  # # x = "pages"
-  # doc_ref = $firestore.doc("#{x}/#{filename}")
-  # doc_ref.set({ url: url })
+  x = "components"
+  doc_ref = $firestore.doc("#{x}/#{filename}")
+  doc_ref.set({ url: url })
 
   # Redirect to the home page
   redirect "/"
-end
-
-helpers do
-  def fetch_html_from_gcs(components)
-    Array(components).map do |component|
-      # Fetch the HTML template from GCS
-      url = component.fetch(:url)
-      
-      # Continue to next iteration if url is not present
-      next unless url
-
-      # Check if the url starts with http:// or https://
-      unless url.start_with?('http://', 'https://')
-        next
-      end
-
-      response = HTTP.get(url)
-      html_template = response.to_s
-
-      # Get the properties for this component
-      properties = component.fetch(:properties, {})
-
-      properties["current_user"] = current_user()
-
-      # Look for placeholders in the HTML template and replace them
-      # with the HTML content of the nested components
-      properties.each do |key, value|
-        if value.is_a?(Hash) && value.has_key?(:url)
-          # This is a nested component
-          nested_html = fetch_html_from_gcs([value])
-          html_template.gsub!("<%= #{key} %>", nested_html)
-        end
-      end
-
-      # Render the HTML template with the properties
-      html_content = ERB.new(html_template).result_with_hash(properties)
-      
-
-      html_content
-    end.compact.join("\n") # Join the HTML strings with line breaks
-  end
 end
 
 get("/components") do
@@ -402,14 +424,16 @@ get("/*") do
   if page.nil?
     redirect "/404"
   else
-    # Get the GCS URLs from the Page document
-    gcs_urls = page.data.fetch(:components)
+    # Get the component object from the Page document
+    component = page.data.fetch(:component, {})
 
     # Fetch the HTML content from GCS
-    html_content = fetch_html_from_gcs(gcs_urls)
+    html_content = fetch_html_from_gcs(component)
 
     # Render the HTML content
     # The :page template should be set up to display the raw HTML content
+    puts "Sidebar links: #{@sidebar_links.inspect}"
+ puts "Admin links: #{@admin_links.inspect}"
     erb :page, :locals => { :html_content => html_content }
   end
 end
