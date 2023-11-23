@@ -8,6 +8,9 @@ require_relative "config/initialize_firestore"
 require_relative "models/meal_plan_generator"
 require 'bcrypt'
 require 'http'
+require 'json'
+require 'erb'
+require 'ostruct'
 
 # Add these lines to your existing code
 set :session_secret, '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad' # replace with your actual secret string
@@ -174,67 +177,6 @@ helpers do
     redirect to("/") unless user && user[:admin]
   end
 
-  def ensure_properties(hash)
-    hash.default_proc = proc { |h, k| h[k] = {} }
-    hash.each do |key, value|
-      if value.is_a?(Hash)
-        ensure_properties(value)
-      end
-    end
-  end
-
-  def fetch_and_render(url, locals = {})
-    response = HTTP.get(url)
-    html_content = response.to_s
-
-    # Create a new object that includes all the properties
-    context = OpenStruct.new(locals)
-
-    # Use the new object as the context when rendering the template
-    erb_template = ERB.new(html_content)
-    rendered_content = erb_template.result(context.instance_eval { binding })
-
-    return rendered_content
-  end
-
-  def fetch_html_from_gcs(component)
-    return '' if component.nil?
-    
-    # Fetch the HTML template from GCS
-    url = component.fetch(:url, '')
-  
-    # Return early if the URL is blank
-    return '' if url.strip.empty?
-
-    properties = component.fetch(:properties, {})
-
-    ensure_properties(properties)
-        
-    # Get the properties for this component
-    @properties.transform_values do |value|
-      case value
-      when Hash
-        fetch_html_from_gcs(value) # Recursive call for nested components
-      when String
-        value # If a value is a string, we leave it as it is.
-      else
-        '' # For any other type, we set it to an empty string.
-      end
-    end
-  
-    # Add session data and current user to the properties
-    @properties["session"] = session
-    @properties["current_user"] = current_user()
-        
-    # Fetch the HTML template and render it with the properties
-    html_template = fetch_and_render(url, @properties)
-    puts "HTML Template: #{html_template}"
-    html_content = ERB.new(html_template).result_with_hash(@properties)
-    puts "HTML Content: #{html_content}"
-        
-    html_content # Return the final HTML content
-  end
-
 end
 
 post("/update_position") do
@@ -378,6 +320,12 @@ post "/logout" do
   redirect to(request.referer || "/")
 end
 
+get("/components") do
+  ensure_admin!
+  @admin_links = ADMIN_LINKS
+  erb :"admin/collections"
+end
+
 post("/upload") do
   # Get the file from the request
   file = params.fetch("file")
@@ -406,10 +354,66 @@ post("/upload") do
   redirect "/"
 end
 
-get("/components") do
-  ensure_admin!
-  @admin_links = ADMIN_LINKS
-  erb :"admin/collections"
+helpers do
+  def ensure_properties(hash)
+    hash.default_proc = proc { |h, k| h[k] = {} }
+    hash.each do |key, value|
+      if value.is_a?(Hash)
+        ensure_properties(value)
+      end
+    end
+  end
+
+
+  # Fetches the HTML template and properties for a given component
+  def fetch_data(component)
+    return { :template => '', :properties => {} } if component.nil?
+  
+    url = component.fetch(:url, '').strip
+    properties = component.fetch(:properties, {})
+    ensure_properties(properties)
+  
+    # Return early if the URL is blank
+    return { :template => '', :properties => {} } if url.empty?
+  
+    # Fetch the HTML template from GCS
+    response = HTTP.get(url)
+  
+    return { 
+      :template => response.to_s, 
+      :properties => properties 
+    }
+  end
+  
+  # Renders the HTML template with the provided properties
+  def render_component(data)
+    properties = data.fetch(:properties).transform_values do |value|
+      case value
+      when Hash
+        if value.key?(:url)
+          render_component(fetch_data(value)) 
+        else
+          value
+        end
+      else
+        value
+      end
+    end
+  
+    # Add session data and current user to the properties
+    properties["session"] = session
+    properties["current_user"] = current_user()
+
+    puts "INSPECT " + properties.inspect
+    
+    # Render the HTML template with the properties
+    erb_template = ERB.new(data[:template])
+    
+    # Create a new OpenStruct from properties and get its binding
+    context = OpenStruct.new(properties).instance_eval { binding }
+
+    return erb_template.result(context)
+  end
 end
 
 get("/*") do
@@ -419,22 +423,20 @@ get("/*") do
   # Fetch the corresponding Page record from Firestore
   pages_col = $firestore.col("pages")
   matching_pages = pages_col.where("route", "=", route).get
-  page = matching_pages.first
+  the_page = matching_pages.first
 
   # If the page is not found, redirect to a 404 page
-  if page.nil?
+  if the_page.nil?
     redirect "/404"
   else
     # Get the component object from the Page document
-    component = page.data.fetch(:component, {})
+    component = the_page.data.fetch(:component, {})
 
-    # Fetch the HTML content from GCS
-    html_content = fetch_html_from_gcs(component)
+    # Fetch the data from GCS and render the component
+    data = fetch_data(component)
+    html_content = render_component(data)
 
     # Render the HTML content
-    # The :page template should be set up to display the raw HTML content
-    puts "Sidebar links: #{@sidebar_links.inspect}"
- puts "Admin links: #{@admin_links.inspect}"
     erb :page, :locals => { :html_content => html_content }
   end
 end
