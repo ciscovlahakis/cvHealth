@@ -16,25 +16,22 @@
   </head>
 
   <body>
-    <div class="app-container">
-      <div class="page-content">
-        <form action="/upload" method="post" enctype="multipart/form-data">
-          <input type="file" name="file">
-          <input type="submit" value="Upload">
-        </form>
-        <!-- Your page content goes here -->
-        <%= yield %>
-      </div>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+      <input type="file" name="file">
+      <input type="submit" value="Upload">
+    </form>
+    <!-- Your page content goes here -->
+    <%= yield %>
 
-      <%= erb :"shared/user_modal" %>
+    <%= erb :"shared/user_modal" %>
 
-      <!-- JS -->
-      <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-      <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+    <!-- JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 
-      <% js_files = Dir.glob('./public/js/*.js').map { |path| path.split('/').last } %>
-      <% js_files.each do |file| %>
-        <script src="/js/<%= file %>"></script>
-      <% end %>
-    </body>
-  </html>
+    <% js_files = Dir.glob('./public/js/*.js').map { |path| path.split('/').last } %>
+    <% js_files.each do |file| %>
+      <script src="/js/<%= file %>"></script>
+    <% end %>
+  </body>
+</html>

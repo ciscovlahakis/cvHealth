@@ -10,22 +10,19 @@ body {
   font-family: var(--bs-font-sans-serif)
 }
 
-.app-container {
+.sidebar_header {
   display: flex;
-  flex-direction: row; /* Make sure sidebar and page content are in the same row */
-}
-
-.page-content {
-  width: 80vw; /* Take up the remaining space */
-  padding: var(--padding);
-  background-color: white
+  flex-direction: 'row';
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  width: 100%;
   margin-bottom: 20px; /* Add space below the header */
+  padding-left: var(--padding);
+  padding-right: var(--padding);
 }
 
 .search-tag-container {
