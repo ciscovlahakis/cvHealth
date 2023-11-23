@@ -2,6 +2,7 @@
 
 require "sinatra"
 require "sinatra/reloader"
+require 'dotenv/load'
 require_relative 'config/initialize_google_cloud_storage'
 require_relative "config/initialize_firestore"
 require_relative "models/meal_plan_generator"

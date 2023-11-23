@@ -13,6 +13,7 @@ gem 'google-cloud-firestore'
 gem "google-cloud-storage", "~> 1.35"
 gem 'bcrypt'
 gem 'http'
+gem 'dotenv'
 
 # Use Puma as the app server
 gem 'puma', '~> 5.0'
