@@ -21,6 +21,12 @@
       <input type="submit" value="Upload">
     </form>
 
+    <% if session.fetch("show_banner") %>
+      <div class="banner">
+      You have made changes to Firestore "collections". Redeploy Cloud Functions.
+      </div>
+    <% end %>
+
     <script src="/firestore_client.js"></script>
 
     <!-- Your page content goes here -->

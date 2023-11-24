@@ -1,42 +1,27 @@
 require("dotenv").config();
 const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-admin.initializeApp();
-const firestore = admin.firestore();
 
 const algoliasearch = require("algoliasearch");
 const ALGOLIA_ID = process.env["ALGOLIA_APPLICATION_ID"];
 const ALGOLIA_ADMIN_KEY = process.env["ALGOLIA_ADMIN_API_KEY"];
 const client = algoliasearch(ALGOLIA_ID, ALGOLIA_ADMIN_KEY);
 
-firestore
-    .collection("collections")
-    .get()
-    .then((snapshot) => {
-      snapshot.forEach((doc) => {
-        const collectionName = doc.id;
+exports.indexOnCreate = functions.firestore
+    .document("{collectionName}/{documentId}")
+    .onCreate((snap, context) =>
+      indexDocument(context.params.collectionName, snap, context),
+    );
 
-        exports[`index${collectionName}OnCreate`] = functions.firestore
-            .document(`${collectionName}/{documentId}`)
-            .onCreate((snap, context) =>
-              indexDocument(collectionName, snap, context),
-            );
+exports.indexOnUpdate = functions.firestore
+    .document("{collectionName}/{documentId}")
+    .onUpdate((change, context) =>
+      indexDocument(context.params.collectionName, change.after, context),
+    );
 
-        exports[`index${collectionName}OnUpdate`] = functions.firestore
-            .document(`${collectionName}/{documentId}`)
-            .onUpdate((change, context) =>
-              indexDocument(collectionName, change.after, context),
-            );
-
-        exports[`unindex${collectionName}OnDelete`] = functions.firestore
-            .document(`${collectionName}/{documentId}`)
-            .onDelete((snap, context) =>
-              unindexDocument(collectionName, context));
-      });
-    })
-    .catch((err) => {
-      console.log("Error getting documents", err);
-    });
+exports.unindexOnDelete = functions.firestore
+    .document("{collectionName}/{documentId}")
+    .onDelete((snap, context) =>
+      unindexDocument(context.params.collectionName, context));
 
 /**
  * Indexes a document in Algolia.
