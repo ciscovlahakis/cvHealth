@@ -3,8 +3,8 @@
 require "sinatra"
 require "sinatra/reloader"
 require 'dotenv/load'
-require_relative 'config/initialize_google_cloud_storage'
-require_relative "config/initialize_firestore"
+require_relative 'config/google_cloud_storage'
+require_relative "config/firestore_server"
 require_relative "models/meal_plan_generator"
 require 'bcrypt'
 require 'http'
@@ -15,26 +15,6 @@ require 'ostruct'
 # Add these lines to your existing code
 set :session_secret, '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad' # replace with your actual secret string
 set :sessions, key: 'my_app_key', expire_after: 1440, secret: '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad'
-
-
-SIDEBAR_LINKS = [
-  { path: "meal-plan", title: "Meal Plan", icon: "fas fa-calendar", create_title: false }
-  # path: "food-log" => { :title => "Food Log", :icon => "fas fa-calendar", :create_title => false },
-  # path: "nutritional-components" => { :title => "Nutritional Components", :icon => "fas fa-cubes", :description => "Calories, Protein, Sodium...", :create_title => true, :enable_move => true },
-  # path: "food-types" => { :title => "Food Types", :icon => "fas fa-list-ul", :create_title => true },
-  # path: "foods" => { :title => "Foods", :icon => "fas fa-apple-alt", :create_title => true },
-  # path: "recipes" => { :title => "Recipes", :icon => "fas fa-apple-alt", :create_title => true },
-  # path: "pantry" => { :title => "Pantry", :icon => "fas fa-clipboard-list", :create_title => true },
-  # path: "meal-events" => { :title => "Meal Events", :icon => "fas fa-clock", :description => "Manage your meal times, types, and constraints.", :create_title => true, :enable_move => true },
-  # path: "recurrences" => { :title => "Recurrences", :icon => "fas fa-clipboard-list", :create_title => true },
-  # path: "statistics" => { :title => "Statistics", :icon => "fas fa-chart-pie", :create_title => false },
-]
-
-ADMIN_LINKS = [
-  { path: "admin/pages", title: "Pages", icon: "fas fa-file-alt" },
-  { path: "admin/collections", title: "Collections", icon: "fas fa-boxes" }
-  # Add more links here if needed
-]
 
 NUTRITIONAL_COMPONENT_ATTRIBUTES = [
   { :id => "name", :name => "Name", :type => String },
@@ -62,8 +42,6 @@ MEAL_EVENT_ATTRIBUTES = [
 
 helpers do
 
-  
-
   def get_attributes(resource)
     case resource
     when "nutritional-components"
@@ -85,18 +63,9 @@ helpers do
   end
 
   def render_page(path, columns)
-    sidebar_link_hash = SIDEBAR_LINKS.fetch(path, { :title => "", :icon => "", :description => "", :enable_move => false, :create_title => false })
-    @title = sidebar_link_hash.fetch(:title, "")
-    @icon = sidebar_link_hash.fetch(:icon, "")
-    @description = sidebar_link_hash.fetch(:description, "")
-    @enable_move = sidebar_link_hash.fetch(:enable_move, false)
-    if sidebar_link_hash.fetch(:create_title, false)
-      @create_title = "Create #{@title.chop}"
-    end
-
-    ref = $firestore.col(path)
+    
+    ref = $db.col(path)
     @data = get_data(ref, path)
-    @columns = columns
     erb :"shared/page"
   end
 
@@ -109,7 +78,7 @@ helpers do
         hash[id] = params.fetch(id, "")
       end
     end
-    collection_ref = $firestore.col(collection_name)
+    collection_ref = $db.col(collection_name)
     collection_ref.add(new_item)
     redirect "/#{collection_name}"
   end
@@ -127,10 +96,10 @@ helpers do
       d["position"] = position
 
       # Update the position in the database
-      ref = $firestore.col(resource).doc(d["id"])
+      ref = $db.col(resource).doc(d["id"])
 
       # Start a transaction
-      $firestore.transaction do |tx|
+      $db.transaction do |tx|
         # Add this operation to the transaction
         tx.set(ref, { :position => position }, merge: true)
       end
@@ -161,7 +130,7 @@ helpers do
     return unless session.fetch("user_id", nil)
     user_id = session.fetch("user_id", nil)
     return unless user_id
-    users_ref = $firestore.col("users")
+    users_ref = $db.col("users")
     user = users_ref.doc(user_id).get
     if user.exists?
       @current_user = user.data.dup # Create a duplicate of user.data that is not frozen
@@ -179,11 +148,11 @@ helpers do
 
 end
 
-post("/update_position") do
+post "/update_position" do
   id = params.fetch("id")
   new_position = params.fetch("position").to_i
   resource = params.fetch("resource")
-  ref = $firestore.col(resource).doc(id)
+  ref = $db.col(resource).doc(id)
   ref.set({ :position => new_position }, merge: true)
   return { :status => "success" }.to_json
 end
@@ -196,26 +165,26 @@ before do
   end
 end
 
-get("/meal-plan") do
+get "/meal-plan" do
   @meal_plan = MealPlanGenerator.new(@current_user).generate
   erb :meal_plan
 end
 
-# get("/statistics") do
+# get "/statistics" do
 #   erb :home
 # end
 
-get("/:resource") do
+get "/:resource" do
   resource, attributes = resource_and_attributes()
   render_page(resource, attributes)
 end
 
-post("/create/:resource") do
+post "/create/:resource" do
   resource, attributes = resource_and_attributes()
   create_item(resource, attributes)
 end
 
-post("/update/:resource") do
+post "/update/:resource" do
   resource, attributes = resource_and_attributes()
   id = params.fetch("id")  # Fetch the existing document's id from params
   updated_item = attributes.each_with_object({}) do |attribute, hash|
@@ -226,27 +195,27 @@ post("/update/:resource") do
       hash[attribute_id] = params.fetch(attribute_id, "")
     end
   end
-  collection_ref = $firestore.col(resource).doc(id)  # Pass the existing document's id to doc(id)
+  collection_ref = $db.col(resource).doc(id)  # Pass the existing document's id to doc(id)
   collection_ref.set(updated_item)
   redirect "/#{resource}"
 end
 
-post("/delete/:resource") do
+post "/delete/:resource" do
   resource = params.fetch("resource")
   id = params.fetch("id")
-  ref = $firestore.col(resource).doc(id)
+  ref = $db.col(resource).doc(id)
   ref.delete
   redirect "/#{resource}"
 end
 
-get("/admin/pages") do
+get "/admin/pages" do
   @current_user = current_user
   ensure_admin!
   @admin_links = ADMIN_LINKS
   erb :"admin/pages"
 end
 
-get("/admin/collections") do
+get "/admin/collections" do
   ensure_admin!
   @admin_links = ADMIN_LINKS
   erb :"admin/collections"
@@ -263,7 +232,7 @@ post "/sign_up" do
   new_user = { :username => username, :password => hashed_password }
 
   # Save the new user to the Firestore database
-  users_ref = $firestore.col("users")
+  users_ref = $db.col("users")
   added_user_ref = users_ref.add(new_user)
 
   # Log the user in by setting the session user_id
@@ -295,7 +264,7 @@ post "/login" do
   username = params.fetch("username")
   password = params.fetch("password")
 
-  users_ref = $firestore.col("users")
+  users_ref = $db.col("users")
   users_ref.get do |user|
     if user.data[:username] == username && BCrypt::Password.new(user.data[:password]) == password
       session.store("user_id", user.document_id)
@@ -320,13 +289,13 @@ post "/logout" do
   redirect to(request.referer || "/")
 end
 
-get("/components") do
+get "/components" do
   ensure_admin!
   @admin_links = ADMIN_LINKS
   erb :"admin/collections"
 end
 
-post("/upload") do
+post "/upload" do
   # Get the file from the request
   file = params.fetch("file")
 
@@ -347,7 +316,7 @@ post("/upload") do
 
   # Add a new document to Firestore with the URL
   x = "components"
-  doc_ref = $firestore.doc("#{x}/#{filename}")
+  doc_ref = $db.doc("#{x}/#{filename}")
   doc_ref.set({ url: url })
 
   # Redirect to the home page
@@ -355,6 +324,7 @@ post("/upload") do
 end
 
 helpers do
+
   def ensure_properties(hash)
     hash.default_proc = proc { |h, k| h[k] = {} }
     hash.each do |key, value|
@@ -416,12 +386,32 @@ helpers do
   end
 end
 
-get("/*") do
+get '/firestore_config' do
+  begin
+    firestore_config = {
+      :apiKey => ENV["FIREBASE_API_KEY"],
+      :authDomain => ENV["FIREBASE_AUTH_DOMAIN"],
+      :databaseURL => ENV["FIREBASE_DATABASE_URL"],
+      :projectId => ENV["FIREBASE_PROJECT_ID"],
+      :storageBucket => ENV["FIREBASE_STORAGE_BUCKET"],
+      :messagingSenderId => ENV["FIREBASE_MESSAGING_SENDER_ID"],
+      :appId => ENV["FIREBASE_APP_ID"]
+    }
+    content_type :json
+    return firestore_config.to_json
+  rescue => e
+    content_type :json
+    status 500
+    return { :error => e.message }.to_json
+  end
+end
+
+get "/*" do
   # Get the route from the URL
   route = request.path_info[1..] # Remove the leading slash
 
   # Fetch the corresponding Page record from Firestore
-  pages_col = $firestore.col("pages")
+  pages_col = $db.col("pages")
   matching_pages = pages_col.where("route", "=", route).get
   the_page = matching_pages.first
 

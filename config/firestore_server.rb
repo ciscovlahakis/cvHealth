@@ -20,7 +20,7 @@ Google::Cloud::Firestore.configure do |config|
 end
 
 begin
-  $firestore = Google::Cloud::Firestore.new
+  $db = Google::Cloud::Firestore.new
 rescue Exception => e
   puts "Error while initializing Firestore: #{e.message}"
 end
