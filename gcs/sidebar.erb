@@ -73,57 +73,43 @@
 
 <script>
   function fetchPageData(route) {
-    console.log("Fetching data for route:", route);
     var promise = window.db.collection("pages").where("route", "==", route).get();
-    console.log("Promise:", promise);
     return window.db.collection("pages").where("route", "==", route).get()
       .then(function(querySnapshot) {
-        console.log("Inside Firebase then function");
         var title = '';
         var icon = '';
         querySnapshot.forEach(function(doc) {
-          console.log("Document data:", doc.data());
           title = doc.data().title;
           icon = doc.data().icon;
         });
-        console.log("Finished processing Firebase data");
         return { title: title, icon: icon, route: route };
       })
       .catch(function(error) {
-        console.log("Error getting documents from Firebase: ", error);
+        console.error("Error getting documents from Firebase: ", error);
       });
   }
 
   function createTab(data) {
-    console.log("Creating tab with data:", data);
     var link = document.createElement('a');
-    console.log("Created link element:", link);
     link.href = "/" + data.route;
     link.className = "list-group-item sidebar-link";
     var icon = document.createElement('i');
-    console.log("Created icon element:", icon);
     icon.className = data.icon;
     link.appendChild(icon);
     link.appendChild(document.createTextNode(data.title));
     var menuContainer = document.getElementById('menuContainer');
-    console.log("Fetched menuContainer:", menuContainer);
     menuContainer.appendChild(link);
-    console.log("Finished creating tab");
   }
 
   function renderSidebar() {
     var sidebar = document.getElementById('sidebar-container');
     var links = JSON.parse(sidebar.dataset.links);
-    console.log("Rendering sidebar with links:", links);
     links.forEach(function(link) {
-      console.log("Link:", link);
       fetchPageData(link).then(createTab);
     });
   }
 
-  console.log("Before .then block of window.firebaseInitialized");
   window.firebaseInitialized.then(() => {
-    console.log("here")
     renderSidebar();
   }).catch(error => {
     console.error('Error during Firebase initialization:', error);

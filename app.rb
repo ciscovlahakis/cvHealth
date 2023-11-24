@@ -42,26 +42,6 @@ MEAL_EVENT_ATTRIBUTES = [
   { :id => "recurrence", :name => "Recurrence", :type => String },
 ]
 
-get '/firestore_config' do
-  begin
-    firestore_config = {
-      :apiKey => ENV["FIREBASE_API_KEY"],
-      :authDomain => ENV["FIREBASE_AUTH_DOMAIN"],
-      :databaseURL => ENV["FIREBASE_DATABASE_URL"],
-      :projectId => ENV["FIREBASE_PROJECT_ID"],
-      :storageBucket => ENV["FIREBASE_STORAGE_BUCKET"],
-      :messagingSenderId => ENV["FIREBASE_MESSAGING_SENDER_ID"],
-      :appId => ENV["FIREBASE_APP_ID"]
-    }
-    content_type :json
-    return firestore_config.to_json
-  rescue => e
-    content_type :json
-    status 500
-    return { :error => e.message }.to_json
-  end
-end
-
 helpers do
 
   def get_attributes(resource)
@@ -168,6 +148,151 @@ helpers do
     redirect to("/") unless user && user[:admin]
   end
 
+  def ensure_properties(hash)
+    hash.default_proc = proc { |h, k| h[k] = {} }
+    hash.each do |key, value|
+      if value.is_a?(Hash)
+        ensure_properties(value)
+      end
+    end
+  end
+
+
+  # Fetches the HTML template and properties for a given component
+  def fetch_data(component)
+    return { :template => '', :properties => {} } if component.nil?
+  
+    url = component.fetch(:url, '').strip
+    properties = component.fetch(:properties, {})
+    ensure_properties(properties)
+  
+    # Return early if the URL is blank
+    return { :template => '', :properties => {} } if url.empty?
+  
+    # Fetch the HTML template from GCS
+    response = HTTP.get(url)
+  
+    return { 
+      :template => response.to_s, 
+      :properties => properties 
+    }
+  end
+  
+  # Renders the HTML template with the provided properties
+  def render_component(data)
+    properties = data.fetch(:properties).transform_values do |value|
+      case value
+      when Hash
+        if value.key?(:url)
+          render_component(fetch_data(value)) 
+        else
+          value
+        end
+      else
+        value
+      end
+    end
+  
+    # Add session data and current user to the properties
+    properties["session"] = session
+    properties["current_user"] = current_user()
+    
+    # Render the HTML template with the properties
+    erb_template = ERB.new(data[:template])
+    
+    # Create a new OpenStruct from properties and get its binding
+    context = OpenStruct.new(properties).instance_eval { binding }
+
+    return erb_template.result(context)
+  end
+
+  def search(term, priority_module = nil)
+    term = params.fetch("term")
+    priority_module = request.path
+
+    algolia = Algolia::Search::Client.new("YourApplicationID", "YourSearchOnlyAPIKey")
+    modules_index = algolia.init_index('modules')
+
+    # Query Algolia for modules that match the search term.
+    response = modules_index.search(term)
+
+    # The search results are in the 'hits' key of the response.
+    results = response['hits']
+
+    # If a priority_module is provided, sort the results to put that module first.
+    if priority_module
+      results.sort_by! { |result| result[:objectID] == priority_module ? 0 : 1 }
+    end
+
+    return results.to_jsons
+  end
+end
+
+get '/firestore_config' do
+  begin
+    firestore_config = {
+      :apiKey => ENV["FIREBASE_API_KEY"],
+      :authDomain => ENV["FIREBASE_AUTH_DOMAIN"],
+      :databaseURL => ENV["FIREBASE_DATABASE_URL"],
+      :projectId => ENV["FIREBASE_PROJECT_ID"],
+      :storageBucket => ENV["FIREBASE_STORAGE_BUCKET"],
+      :messagingSenderId => ENV["FIREBASE_MESSAGING_SENDER_ID"],
+      :appId => ENV["FIREBASE_APP_ID"]
+    }
+    content_type :json
+    return firestore_config.to_json
+  rescue => e
+    content_type :json
+    status 500
+    return { :error => e.message }.to_json
+  end
+end
+
+get("/search") do
+  term = params.fetch("term")
+  current_route = request.path
+  @results = search(term, current_route)
+
+  if @results.is_a?(Hash) || @results.is_a?(Array)
+    return @results.to_json
+  else
+    return {:error => "Unexpected return value from search"}.to_json
+  end
+end
+
+get "/meal-plan" do
+  @meal_plan = MealPlanGenerator.new(@current_user).generate
+  erb :meal_plan
+end
+
+get "/:resource" do
+  resource, attributes = resource_and_attributes()
+  render_page(resource, attributes)
+end
+
+get "/*" do
+  # Get the route from the URL
+  route = request.path_info[1..] # Remove the leading slash
+
+  # Fetch the corresponding Page record from Firestore
+  pages_col = $db.col("pages")
+  matching_pages = pages_col.where("route", "=", route).get
+  the_page = matching_pages.first
+
+  # If the page is not found, redirect to a 404 page
+  if the_page.nil?
+    redirect "/404"
+  else
+    # Get the component object from the Page document
+    component = the_page.data.fetch(:component, {})
+
+    # Fetch the data from GCS and render the component
+    data = fetch_data(component)
+    html_content = render_component(data)
+
+    # Render the HTML content
+    erb :page, :locals => { :html_content => html_content }
+  end
 end
 
 post "/update_position" do
@@ -177,28 +302,6 @@ post "/update_position" do
   ref = $db.col(resource).doc(id)
   ref.set({ :position => new_position }, merge: true)
   return { :status => "success" }.to_json
-end
-
-before do
-  current_user()
-  if session.fetch("error", nil)
-    @error = session.fetch("error")
-    session.store("error", nil) # Clear the error message from the session
-  end
-end
-
-get "/meal-plan" do
-  @meal_plan = MealPlanGenerator.new(@current_user).generate
-  erb :meal_plan
-end
-
-# get "/statistics" do
-#   erb :home
-# end
-
-get "/:resource" do
-  resource, attributes = resource_and_attributes()
-  render_page(resource, attributes)
 end
 
 post "/create/:resource" do
@@ -228,19 +331,6 @@ post "/delete/:resource" do
   ref = $db.col(resource).doc(id)
   ref.delete
   redirect "/#{resource}"
-end
-
-get "/admin/pages" do
-  @current_user = current_user
-  ensure_admin!
-  @admin_links = ADMIN_LINKS
-  erb :"admin/pages"
-end
-
-get "/admin/collections" do
-  ensure_admin!
-  @admin_links = ADMIN_LINKS
-  erb :"admin/collections"
 end
 
 post "/sign_up" do
@@ -305,16 +395,9 @@ post "/login" do
   end
 end
 
-# Log out action
 post "/logout" do
   session.clear
   redirect to(request.referer || "/")
-end
-
-get "/components" do
-  ensure_admin!
-  @admin_links = ADMIN_LINKS
-  erb :"admin/collections"
 end
 
 post "/upload" do
@@ -345,89 +428,11 @@ post "/upload" do
   redirect "/"
 end
 
-helpers do
-
-  def ensure_properties(hash)
-    hash.default_proc = proc { |h, k| h[k] = {} }
-    hash.each do |key, value|
-      if value.is_a?(Hash)
-        ensure_properties(value)
-      end
-    end
-  end
-
-
-  # Fetches the HTML template and properties for a given component
-  def fetch_data(component)
-    return { :template => '', :properties => {} } if component.nil?
-  
-    url = component.fetch(:url, '').strip
-    properties = component.fetch(:properties, {})
-    ensure_properties(properties)
-  
-    # Return early if the URL is blank
-    return { :template => '', :properties => {} } if url.empty?
-  
-    # Fetch the HTML template from GCS
-    response = HTTP.get(url)
-  
-    return { 
-      :template => response.to_s, 
-      :properties => properties 
-    }
-  end
-  
-  # Renders the HTML template with the provided properties
-  def render_component(data)
-    properties = data.fetch(:properties).transform_values do |value|
-      case value
-      when Hash
-        if value.key?(:url)
-          render_component(fetch_data(value)) 
-        else
-          value
-        end
-      else
-        value
-      end
-    end
-  
-    # Add session data and current user to the properties
-    properties["session"] = session
-    properties["current_user"] = current_user()
-    
-    # Render the HTML template with the properties
-    erb_template = ERB.new(data[:template])
-    
-    # Create a new OpenStruct from properties and get its binding
-    context = OpenStruct.new(properties).instance_eval { binding }
-
-    return erb_template.result(context)
-  end
-end
-
-
-get "/*" do
-  # Get the route from the URL
-  route = request.path_info[1..] # Remove the leading slash
-
-  # Fetch the corresponding Page record from Firestore
-  pages_col = $db.col("pages")
-  matching_pages = pages_col.where("route", "=", route).get
-  the_page = matching_pages.first
-
-  # If the page is not found, redirect to a 404 page
-  if the_page.nil?
-    redirect "/404"
-  else
-    # Get the component object from the Page document
-    component = the_page.data.fetch(:component, {})
-
-    # Fetch the data from GCS and render the component
-    data = fetch_data(component)
-    html_content = render_component(data)
-
-    # Render the HTML content
-    erb :page, :locals => { :html_content => html_content }
+# Define all your before filters
+before do
+  current_user()
+  if session.fetch("error", nil)
+    @error = session.fetch("error")
+    session.store("error", nil) # Clear the error message from the session
   end
 end
