@@ -12,6 +12,7 @@ gem "google-cloud-storage", "~> 1.35"
 gem 'bcrypt'
 gem 'http'
 gem 'dotenv'
+gem 'algolia'
 
 # Use Puma as the app server
 gem 'puma', '~> 5.0'

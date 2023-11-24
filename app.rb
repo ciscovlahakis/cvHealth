@@ -210,7 +210,7 @@ helpers do
     term = params.fetch("term")
     priority_module = request.path
 
-    algolia = Algolia::Search::Client.new("YourApplicationID", "YourSearchOnlyAPIKey")
+    algolia = Algolia::Search::Client.new(ENV["ALGOLIA_APPLICATION_ID"], ENV["ALGOLIA_SEARCH_ONLY_API_KEY"])
     modules_index = algolia.init_index('modules')
 
     # Query Algolia for modules that match the search term.
