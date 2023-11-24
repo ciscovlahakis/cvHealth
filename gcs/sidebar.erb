@@ -1,3 +1,61 @@
+<style>
+  #sidebar-container {
+    width: 20vw;
+    height: 100vh;
+    min-height: 100vh;
+    background-color: black;
+    color: #fff;
+  }
+
+  #sidebar-container .sidebar-heading {
+    font-size: calc(1.275rem + .3vw)!important;
+    border-bottom: 1px solid #EEEEEE;
+  }
+
+  #sidebar-container .list-group-item {
+    display: flex;
+    text-decoration: none;
+    color: white;
+    transition: background-color 0.3s;
+    border: none;
+    font-size: 1rem;
+  }
+
+  #sidebar-container .sidebar-heading,
+  #sidebar-container .list-group-item {
+    padding: 1.25rem;
+  }
+
+  #sidebar-container .list-group-item:hover,
+  #sidebar-container .list-group-item.active {
+    background-color: #343a40;
+  }
+
+  #sidebar-container .list-group-item,
+  #sidebar-container .list-group-item.no-hover:hover {
+    background-color: black;
+  }
+
+  #sidebar-container .list-group-item.no-hover {
+    border-bottom: 1px solid #EEEEEE;
+  }
+
+  #sidebar-container .list-group-item i {
+    font-size: 1.2em;
+  }
+
+  #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
+    margin: 0px;
+    width: 16px;
+    height: 16px;
+  }
+
+  #sidebar-container .list-group-item i,
+  #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
+    margin-right: 12px;
+  }
+</style>
+
 <div id="sidebar-container" data-links='<%= links.to_json %>' data-admin-links='<%= admin_links.to_json %>'>
   <div class="sidebar-heading">
     <%= title %>
@@ -16,9 +74,9 @@
 <script>
   function fetchPageData(route) {
     console.log("Fetching data for route:", route);
-    var promise = window.db.collection("pages").where("route", "=", route).get();
+    var promise = window.db.collection("pages").where("route", "==", route).get();
     console.log("Promise:", promise);
-    return window.db.collection("pages").where("route", "=", route).get()
+    return window.db.collection("pages").where("route", "==", route).get()
       .then(function(querySnapshot) {
         console.log("Inside Firebase then function");
         var title = '';
@@ -63,8 +121,11 @@
     });
   }
 
-  window.onload = function() {
-    console.log("Page loaded. Rendering sidebar");
+  console.log("Before .then block of window.firebaseInitialized");
+  window.firebaseInitialized.then(() => {
+    console.log("here")
     renderSidebar();
-  }
+  }).catch(error => {
+    console.error('Error during Firebase initialization:', error);
+  });
 </script>

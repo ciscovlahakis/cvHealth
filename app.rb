@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require 'dotenv'
+Dotenv.load
+
 require "sinatra"
 require "sinatra/reloader"
-require 'dotenv/load'
 require_relative 'config/google_cloud_storage'
 require_relative "config/firestore_server"
 require_relative "models/meal_plan_generator"
@@ -39,6 +41,26 @@ MEAL_EVENT_ATTRIBUTES = [
   { :id => "max_foods", :name => "Max Foods", :type => Integer },
   { :id => "recurrence", :name => "Recurrence", :type => String },
 ]
+
+get '/firestore_config' do
+  begin
+    firestore_config = {
+      :apiKey => ENV["FIREBASE_API_KEY"],
+      :authDomain => ENV["FIREBASE_AUTH_DOMAIN"],
+      :databaseURL => ENV["FIREBASE_DATABASE_URL"],
+      :projectId => ENV["FIREBASE_PROJECT_ID"],
+      :storageBucket => ENV["FIREBASE_STORAGE_BUCKET"],
+      :messagingSenderId => ENV["FIREBASE_MESSAGING_SENDER_ID"],
+      :appId => ENV["FIREBASE_APP_ID"]
+    }
+    content_type :json
+    return firestore_config.to_json
+  rescue => e
+    content_type :json
+    status 500
+    return { :error => e.message }.to_json
+  end
+end
 
 helpers do
 
@@ -373,8 +395,6 @@ helpers do
     # Add session data and current user to the properties
     properties["session"] = session
     properties["current_user"] = current_user()
-
-    puts "INSPECT " + properties.inspect
     
     # Render the HTML template with the properties
     erb_template = ERB.new(data[:template])
@@ -386,25 +406,6 @@ helpers do
   end
 end
 
-get '/firestore_config' do
-  begin
-    firestore_config = {
-      :apiKey => ENV["FIREBASE_API_KEY"],
-      :authDomain => ENV["FIREBASE_AUTH_DOMAIN"],
-      :databaseURL => ENV["FIREBASE_DATABASE_URL"],
-      :projectId => ENV["FIREBASE_PROJECT_ID"],
-      :storageBucket => ENV["FIREBASE_STORAGE_BUCKET"],
-      :messagingSenderId => ENV["FIREBASE_MESSAGING_SENDER_ID"],
-      :appId => ENV["FIREBASE_APP_ID"]
-    }
-    content_type :json
-    return firestore_config.to_json
-  rescue => e
-    content_type :json
-    status 500
-    return { :error => e.message }.to_json
-  end
-end
 
 get "/*" do
   # Get the route from the URL
