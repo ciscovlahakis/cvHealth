@@ -1,3 +1,3 @@
-require "algolia"
+require "algoliasearch"
 
-AlgoliaClient = Algolia::Search::Client.new(ENV.fetch('ALGOLIA_APPLICATION_ID'), ENV.fetch('ALGOLIA_ADMIN_API_KEY'))
+AlgoliaClient = Algolia::Client.new({ :application_id => ENV.fetch('ALGOLIA_APPLICATION_ID'), :api_key => ENV.fetch('ALGOLIA_ADMIN_API_KEY') })

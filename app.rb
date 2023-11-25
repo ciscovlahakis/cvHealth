@@ -13,6 +13,7 @@ require 'http'
 require 'json'
 require 'erb'
 require 'ostruct'
+require 'algoliasearch'
 
 # Add these lines to your existing code
 set :session_secret, '902aaebd6da3f5260862b475ab940d300e586076d18cb21d7e7dcbbec2feadad' # replace with your actual secret string
@@ -209,23 +210,48 @@ helpers do
   def search(term, priority_module = nil)
     term = params.fetch("term")
     priority_module = request.path
+  
+    algolia = Algolia::Client.new({ :application_id => ENV["ALGOLIA_APPLICATION_ID"], :api_key => ENV["ALGOLIA_SEARCH_ONLY_API_KEY"] })
 
-    algolia = Algolia::Search::Client.new(ENV["ALGOLIA_APPLICATION_ID"], ENV["ALGOLIA_SEARCH_ONLY_API_KEY"])
     modules_index = algolia.init_index('modules')
-
+  
     # Query Algolia for modules that match the search term.
     response = modules_index.search(term)
-
+  
     # The search results are in the 'hits' key of the response.
     results = response['hits']
-
+  
     # If a priority_module is provided, sort the results to put that module first.
     if priority_module
       results.sort_by! { |result| result[:objectID] == priority_module ? 0 : 1 }
     end
-
-    return results.to_jsons
+  
+    return results
   end
+
+  # def index_all_collections
+  #   # Initialize Algolia
+  #   algolia = Algolia::Client.new({ :application_id => ENV['ALGOLIA_APPLICATION_ID'], :api_key => ENV['ALGOLIA_ADMIN_API_KEY'] })
+
+  #   # Replace 'modules' with the names of your collections
+  #   collections = ['modules']
+
+  #   collections.each do |collection|
+  #     # Initialize the Algolia index for the collection
+  #     index = algolia.init_index(collection)
+
+  #     # Get the Firestore collection
+  #     ref = $db.col(collection)
+
+  #     # Fetch each document from the Firestore collection
+  #     ref.get do |doc|
+  #       data = doc.data.dup.tap { |h| h[:objectID] = doc.document_id }
+
+  #       # Add the document data to Algolia
+  #       index.save_object(data)
+  #     end
+  #   end
+  # end
 end
 
 get '/firestore_config' do
@@ -247,6 +273,11 @@ get '/firestore_config' do
     return { :error => e.message }.to_json
   end
 end
+
+# get '/index_all' do
+#   index_all_collections
+#   "All collections have been indexed in Algolia."
+# end
 
 get("/search") do
   term = params.fetch("term")
