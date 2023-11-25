@@ -5,8 +5,6 @@
     align-items: flex-start;
     width: 100%;
     margin-bottom: 20px; /* Add space below the header */
-    padding-left: var(--padding);
-    padding-right: var(--padding);
   }
 
   .search-tag-container {
@@ -128,17 +126,54 @@
 </div>
 
 <script>
+document.addEventListener("DOMContentLoaded", function() {
   document.querySelector("input[name='search']").addEventListener("keyup", function(event) {
     var searchTerm = event.target.value;
     var currentRoute = window.location.pathname;
-    
-    fetch("/search?term=" + searchTerm + "&route=" + currentRoute)
+
+    // If the search term is empty, clear the results and return early
+    if (searchTerm.trim() === '') {
+      document.getElementById('results').innerHTML = '';
+      return;
+    }
+
+    console.log("Search term: " + searchTerm);
+    console.log("Current route: " + currentRoute);
+
+    var url = "/search?term=" + searchTerm + "&route=" + currentRoute;
+    console.log("URL: " + url);
+
+    fetch(url)
       .then(function(response) {
         return response.json();
       })
       .then(function(data) {
-        // Do something with the data
-        console.log(data); // for now, just log the data
+        var resultsContainer = document.getElementById('results');
+        if (resultsContainer) {
+          resultsContainer.innerHTML = '';
+        } else {
+          console.log("No element with the id 'results' was found.");
+        }
+
+        if (data.length === 0) {
+          resultsContainer.innerHTML = 'No results found.';
+        } else {
+          data.forEach(function(result) {
+            var resultElement = document.createElement('div');
+            if (resultElement) {
+              resultElement.classList.add('result');
+            } else {
+              console.log("No result element was found.");
+            }
+
+            var titleElement = document.createElement('h2');
+            titleElement.innerText = result.title;
+
+            resultElement.appendChild(titleElement);
+            resultsContainer.appendChild(resultElement);
+          });
+        }
       });
   });
+});
 </script>

@@ -181,7 +181,7 @@ helpers do
   
   # Renders the HTML template with the provided properties
   def render_component(data)
-    properties = data.fetch(:properties).transform_values do |value|
+    properties = data.fetch(:properties, {}).transform_values do |value|
       case value
       when Hash
         if value.key?(:url)
@@ -210,20 +210,31 @@ helpers do
   def search(term, priority_module = nil)
     term = params.fetch("term")
     priority_module = request.path
+
+    puts "Term: #{term}"
+    puts "Priority Module: #{priority_module}"
   
     algolia = Algolia::Client.new({ :application_id => ENV["ALGOLIA_APPLICATION_ID"], :api_key => ENV["ALGOLIA_SEARCH_ONLY_API_KEY"] })
-
+  
     modules_index = algolia.init_index('modules')
   
-    # Query Algolia for modules that match the search term.
-    response = modules_index.search(term)
+    begin
+      # Query Algolia for modules that match the search term.
+      response = modules_index.search(term)
+      puts "Response: #{response}"
   
-    # The search results are in the 'hits' key of the response.
-    results = response['hits']
+      # The search results are in the 'hits' key of the response.
+      results = response.fetch('hits')
+      puts "Results: #{results}"
   
-    # If a priority_module is provided, sort the results to put that module first.
-    if priority_module
-      results.sort_by! { |result| result[:objectID] == priority_module ? 0 : 1 }
+      # If a priority_module is provided, sort the results to put that module first.
+      if priority_module
+        results.sort_by! { |result| result.has_key?('objectID') && result.fetch('objectID') == priority_module ? 0 : 1 }
+      end
+  
+    rescue => e
+      puts "An error occurred: #{e.message}"
+      results = []
     end
   
     return results
@@ -284,11 +295,9 @@ get("/search") do
   current_route = request.path
   @results = search(term, current_route)
 
-  if @results.is_a?(Hash) || @results.is_a?(Array)
-    return @results.to_json
-  else
-    return {:error => "Unexpected return value from search"}.to_json
-  end
+  @results = [] if @results.nil? || !@results.is_a?(Array)
+
+  return @results.to_json
 end
 
 get "/meal-plan" do
