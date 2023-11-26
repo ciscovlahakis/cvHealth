@@ -181,7 +181,7 @@ helpers do
   def render_component(data)
     return '' unless data.is_a?(Hash)
 
-    properties = data[:properties] || {}
+    properties = (@page_properties || {}).merge(data[:properties] || {})
 
     properties = properties.transform_values do |value|
       case value
@@ -338,6 +338,7 @@ get "/*" do
     # If this is the current page, remember its data
     if breadcrumb_path == route
       current_page_data = the_page.data
+      @page_properties = current_page_data.dup.tap { |h| h.delete(:component) }
     end
 
     # Create the breadcrumb

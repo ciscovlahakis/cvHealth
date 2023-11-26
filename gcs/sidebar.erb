@@ -8,8 +8,11 @@
   }
 
   #sidebar-container .sidebar-heading {
+    display: flex;
+    justify-content: center;
+    align-itmes: center;
     font-size: calc(1.275rem + .3vw)!important;
-    border-bottom: 1px solid #EEEEEE;
+    border-bottom: 1px solid gainsboro;
   }
 
   #sidebar-container .list-group-item {
@@ -54,11 +57,20 @@
   #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
     margin-right: 12px;
   }
+  .logo-thumbnail {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+  }
 </style>
 
 <div id="sidebar-container" data-links='<%= links.to_json %>' data-admin-links='<%= admin_links.to_json %>'>
-  <div class="sidebar-heading">
-    <%= title %>
+  <div class="sidebar-heading text-center">
+  <% if icon && !icon.empty? %>
+      <img src="<%= icon %>" alt="Logo" class="logo-thumbnail">
+    <% else %>
+      <img src="https://via.placeholder.com/150" alt="Placeholder" class="logo-thumbnail">
+    <% end %>
   </div>
   <div id="menuContainer">
     <!-- The tabs will be populated here by JavaScript -->
