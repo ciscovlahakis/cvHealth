@@ -198,9 +198,9 @@ helpers do
       end
     end
   
-    # Add session data and current user to the properties
     properties["session"] = session
     properties["current_user"] = current_user()
+    properties["breadcrumbs"] = @breadcrumbs
     
     # Render the HTML template with the properties
     erb_template = ERB.new(data[:template])

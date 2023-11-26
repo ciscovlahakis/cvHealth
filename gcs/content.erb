@@ -134,7 +134,7 @@
     <div class="search-tag-container">
       <div class="search-bar">
         <div class="breadcrumb-container">
-          <% Array(@breadcrumbs).each do |breadcrumb| %>
+          <% Array(breadcrumbs).each do |breadcrumb| %>
             <span class="breadcrumb">
               <a href="<%= breadcrumb.fetch(:path) %>">
                 <img src="<%= breadcrumb.fetch(:icon) %>" alt="Thumbnail" style="width: 20px; height: 20px;">
