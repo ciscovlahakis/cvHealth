@@ -66,7 +66,6 @@ helpers do
   end
 
   def render_page(path, columns)
-    
     ref = $db.col(path)
     @data = get_data(ref, path)
     erb :"shared/page"
@@ -139,7 +138,6 @@ helpers do
       @current_user = user.data.dup # Create a duplicate of user.data that is not frozen
       @current_user[:id] = user.document_id
       @current_user[:profile_picture] = user.data[:profile_picture]
-      puts "Profile Picture Path: #{@current_user[:profile_picture]}" # Add this line
     end
     return @current_user
   end
@@ -181,7 +179,11 @@ helpers do
   
   # Renders the HTML template with the provided properties
   def render_component(data)
-    properties = data.fetch(:properties, {}).transform_values do |value|
+    return '' unless data.is_a?(Hash)
+
+    properties = data[:properties] || {}
+
+    properties = properties.transform_values do |value|
       case value
       when Hash
         if value.key?(:url)
@@ -189,6 +191,8 @@ helpers do
         else
           value
         end
+      when nil
+        ""
       else
         value
       end
@@ -210,9 +214,6 @@ helpers do
   def search(term, priority_module = nil)
     term = params.fetch("term")
     priority_module = request.path
-
-    puts "Term: #{term}"
-    puts "Priority Module: #{priority_module}"
   
     algolia = Algolia::Client.new({ :application_id => ENV["ALGOLIA_APPLICATION_ID"], :api_key => ENV["ALGOLIA_SEARCH_ONLY_API_KEY"] })
   
@@ -221,11 +222,9 @@ helpers do
     begin
       # Query Algolia for modules that match the search term.
       response = modules_index.search(term)
-      puts "Response: #{response}"
   
       # The search results are in the 'hits' key of the response.
       results = response.fetch('hits')
-      puts "Results: #{results}"
   
       # If a priority_module is provided, sort the results to put that module first.
       if priority_module
@@ -312,23 +311,67 @@ end
 
 get "/*" do
   # Get the route from the URL
-  route = request.path_info[1..] # Remove the leading slash
+  route = request.path_info
 
-  # Fetch the corresponding Page record from Firestore
-  pages_col = $db.col("pages")
-  matching_pages = pages_col.where("route", "=", route).get
-  the_page = matching_pages.first
+  # Split the route into its components
+  path_components = route == "/" ? [""] : route.split("/")[1..]
 
-  # If the page is not found, redirect to a 404 page
-  if the_page.nil?
-    redirect "/404"
+  # Initialize the breadcrumbs array
+  breadcrumbs = []
+
+  # Initialize the variable for the current page data
+  current_page_data = nil
+
+  # For each path component, create a breadcrumb
+  path_components.each_with_index do |component, index|
+    # Create the path for this breadcrumb
+    breadcrumb_path = "/" + path_components[0..index].join("/")
+
+    # Fetch the corresponding Page record from Firestore
+    pages_col = $db.col("pages")
+    matching_pages = pages_col.where("route", "=", breadcrumb_path).get
+    the_page = matching_pages.first
+
+    # If the page is not found, skip this breadcrumb
+    next if the_page.nil?
+
+    # If this is the current page, remember its data
+    if breadcrumb_path == route
+      current_page_data = the_page.data
+    end
+
+    # Create the breadcrumb
+    breadcrumb = {
+      :path => breadcrumb_path,
+      :title => the_page.data.fetch(:title, ""),
+      :icon => the_page.data.fetch(:icon, "")
+    }
+
+    # Add the breadcrumb to the breadcrumbs array
+    breadcrumbs.push(breadcrumb)
+  end
+
+  @breadcrumbs = breadcrumbs
+
+  # TODO: If the current page data is not found, render a 404 page
+  if current_page_data.nil?
+    erb :page, :locals => { :html_content => "" }
   else
     # Get the component object from the Page document
-    component = the_page.data.fetch(:component, {})
+    component = current_page_data.fetch(:component, {})
 
     # Fetch the data from GCS and render the component
     data = fetch_data(component)
     html_content = render_component(data)
+
+    # Generate ERB code dynamically based on the data
+    # erb_code = ""
+    # data.each do |key, value|
+    #   erb_code += "<p><%= #{key} %></p>\n"
+    # end
+
+    # # Render the ERB code
+    # erb(erb_code, :locals => data)
 
     # Render the HTML content
     erb :page, :locals => { :html_content => html_content }
@@ -389,7 +432,6 @@ post "/sign_up" do
 
   # Log the user in by setting the session user_id
   session.store("user_id", added_user_ref.document_id)
-  puts "Stored user_id in session: #{session.fetch("user_id")}"
 
   # Create a Google Cloud Storage client
   storage = Google::Cloud::Storage.new
