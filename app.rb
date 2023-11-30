@@ -291,33 +291,45 @@ get "/*" do
   path_components = route == "/" ? [""] : route.split("/")[1..]
   breadcrumbs = []
   current_page = nil
+  root_component = nil
 
   path_components.each_with_index do |component, index|
     breadcrumb_path = "/" + path_components[0..index].join("/")
     pages_col = $db.col("pages")
-    matching_pages = pages_col.where("route", "=", breadcrumb_path).get
-    the_page = matching_pages.first
-    next if the_page.nil?
-
+    matching_pages = pages_col.where("route", "==", breadcrumb_path).get
+    page_data = matching_pages.first
+    next if page_data.nil?
     if breadcrumb_path == route
-      @page_properties = the_page.data
-      current_page = the_page
+      @page_properties = page_data.data
+      # Fetch the template data from Firestore
+      template_id = @page_properties.fetch(:template, '')
+      templates_col = $db.col("templates")
+      template_doc = templates_col.doc(template_id)
+      if template_doc.get.exists?
+        template_data = template_doc.get.data
+        if template_data && template_data.keys.first && template_data[template_data.keys.first].is_a?(Hash)
+          # Merge template data into page data
+          @page_properties = template_data.merge(@page_properties)
+          # Use the first key in the template data as the root component
+          root_component = template_data.keys.first
+        end
+      end
+      current_page = page_data
     end
-
     breadcrumb = {
       :path => breadcrumb_path,
-      :title => the_page.data.fetch(:title, ""),
-      :icon => the_page.data.fetch(:icon, "")
+      :title => page_data.data.fetch("title", ""),
+      :icon => page_data.data.fetch("icon", "")
     }
     breadcrumbs.push(breadcrumb)
   end
 
   @breadcrumbs = breadcrumbs
 
-  if current_page.nil?
+  if current_page.nil? || root_component.nil?
     erb :page, :locals => { :html_content => "" }
   else
-    html_content = render_component("page", @page_properties)
+    html_content = render_component(root_component, @page_properties)
     erb :page, :locals => { :html_content => html_content }
   end
 end
