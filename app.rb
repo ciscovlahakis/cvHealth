@@ -149,42 +149,30 @@ helpers do
 
   def render_component(component_name, page_data)
     component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
-  
     metadata_string = component_template.scan(/<!--(.*?)-->/m).first
+
     if metadata_string
       begin
         component_metadata = JSON.parse(metadata_string.first)
       rescue
         return "Error parsing metadata for #{component_name}"
       end
-  
       rendered_nested_components = component_metadata.map { |nested_component_name|
         render_component(nested_component_name, page_data.fetch(component_name.to_sym, {}))
       }
-      
       locals = Hash[component_metadata.zip(rendered_nested_components)]
-
     else
       locals = {}
     end
   
     # Fetch the properties of the component from Firestore
-    component_properties = page_data.fetch(component_name.to_sym, {}) || {}
-
-    component_properties.each do |key, value|
-      if value == "__inherit__" && @page_properties.key?(key)
-        component_properties[key] = @page_properties.fetch(key)
-      end
-    end
-
+    component_properties = page_data.fetch(component_name.to_sym, {})
     component_properties[:current_user] = @current_user
     component_properties[:session] = @session
     component_properties[:breadcrumbs] = @breadcrumbs
     
     locals = component_properties.merge(locals)
-  
     rendered_component = ERB.new(component_template).result_with_hash(locals)
-  
     return rendered_component
   end
 
@@ -286,6 +274,62 @@ get "/:resource" do
   render_page(resource, attributes)
 end
 
+def merge_template_into_properties(page_properties, template_data)
+  if template_data && template_data.keys.at(0) && template_data[template_data.keys.at(0)].is_a?(Hash)
+    page_properties = template_data.merge(page_properties)
+    root_component = template_data.keys.at(0)
+  end
+  return page_properties, root_component
+end
+
+def fetch_page_data(route)
+  pages_col = $db.col("pages")
+  matching_pages = pages_col.where("route", "=", route).get
+  page_data = matching_pages.first
+  return page_data ? page_data.data : nil
+end
+
+def fetch_inherited_template(inheritsFrom)
+  inherited_page_properties = fetch_page_data(inheritsFrom)
+  return nil unless inherited_page_properties
+  inherited_template_data = fetch_template_data(inherited_page_properties.fetch(:template, nil))
+  return nil unless inherited_template_data
+  inherited_template_data = replace_inherit_values(inherited_template_data, inherited_page_properties)
+  return inherited_template_data
+end
+
+def replace_inherit_values(template_data, page_properties)
+  template_data.each do |key, value|
+    if value.is_a?(Hash)
+      replace_inherit_values(value, page_properties)
+    elsif value == "__inherit__" && page_properties.key?(key)
+      template_data.store(key, page_properties.fetch(key))
+    end
+  end
+  return template_data
+end
+
+def fetch_template_data(template_id)
+  return nil if template_id.nil? || template_id.empty?
+  templates_col = $db.col("templates")
+  template_doc = templates_col.doc(template_id)
+  template_exists = template_doc.get.exists?
+  template_data = template_exists ? template_doc.get.data : nil
+  return template_data
+end
+
+def process_template(page_data)
+  template_id = page_data.fetch(:template, '')
+  template_data = fetch_template_data(template_id)
+  page_properties = replace_inherit_values(template_data, page_data)
+  
+  inherited_template_data = fetch_inherited_template(page_properties.fetch(:inheritsFrom, nil))
+  page_properties, _ = merge_template_into_properties(page_properties, inherited_template_data)
+  page_properties, root_component = merge_template_into_properties(page_properties, template_data)
+
+  return page_properties, root_component
+end
+
 get "/*" do
   route = request.path_info
   path_components = route == "/" ? [""] : route.split("/")[1..]
@@ -295,31 +339,18 @@ get "/*" do
 
   path_components.each_with_index do |component, index|
     breadcrumb_path = "/" + path_components[0..index].join("/")
-    pages_col = $db.col("pages")
-    matching_pages = pages_col.where("route", "==", breadcrumb_path).get
-    page_data = matching_pages.first
+    page_data = fetch_page_data(breadcrumb_path)
     next if page_data.nil?
+
     if breadcrumb_path == route
-      @page_properties = page_data.data
-      # Fetch the template data from Firestore
-      template_id = @page_properties.fetch(:template, '')
-      templates_col = $db.col("templates")
-      template_doc = templates_col.doc(template_id)
-      if template_doc.get.exists?
-        template_data = template_doc.get.data
-        if template_data && template_data.keys.first && template_data[template_data.keys.first].is_a?(Hash)
-          # Merge template data into page data
-          @page_properties = template_data.merge(@page_properties)
-          # Use the first key in the template data as the root component
-          root_component = template_data.keys.first
-        end
-      end
+      @page_properties, root_component = process_template(page_data)
       current_page = page_data
     end
+
     breadcrumb = {
       :path => breadcrumb_path,
-      :title => page_data.data.fetch("title", ""),
-      :icon => page_data.data.fetch("icon", "")
+      :title => page_data.fetch(:title, ""),
+      :icon => page_data.fetch(:icon, "")
     }
     breadcrumbs.push(breadcrumb)
   end
