@@ -202,18 +202,31 @@
         </span>
       </div>
     </div>
-    <div id="user-icon" data-username="<%= current_user ? current_user[:username] : '' %>" data-user-id="<%= current_user ? current_user[:id] : '' %>" data-profile-picture="<%= current_user ? current_user[:profile_picture] : '' %>" data-signed-in="<%= session.fetch("user_id", nil) ? "true" : "false" %>">
-      <% if current_user %>
-        <% bucket = "cisco-vlahakis.appspot.com" %>
-        <img id="user-image" class="user-image" src="https://storage.googleapis.com/<%= bucket %>/uploads/<%= current_user[:id] %>/<%= current_user[:profile_picture] %>">
-        <% if current_user[:admin] && !current_user[:super_admin] %>
-          <i id="admin-gear" class="fas fa-cog"></i>
-        <% end %>
-        <% if current_user[:super_admin] %>
-          <i id="super-admin-crown" class="fas fa-crown"></i>
-        <% end %>
+
+    <% current_user = current_user || {} %>
+    <% session = session || {} %>
+
+    <div id="user-icon" 
+      data-username="<%= current_user[:username] || '' %>" 
+      data-user-id="<%= current_user[:id] || '' %>" 
+      data-profile-picture="<%= current_user[:profile_picture] || '' %>" 
+      data-signed-in="<%= session.fetch("user_id", nil) ? "true" : "false" %>">
+
+      <% if current_user.any? %>
+          <% bucket = "cisco-vlahakis.appspot.com" %>
+          <img id="user-image" 
+              class="user-image" 
+              src="https://storage.googleapis.com/<%= bucket %>/uploads/<%= current_user[:id] %>/<%= current_user[:profile_picture] %>">
+          
+          <% if current_user[:admin] && !current_user[:super_admin] %>
+              <i id="admin-gear" class="fas fa-cog"></i>
+          <% end %>
+
+          <% if current_user[:super_admin] %>
+              <i id="super-admin-crown" class="fas fa-crown"></i>
+          <% end %>
       <% else %>
-        <img id="user-image" class="user-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+          <img id="user-image" class="user-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
       <% end %>
     </div>
   </div>

@@ -147,68 +147,45 @@ helpers do
     redirect to("/") unless user && user[:admin]
   end
 
-  def ensure_properties(hash)
-    hash.default_proc = proc { |h, k| h[k] = {} }
-    hash.each do |key, value|
-      if value.is_a?(Hash)
-        ensure_properties(value)
+  def render_component(component_name, page_data)
+    component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
+  
+    metadata_string = component_template.scan(/<!--(.*?)-->/m).first
+    if metadata_string
+      begin
+        component_metadata = JSON.parse(metadata_string.first)
+      rescue
+        return "Error parsing metadata for #{component_name}"
       end
-    end
-  end
+  
+      rendered_nested_components = component_metadata.map { |nested_component_name|
+        render_component(nested_component_name, page_data.fetch(component_name.to_sym, {}))
+      }
+      
+      locals = Hash[component_metadata.zip(rendered_nested_components)]
 
-
-  # Fetches the HTML template and properties for a given component
-  def fetch_data(component)
-    return { :template => '', :properties => {} } if component.nil?
-  
-    url = component.fetch(:url, '').strip
-    properties = component.fetch(:properties, {})
-    ensure_properties(properties)
-  
-    # Return early if the URL is blank
-    return { :template => '', :properties => {} } if url.empty?
-  
-    # Fetch the HTML template from GCS
-    response = HTTP.get(url)
-  
-    return { 
-      :template => response.to_s, 
-      :properties => properties 
-    }
-  end
-  
-  # Renders the HTML template with the provided properties
-  def render_component(data)
-    return '' unless data.is_a?(Hash)
-
-    properties = (@page_properties || {}).merge(data[:properties] || {})
-
-    properties = properties.transform_values do |value|
-      case value
-      when Hash
-        if value.key?(:url)
-          render_component(fetch_data(value)) 
-        else
-          value
-        end
-      when nil
-        ""
-      else
-        value
-      end
+    else
+      locals = {}
     end
   
-    properties["session"] = session
-    properties["current_user"] = current_user()
-    properties["breadcrumbs"] = @breadcrumbs
-    
-    # Render the HTML template with the properties
-    erb_template = ERB.new(data[:template])
-    
-    # Create a new OpenStruct from properties and get its binding
-    context = OpenStruct.new(properties).instance_eval { binding }
+    # Fetch the properties of the component from Firestore
+    component_properties = page_data.fetch(component_name.to_sym, {}) || {}
 
-    return erb_template.result(context)
+    component_properties.each do |key, value|
+      if value == "__inherit__" && @page_properties.key?(key)
+        component_properties[key] = @page_properties.fetch(key)
+      end
+    end
+
+    component_properties[:current_user] = @current_user
+    component_properties[:session] = @session
+    component_properties[:breadcrumbs] = @breadcrumbs
+    
+    locals = component_properties.merge(locals)
+  
+    rendered_component = ERB.new(component_template).result_with_hash(locals)
+  
+    return rendered_component
   end
 
   def search(term, priority_module = nil)
@@ -310,71 +287,37 @@ get "/:resource" do
 end
 
 get "/*" do
-  # Get the route from the URL
   route = request.path_info
-
-  # Split the route into its components
   path_components = route == "/" ? [""] : route.split("/")[1..]
-
-  # Initialize the breadcrumbs array
   breadcrumbs = []
+  current_page = nil
 
-  # Initialize the variable for the current page data
-  current_page_data = nil
-
-  # For each path component, create a breadcrumb
   path_components.each_with_index do |component, index|
-    # Create the path for this breadcrumb
     breadcrumb_path = "/" + path_components[0..index].join("/")
-
-    # Fetch the corresponding Page record from Firestore
     pages_col = $db.col("pages")
     matching_pages = pages_col.where("route", "=", breadcrumb_path).get
     the_page = matching_pages.first
-
-    # If the page is not found, skip this breadcrumb
     next if the_page.nil?
 
-    # If this is the current page, remember its data
     if breadcrumb_path == route
-      current_page_data = the_page.data
-      @page_properties = current_page_data.dup.tap { |h| h.delete(:component) }
+      @page_properties = the_page.data
+      current_page = the_page
     end
 
-    # Create the breadcrumb
     breadcrumb = {
       :path => breadcrumb_path,
       :title => the_page.data.fetch(:title, ""),
       :icon => the_page.data.fetch(:icon, "")
     }
-
-    # Add the breadcrumb to the breadcrumbs array
     breadcrumbs.push(breadcrumb)
   end
 
   @breadcrumbs = breadcrumbs
 
-  # TODO: If the current page data is not found, render a 404 page
-  if current_page_data.nil?
+  if current_page.nil?
     erb :page, :locals => { :html_content => "" }
   else
-    # Get the component object from the Page document
-    component = current_page_data.fetch(:component, {})
-
-    # Fetch the data from GCS and render the component
-    data = fetch_data(component)
-    html_content = render_component(data)
-
-    # Generate ERB code dynamically based on the data
-    # erb_code = ""
-    # data.each do |key, value|
-    #   erb_code += "<p><%= #{key} %></p>\n"
-    # end
-
-    # # Render the ERB code
-    # erb(erb_code, :locals => data)
-
-    # Render the HTML content
+    html_content = render_component("page", @page_properties)
     erb :page, :locals => { :html_content => html_content }
   end
 end
