@@ -334,7 +334,7 @@ def process_template(page_data)
   template_data = fetch_template_data(template_id)
   template_data = replace_inherit_values(template_data, page_data)
 
-  inherited_template_data = fetch_inherited_template(page_data.fetch(:inheritsFrom, nil))
+  inherited_template_data = fetch_inherited_template(page_data.fetch(:inherits_from, nil))
 
   # Merge the two templates together
   merged_template_data, _ = merge_template_into_properties(inherited_template_data, template_data)
@@ -354,32 +354,25 @@ end
 
 get "/*" do
   route = request.path_info
-  path_components = route == "/" ? [""] : route.split("/")[1..]
+  route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..]
   breadcrumbs = []
   current_page = nil
   root_component = nil
 
-  puts path_components.inspect
-  path_components.each_with_index do |component, index|
-    breadcrumb_path = "/" + path_components[0..index].join("/")
-    puts breadcrumb_path.inspect
-    next if breadcrumb_path.nil?
+  route_components.each_with_index do |component, index|
+    breadcrumb_route = route_components[0..index].join("")
+    breadcrumb_route = "/" if breadcrumb_route == ""
+    next if breadcrumb_route.nil?
 
-    page_data = fetch_page_data(breadcrumb_path)
+    page_data = fetch_page_data(breadcrumb_route)
     next if page_data.nil?
 
-    if breadcrumb_path == route
+    if breadcrumb_route == route
       @page_properties, root_component = process_template(page_data)
       current_page = page_data
     end
 
-    icon = CGI.unescape(page_data.fetch(:icon, ""))
-    breadcrumb = {
-      :path => breadcrumb_path,
-      :title => page_data.fetch(:title, ""),
-      :icon => icon
-    }
-    breadcrumbs.push(breadcrumb)
+    breadcrumbs.push(page_data)
   end
 
   @breadcrumbs = breadcrumbs
@@ -521,7 +514,7 @@ post "/upload" do
   doc_ref.set({ url: url })
 
   # Redirect to the home page
-  redirect "/"
+  redirect back
 end
 
 # Define all your before filters
