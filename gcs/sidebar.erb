@@ -65,7 +65,7 @@
   }
 </style>
 
-<div id="sidebar-container" data-links='<%= links.to_json %>' data-admin-links='<%= admin_links.to_json %>'>
+<div id="sidebar-container" data-links='<%= links ? links.to_json : {} %>' data-admin-links='<%= admin_links ? admin_links.to_json : {} %>'>
   <div class="sidebar-heading text-center">
   <% if icon && !icon.empty? %>
       <img src="<%= icon %>" alt="Logo" class="logo-thumbnail">
@@ -115,10 +115,12 @@
 
   function renderSidebar() {
     var sidebar = document.getElementById('sidebar-container');
-    var links = JSON.parse(sidebar.dataset.links);
-    links.forEach(function(link) {
-      fetchPageData(link).then(createTab);
-    });
+    if (sidebar.dataset.links) {
+      var links = JSON.parse(sidebar.dataset.links);
+      links.forEach(function(link) {
+        fetchPageData(link).then(createTab);
+      });
+    }
   }
 
   window.firebaseInitialized.then(() => {

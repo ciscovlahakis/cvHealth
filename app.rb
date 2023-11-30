@@ -33,7 +33,6 @@ FOOD_ATTRIBUTES = [
   { :id => "index", :name => "Index", :type => Integer },
   { :id => "name", :name => "Name", :type => String },
   { :id => "id", :name => "ID", :type => String },
-# Add more attributes here if needed
 ]
 
 MEAL_EVENT_ATTRIBUTES = [
@@ -53,7 +52,6 @@ helpers do
       FOOD_ATTRIBUTES
     when "meal-events"
       MEAL_EVENT_ATTRIBUTES
-      # Add more cases here for other resources
     else
       []
     end
@@ -65,11 +63,11 @@ helpers do
     return @resource, attributes
   end
 
-  def render_page(path, columns)
-    ref = $db.col(path)
-    @data = get_data(ref, path)
-    erb :"shared/page"
-  end
+  # def render_page(path, columns)
+  #   ref = $db.col(path)
+  #   @data = get_data(ref, path)
+  #   erb :"shared/page"
+  # end
 
   def create_item(collection_name, attributes)
     new_item = attributes.each_with_object({}) do |attribute, hash|
@@ -114,19 +112,19 @@ helpers do
     return sorted_data
   end
 
-  def get_data(ref, resource)
-    output = []
-    ref.get do |doc|
-      data = doc.data
-      data_with_id = data.merge({ "id" => doc.document_id })
-      string_data = data_with_id.transform_keys(&:to_s) # Convert all keys to Strings
-      output << string_data
-    end
+  # def get_data(ref, resource)
+  #   output = []
+  #   ref.get do |doc|
+  #     data = doc.data
+  #     data_with_id = data.merge({ "id" => doc.document_id })
+  #     string_data = data_with_id.transform_keys(&:to_s) # Convert all keys to Strings
+  #     output << string_data
+  #   end
 
-    # Sort the output array based on the 'position' field
-    output = output.sort_by { |item| item.fetch("position", 0) }
-    return output
-  end
+  #   # Sort the output array based on the 'position' field
+  #   output = output.sort_by { |item| item.fetch("position", 0) }
+  #   return output
+  # end
 
   def current_user
     return unless session.fetch("user_id", nil)
@@ -269,24 +267,36 @@ get "/meal-plan" do
   erb :meal_plan
 end
 
-get "/:resource" do
-  resource, attributes = resource_and_attributes()
-  render_page(resource, attributes)
+# get "/:resource" do
+#   resource, attributes = resource_and_attributes()
+#   render_page(resource, attributes)
+# end
+
+get "/favicon.ico" do
+  # Handle favicon.ico requests separately
+end
+
+def deep_merge(hash1, hash2)
+  if hash1.is_a?(Hash) && hash2.is_a?(Hash)
+    hash1.merge(hash2) do |key, oldval, newval| 
+      if oldval.is_a?(Hash) && newval.is_a?(Hash)
+        deep_merge(oldval, newval)
+      else
+        newval
+      end
+    end
+  else
+    hash1 || hash2
+  end
 end
 
 def merge_template_into_properties(page_properties, template_data)
-  if template_data && template_data.keys.at(0) && template_data[template_data.keys.at(0)].is_a?(Hash)
-    page_properties = template_data.merge(page_properties)
+  root_component = nil
+  if template_data && template_data.keys.at(0) && template_data.fetch(template_data.keys.at(0)).is_a?(Hash)
+    page_properties = deep_merge(template_data, page_properties)
     root_component = template_data.keys.at(0)
   end
   return page_properties, root_component
-end
-
-def fetch_page_data(route)
-  pages_col = $db.col("pages")
-  matching_pages = pages_col.where("route", "=", route).get
-  page_data = matching_pages.first
-  return page_data ? page_data.data : nil
 end
 
 def fetch_inherited_template(inheritsFrom)
@@ -299,6 +309,7 @@ def fetch_inherited_template(inheritsFrom)
 end
 
 def replace_inherit_values(template_data, page_properties)
+  return nil if template_data.nil?
   template_data.each do |key, value|
     if value.is_a?(Hash)
       replace_inherit_values(value, page_properties)
@@ -321,13 +332,24 @@ end
 def process_template(page_data)
   template_id = page_data.fetch(:template, '')
   template_data = fetch_template_data(template_id)
-  page_properties = replace_inherit_values(template_data, page_data)
-  
-  inherited_template_data = fetch_inherited_template(page_properties.fetch(:inheritsFrom, nil))
-  page_properties, _ = merge_template_into_properties(page_properties, inherited_template_data)
-  page_properties, root_component = merge_template_into_properties(page_properties, template_data)
+  template_data = replace_inherit_values(template_data, page_data)
+
+  inherited_template_data = fetch_inherited_template(page_data.fetch(:inheritsFrom, nil))
+
+  # Merge the two templates together
+  merged_template_data, _ = merge_template_into_properties(inherited_template_data, template_data)
+
+  # Merge the final template with the page's properties
+  page_properties, root_component = merge_template_into_properties(page_data, merged_template_data)
 
   return page_properties, root_component
+end
+
+def fetch_page_data(route)
+  pages_col = $db.col("pages")
+  matching_pages = pages_col.where("route", "=", route).get
+  page_data = matching_pages.first
+  return page_data ? page_data.data : nil
 end
 
 get "/*" do
@@ -337,8 +359,12 @@ get "/*" do
   current_page = nil
   root_component = nil
 
+  puts path_components.inspect
   path_components.each_with_index do |component, index|
     breadcrumb_path = "/" + path_components[0..index].join("/")
+    puts breadcrumb_path.inspect
+    next if breadcrumb_path.nil?
+
     page_data = fetch_page_data(breadcrumb_path)
     next if page_data.nil?
 
@@ -347,10 +373,11 @@ get "/*" do
       current_page = page_data
     end
 
+    icon = CGI.unescape(page_data.fetch(:icon, ""))
     breadcrumb = {
       :path => breadcrumb_path,
       :title => page_data.fetch(:title, ""),
-      :icon => page_data.fetch(:icon, "")
+      :icon => icon
     }
     breadcrumbs.push(breadcrumb)
   end
