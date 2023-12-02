@@ -333,11 +333,15 @@ def fetch_page_data(route)
 end
 
 def render_component(component_name, parent_component_props)
+  # component_name: "content"
+  # parent_component_props: { :sidebar => {...}, :content => { :results => { :table => {} } } }
+  
   locals = {}
-  component_props = parent_component_props.fetch(component_name.to_sym, {})
+  component_props = parent_component_props.fetch(component_name.to_sym, {}) # { :results => { :table => {} } }
 
   component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
   metadata_string = component_template.scan(/<!--(.*?)-->/m).first
+
   if metadata_string
     begin
       component_metadata = JSON.parse(metadata_string.first)
@@ -345,47 +349,33 @@ def render_component(component_name, parent_component_props)
       return "Error parsing metadata for #{component_name}"
     end
 
-    rendered_nested_components = component_metadata.map do |nested_component|
-      if nested_component.is_a?(Hash)
-        nested_component_name = nested_component.keys.at(0)
-        if nested_component.fetch(nested_component_name)["yield"]
-          nested_component_data = component_props.fetch(nested_component_name.to_sym, {})
-          nested_component_data.keys.map do |yielded_component_name|
-            render_component(yielded_component_name, nested_component_data.fetch(yielded_component_name, {}))
-          end.join
-        else
-          render_component(nested_component_name, component_props)
-        end
+    component_metadata.each do |nested_component|
+      component_key = nested_component.is_a?(Hash) ? nested_component.keys.at(0) : nested_component
+      # { "results": { "yield": true } } : "header"
+      locals[component_key] = if nested_component.is_a?(Hash) && nested_component.fetch(component_key)["yield"]
+        component_props.fetch(component_key.to_sym, {}).keys.map do |yielded_component_name|
+          # ("table", { :cells => [...] })
+          render_component(yielded_component_name, component_props.fetch(yielded_component_name, {})).to_s
+        end.join
       else
-        render_component(nested_component, component_props)
-      end
-    end
-
-    component_metadata.each_with_index do |nested_component, index|
-      if nested_component.is_a?(Hash)
-        nested_component_name = nested_component.keys.at(0)
-        locals[nested_component_name] = rendered_nested_components.at(index)
-      else
-        locals[nested_component] = rendered_nested_components.at(index)
+        # ("header", { :content => { :results => ...} })
+        render_component(component_key, component_props).to_s
       end
     end
   end
 
-  component_props[:current_user] = @current_user
-  component_props[:session] = @session
-  component_props[:breadcrumbs] = @breadcrumbs
+  component_props.merge!(:current_user => @current_user, :session => @session, :breadcrumbs => @breadcrumbs)
   
-  locals = component_props.merge(locals)
-  rendered_component = ERB.new(component_template).result_with_hash(locals)
-  return rendered_component
+  # Merge locals into component_props and render the component_template with those props
+  ERB.new(component_template).result_with_hash(component_props.merge(locals))
 end
 
 get "/*" do
   route = request.path_info
   route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..]
-  breadcrumbs = []
-  current_page = nil
-  root_component = nil
+
+  @breadcrumbs = []
+  current_page = root_component = nil
 
   route_components.each_with_index do |component, index|
     breadcrumb_route = route_components[0..index].join("")
@@ -400,10 +390,8 @@ get "/*" do
       current_page = page_data
     end
 
-    breadcrumbs.push(page_data)
+    @breadcrumbs.push(page_data)
   end
-
-  @breadcrumbs = breadcrumbs
 
   if current_page.nil? || root_component.nil?
     erb :page, :locals => { :html_content => "" }
