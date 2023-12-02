@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
-get "/search" do
-  term = params.fetch("term")
-  current_route = request.path
-  @results = search(term, current_route)
+get "/search/:index_name" do
+  index_name = params.fetch("index_name")
+  term = params.fetch("term", '')
+  priority_module = params.fetch("priority_module", nil)
 
-  @results = [] if @results.nil? || !@results.is_a?(Array)
+  results = search(index_name, term, priority_module)
 
-  return @results.to_json
+  content_type :json
+  return results.to_json
 end
 
 # get "/index_all" do

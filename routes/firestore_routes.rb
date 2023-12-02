@@ -20,21 +20,6 @@ get "/firestore_config" do
   end
 end
 
-get "/collection" do
-  # Get a reference to your items collection
-  collection_ref = $db.col 'collection'
-  # Get all documents in the collection
-  items = collection_ref.get
-
-  # Format the data as an array of hashes
-  formatted_items = items.map do |item|
-    item.data.merge({ :id => item.document_id })
-  end
-
-  content_type :json
-  return formatted_items.to_json
-end
-
 post "/create/:resource" do
   resource, attributes = resource_and_attributes()
   create_item(resource, attributes)

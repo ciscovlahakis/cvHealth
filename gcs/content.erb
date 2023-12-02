@@ -96,7 +96,8 @@
     var resultsContainer = document.getElementById('results');
     var activityIndicator = document.getElementById('activityIndicator');
 
-    var url = "/collection";
+    var indexName = "modules";
+    var url = "/search/" + indexName;
 
     activityIndicator.style.display = 'flex';
 
@@ -106,6 +107,7 @@
       })
       .then(function(data) {
         activityIndicator.style.display = 'none';
+
         /* Clear previous results */
         while (resultsContainer.firstChild) {
           resultsContainer.removeChild(resultsContainer.firstChild);
@@ -115,7 +117,6 @@
 
     document.querySelector("input[name='search']").addEventListener("keyup", function(event) {
       var searchTerm = event.target.value;
-      var currentRoute = window.location.pathname;
 
       resultsContainer.innerHTML = '';
       var activityIndicator = document.getElementById('activityIndicator');
@@ -126,7 +127,7 @@
         return;
       }
 
-      var url = "/search?term=" + searchTerm + "&route=" + currentRoute;
+      var url = "/search/" + indexName + "?term=" + searchTerm;
 
       activityIndicator.style.display = 'flex';
 

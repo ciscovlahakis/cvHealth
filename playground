@@ -1,11 +1,11 @@
-<div id="menuContainer">
+<!-- <div id="menuContainer">
   <% Array(links).each do |link| %>
     <a href="/<%= link.fetch(:path,'') %>" class="list-group-item sidebar-link">
       <i class="<%= link.fetch(:icon,'') %>"></i>
       <%= link.fetch(:title,'') %>
     </a>
   <% end %>
-</div>
+</div> -->
 
 # sidebar_link_hash = SIDEBAR_LINKS.fetch(path, { :title => "", :icon => "", :description => "", :enable_move => false, :create_title => false })
     # @title = sidebar_link_hash.fetch(:title, "")

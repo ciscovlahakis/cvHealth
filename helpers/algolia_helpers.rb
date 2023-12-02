@@ -1,17 +1,19 @@
 # frozen_string_literal: true
 
 helpers do
-  def search(term, priority_module = nil)
-    term = params.fetch("term")
-    priority_module = request.path
-  
+  def search(index_name, term = '', priority_module = nil)
     algolia = Algolia::Client.new({ :application_id => ENV["ALGOLIA_APPLICATION_ID"], :api_key => ENV["ALGOLIA_SEARCH_ONLY_API_KEY"] })
-  
-    modules_index = algolia.init_index('modules')
+    
+    index = algolia.init_index(index_name)
   
     begin
-      # Query Algolia for modules that match the search term.
-      response = modules_index.search(term)
+      # If a search term was provided, perform a search.
+      # Otherwise, return all records from the index.
+      if term.empty?
+        response = index.browse('')
+      else
+        response = index.search(term)
+      end
   
       # The search results are in the 'hits' key of the response.
       results = response.fetch('hits')
