@@ -324,19 +324,16 @@ def render_component(component_name, parent_component_props, inherited_props_dat
           end
         end
 
-        locals[component_key] = if nested_component.fetch(component_key)["yield"]
-          component_props.fetch(component_key.to_sym, {}).keys.map do |yielded_component_name|
+        _yield = nested_component.fetch(component_key, {}).fetch("yield", false)
+        if _yield
+          locals[component_key] = component_props.fetch(component_key.to_sym, {}).keys.map do |yielded_component_name|
             # Ignore inherited props if yield is true
             render_component(yielded_component_name, component_props.fetch(yielded_component_name, {}), {}).to_s
           end.join
-        else
-          # Shallow merge props
-          merged_component_props = inherited_component_props.merge(component_props)
-          render_component(component_key, merged_component_props, inherited_props_data.fetch(component_key, {})).to_s
         end
       end
-      # If the nested component is not a Hash, still render the component
-      unless locals.key?(component_key)
+
+      if !locals[component_key]
         # Shallow merge props
         merged_component_props = inherited_component_props.merge(component_props)
         locals[component_key] = render_component(component_key, merged_component_props, inherited_props_data.fetch(component_key, {})).to_s
@@ -374,7 +371,8 @@ get "/*" do
 
       if inherits_from
         @inherited_page_data = fetch_page_data(inherits_from)
-        inherited_props_data = get_props_data(inherited_page_data.fetch(:props, ''), inherited_page_data) if inherited_page_data
+        break if !@inherited_page_data
+        inherited_props_data = get_props_data(@inherited_page_data.fetch(:props, ''), @inherited_page_data)
       end
 
       if @page_data && current_props_data
