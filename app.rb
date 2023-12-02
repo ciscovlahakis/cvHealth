@@ -247,16 +247,6 @@ get "/favicon.ico" do
   # Handle favicon.ico requests separately
 end
 
-def get_root_name(data)
-  root_name = data.keys.at(0)
-  if data && root_name && data.fetch(root_name).is_a?(Hash)
-    return root_name
-  else
-    puts "Error: First key does not exist or is not a Hash in #{root_name}"
-    return nil
-  end
-end
-
 def deep_merge(hash1, hash2)
   if hash1.is_a?(Hash) && hash2.is_a?(Hash)
     hash1.merge(hash2) do |key, oldval, newval| 
@@ -268,6 +258,16 @@ def deep_merge(hash1, hash2)
     end
   else
     hash1 || hash2
+  end
+end
+
+def get_root_name(data)
+  root_name = data.keys.at(0)
+  if data && root_name && data.fetch(root_name).is_a?(Hash)
+    return root_name
+  else
+    puts "Error: First key does not exist or is not a Hash in #{root_name}"
+    return nil
   end
 end
 
@@ -291,40 +291,25 @@ def replace_inherit_values(props_data, page_data)
   return props_data
 end
 
-def fetch_inherited_props_data(inheritsFrom)
-  inherited_page_data = fetch_page_data(inheritsFrom)
-  return nil unless inherited_page_data
-  inherited_props_data = fetch_props_data(inherited_page_data.fetch(:props, nil))
-  return nil unless inherited_props_data
-  inherited_props_data = replace_inherit_values(inherited_props_data, inherited_page_data)
-  return inherited_props_data
-end
-
-def fetch_props_data(props_id)
-  return nil if props_id.nil? || props_id.empty?
+def get_props_data(id, defaults)
+  return nil if id.nil? || id.empty?
   props_col = $db.col("props")
-  props_doc = props_col.doc(props_id)
-  props_exists = props_doc.get.exists?
-  props_data = props_exists ? props_doc.get.data : nil
-  return props_data
+  props_doc = props_col.doc(id).get
+  props_data = props_doc.data if props_doc.exists?
+  return replace_inherit_values(props_data, defaults)
 end
 
-def fetch_page_data(route)
-  pages_col = $db.col("pages")
-  matching_pages = pages_col.where("route", "=", route).get
-  page_data = matching_pages.first
-  return page_data ? page_data.data : nil
-end
+def get_page_data_with_props_and_root_component_name(page_data)
+  # Get props data for current page
+  current_props_data = get_props_data(page_data.fetch(:props, ''), page_data)
 
-def get_current_page_data_with_props_and_root_component_name(page_data)
-  current_props_id = page_data.fetch(:props, '')
-  current_props_data = fetch_props_data(current_props_id)
-  current_props_data = replace_inherit_values(current_props_data, page_data)
-
-  inherited_props_data = fetch_inherited_props_data(page_data.fetch(:inherits_from, nil))
+  # Get props data for inherited page, if any
+  inherits_from = page_data.fetch(:inherits_from, nil)
+  inherited_page_data = $db.col("pages").where("route", "=", inherits_from).get.first if inherits_from
+  inherited_props_data = get_props_data(inherited_page_data.data.fetch(:props, '')) if inherited_page_data
 
   # Merge the two props together
-  merged_props_data, _ = merge_props_into_properties(inherited_props_data, current_props_data)
+  merged_props_data, _ = merge_props_into_properties(inherited_props_data || {}, current_props_data || {})
 
   # Merge the final props with the page's properties
   current_page_data_with_props, root_component_name = merge_props_into_properties(page_data, merged_props_data)
@@ -385,7 +370,7 @@ get "/*" do
     next if breadcrumb_route.nil? || breadcrumb_page_data.nil?
     
     if breadcrumb_route == route
-      current_page_data_with_props, root_component_name = get_current_page_data_with_props_and_root_component_name(breadcrumb_page_data)
+      current_page_data_with_props, root_component_name = get_page_data_with_props_and_root_component_name(breadcrumb_page_data)
     end
 
     @breadcrumbs.push(breadcrumb_page_data)
