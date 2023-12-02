@@ -146,6 +146,7 @@ helpers do
   end
 
   def render_component(component_name, page_data)
+    locals = {}
     component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
     metadata_string = component_template.scan(/<!--(.*?)-->/m).first
 
@@ -155,16 +156,35 @@ helpers do
       rescue
         return "Error parsing metadata for #{component_name}"
       end
-      rendered_nested_components = component_metadata.map { |nested_component_name|
-        render_component(nested_component_name, page_data.fetch(component_name.to_sym, {}))
-      }
-      locals = Hash[component_metadata.zip(rendered_nested_components)]
-    else
-      locals = {}
+
+      rendered_nested_components = component_metadata.map do |nested_component|
+        if nested_component.is_a?(Hash)
+          nested_component_name = nested_component.keys.at(0)
+          if nested_component.fetch(nested_component_name)["yield"]
+            nested_component_data = page_data.fetch(component_name.to_sym, {}).fetch(nested_component_name.to_sym, {})
+            nested_component_data.keys.map do |yielded_component_name|
+              render_component(yielded_component_name, nested_component_data.fetch(yielded_component_name, {}))
+            end.join
+          else
+            render_component(nested_component_name, page_data.fetch(component_name.to_sym, {}))
+          end
+        else
+          render_component(nested_component, page_data.fetch(component_name.to_sym, {}))
+        end
+      end
+
+      component_metadata.each_with_index do |nested_component, index|
+        if nested_component.is_a?(Hash)
+          nested_component_name = nested_component.keys.at(0)
+          locals[nested_component_name] = rendered_nested_components.at(index)
+        else
+          locals[nested_component] = rendered_nested_components.at(index)
+        end
+      end
     end
-  
-    # Fetch the properties of the component from Firestore
+
     component_properties = page_data.fetch(component_name.to_sym, {})
+    
     component_properties[:current_user] = @current_user
     component_properties[:session] = @session
     component_properties[:breadcrumbs] = @breadcrumbs
@@ -290,13 +310,22 @@ def deep_merge(hash1, hash2)
   end
 end
 
-def merge_template_into_properties(page_properties, template_data)
-  root_component = nil
-  if template_data && template_data.keys.at(0) && template_data.fetch(template_data.keys.at(0)).is_a?(Hash)
-    page_properties = deep_merge(template_data, page_properties)
-    root_component = template_data.keys.at(0)
+def get_root_name(data)
+  root_name = data.keys.at(0)
+  if data && root_name && data.fetch(root_name).is_a?(Hash)
+    return root_name
+  else
+    puts "Error: First key does not exist or is not a Hash in #{root_name}"
+    return nil
   end
-  return page_properties, root_component
+end
+
+def merge_template_into_properties(page_properties, template_data)
+  root_name = get_root_name(template_data)
+  if root_name
+    page_properties = deep_merge(template_data, page_properties)
+  end
+  return page_properties, root_name
 end
 
 def fetch_inherited_template(inheritsFrom)
@@ -381,6 +410,7 @@ get "/*" do
     erb :page, :locals => { :html_content => "" }
   else
     html_content = render_component(root_component, @page_properties)
+    puts "HTML content type: #{html_content.class}, value: #{html_content}"
     erb :page, :locals => { :html_content => html_content }
   end
 end
