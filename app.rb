@@ -375,30 +375,29 @@ get "/*" do
   route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..]
 
   @breadcrumbs = []
-  current_page = root_component = nil
+  current_page_data = root_component_name = nil
 
   route_components.each_with_index do |component, index|
     breadcrumb_route = route_components[0..index].join("")
     breadcrumb_route = "/" if breadcrumb_route == ""
-    next if breadcrumb_route.nil?
 
-    page_data = fetch_page_data(breadcrumb_route)
-    next if page_data.nil?
-
+    breadcrumb_page_data = fetch_page_data(breadcrumb_route)
+    next if breadcrumb_route.nil? || breadcrumb_page_data.nil?
+    
     if breadcrumb_route == route
-      @page_properties, root_component = process_props(page_data)
-      current_page = page_data
+      current_page_data, root_component_name = process_props(breadcrumb_page_data)
     end
 
-    @breadcrumbs.push(page_data)
+    @breadcrumbs.push(breadcrumb_page_data)
   end
 
-  if current_page.nil? || root_component.nil?
-    erb :page, :locals => { :html_content => "" }
-  else
-    html_content = render_component(root_component, @page_properties)
-    erb :page, :locals => { :html_content => html_content }
+  html_content = ""
+
+  if current_page_data && root_component_name
+    html_content = render_component(root_component_name, current_page_data)
   end
+
+  erb :page, :locals => { :html_content => html_content }
 end
 
 post "/update_position" do
