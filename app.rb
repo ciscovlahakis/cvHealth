@@ -278,17 +278,17 @@ def get_props_data(id, defaults)
   return replace_inherit_values(props_data, defaults)
 end
 
-def render_component(component_name, parent_component_props, inherited_props_data = {}, page_data, inherited_page_data)
+def render_component(component_name, parent_component_props, inherited_props_data = {})
   locals = {}
 
   component_props = parent_component_props.fetch(component_name.to_sym, {})
   inherited_component_props = inherited_props_data.fetch(component_name.to_sym, {})
 
-  component_props = replace_inherit_values(component_props, page_data)
-  inherited_component_props = replace_inherit_values(inherited_component_props, inherited_page_data)
+  component_props = replace_inherit_values(component_props, @page_data)
+  inherited_component_props = replace_inherit_values(inherited_component_props, @inherited_page_data)
 
   component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
-  metadata_string = component_template.scan(/<!--(.*?)-->/m).first
+  metadata_string = component_template.scan(/<!--(.*?)-->/m).at(0)
 
   if metadata_string
     begin
@@ -297,17 +297,49 @@ def render_component(component_name, parent_component_props, inherited_props_dat
       return "Error parsing metadata for #{component_name}"
     end
 
+    # Iterate through the component metadata
     component_metadata.each do |nested_component|
-      component_key = nested_component.is_a?(Hash) ? nested_component.keys.at(0) : nested_component
-      locals[component_key] = if nested_component.is_a?(Hash) && nested_component.fetch(component_key)["yield"]
-        component_props.fetch(component_key.to_sym, {}).keys.map do |yielded_component_name|
-          # Ignore inherited props if yield is true
-          render_component(yielded_component_name, component_props.fetch(yielded_component_name, {}), {}, page_data, inherited_page_data).to_s
-        end.join
-      else
+      component_key = nested_component
+
+      # If the nested component is a Hash, check for the render_if_exists and yield keys
+      if nested_component.is_a?(Hash)
+        component_key = nested_component.keys.at(0)
+
+        render_if_exists = nested_component.fetch(component_key, {}).fetch("render_if_exists", nil)
+
+        # If render_if_exists is specified, fetch the specified key from the component props
+        # If the value is nil or "__inherit__", do not render the component
+        if render_if_exists
+          render_if_exists = [render_if_exists] unless render_if_exists.is_a?(Array)
+          should_render = render_if_exists.all? do |render_if_exists_key|
+            component_value = component_props.fetch(component_key.to_sym, {}).fetch(render_if_exists_key.to_sym, nil)
+            inherited_component_value = inherited_component_props.fetch(component_key.to_sym, {}).fetch(render_if_exists_key.to_sym, nil)
+            render_if_exists_value = component_value || inherited_component_value
+
+            !(render_if_exists_value == "__inherit__" || !render_if_exists_value || (render_if_exists_value.respond_to?(:empty?) && render_if_exists_value.empty?))
+          end
+          if !should_render
+            locals[component_key] = nil
+            next
+          end
+        end
+
+        locals[component_key] = if nested_component.fetch(component_key)["yield"]
+          component_props.fetch(component_key.to_sym, {}).keys.map do |yielded_component_name|
+            # Ignore inherited props if yield is true
+            render_component(yielded_component_name, component_props.fetch(yielded_component_name, {}), {}).to_s
+          end.join
+        else
+          # Shallow merge props
+          merged_component_props = inherited_component_props.merge(component_props)
+          render_component(component_key, merged_component_props, inherited_props_data.fetch(component_key, {})).to_s
+        end
+      end
+      # If the nested component is not a Hash, still render the component
+      unless locals.key?(component_key)
         # Shallow merge props
         merged_component_props = inherited_component_props.merge(component_props)
-        render_component(component_key, merged_component_props, inherited_props_data.fetch(component_key, {}), page_data, inherited_page_data).to_s
+        locals[component_key] = render_component(component_key, merged_component_props, inherited_props_data.fetch(component_key, {})).to_s
       end
     end
   end
@@ -328,25 +360,25 @@ get "/*" do
     breadcrumb_route = route_components[0..index].join("")
     breadcrumb_route = "/" if breadcrumb_route == ""
 
-    breadcrumb_page_data = fetch_page_data(breadcrumb_route)
-    next if breadcrumb_route.nil? || breadcrumb_page_data.nil?
+    @page_data = fetch_page_data(breadcrumb_route)
+    next if breadcrumb_route.nil? || @page_data.nil?
 
-    @breadcrumbs.push(breadcrumb_page_data)
+    @breadcrumbs.push(@page_data)
     
     if breadcrumb_route == route
-      current_props_data = get_props_data(breadcrumb_page_data.fetch(:props, ''), breadcrumb_page_data)
+      current_props_data = get_props_data(@page_data.fetch(:props, ''), @page_data)
 
-      inherits_from = breadcrumb_page_data.fetch(:inherits_from, nil)
-      inherited_page_data = {}
+      inherits_from = @page_data.fetch(:inherits_from, nil)
+      @inherited_page_data = {}
       inherited_props_data = {}
 
       if inherits_from
-        inherited_page_data = fetch_page_data(inherits_from)
+        @inherited_page_data = fetch_page_data(inherits_from)
         inherited_props_data = get_props_data(inherited_page_data.fetch(:props, ''), inherited_page_data) if inherited_page_data
       end
 
-      if breadcrumb_page_data && current_props_data
-        html_content = render_component(current_props_data.keys.at(0), current_props_data, inherited_props_data, breadcrumb_page_data, inherited_page_data)
+      if @page_data && current_props_data
+        html_content = render_component(current_props_data.keys.at(0), current_props_data, inherited_props_data)
       end
     end
   end
