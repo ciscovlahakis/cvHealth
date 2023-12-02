@@ -146,6 +146,30 @@ helpers do
     redirect to("/") unless user && user[:admin]
   end
 
+  # def index_all_collections
+  #   # Initialize Algolia
+  #   algolia = Algolia::Client.new({ :application_id => ENV['ALGOLIA_APPLICATION_ID'], :api_key => ENV['ALGOLIA_ADMIN_API_KEY'] })
+
+  #   # Replace 'modules' with the names of your collections
+  #   collections = ['modules']
+
+  #   collections.each do |collection|
+  #     # Initialize the Algolia index for the collection
+  #     index = algolia.init_index(collection)
+
+  #     # Get the Firestore collection
+  #     ref = $db.col(collection)
+
+  #     # Fetch each document from the Firestore collection
+  #     ref.get do |doc|
+  #       data = doc.data.dup.tap { |h| h[:objectID] = doc.document_id }
+
+  #       # Add the document data to Algolia
+  #       index.save_object(data)
+  #     end
+  #   end
+  # end
+
   def search(term, priority_module = nil)
     term = params.fetch("term")
     priority_module = request.path
@@ -173,30 +197,6 @@ helpers do
   
     return results
   end
-
-  # def index_all_collections
-  #   # Initialize Algolia
-  #   algolia = Algolia::Client.new({ :application_id => ENV['ALGOLIA_APPLICATION_ID'], :api_key => ENV['ALGOLIA_ADMIN_API_KEY'] })
-
-  #   # Replace 'modules' with the names of your collections
-  #   collections = ['modules']
-
-  #   collections.each do |collection|
-  #     # Initialize the Algolia index for the collection
-  #     index = algolia.init_index(collection)
-
-  #     # Get the Firestore collection
-  #     ref = $db.col(collection)
-
-  #     # Fetch each document from the Firestore collection
-  #     ref.get do |doc|
-  #       data = doc.data.dup.tap { |h| h[:objectID] = doc.document_id }
-
-  #       # Add the document data to Algolia
-  #       index.save_object(data)
-  #     end
-  #   end
-  # end
 end
 
 get '/firestore_config' do
@@ -219,11 +219,6 @@ get '/firestore_config' do
   end
 end
 
-# get '/index_all' do
-#   index_all_collections
-#   "All collections have been indexed in Algolia."
-# end
-
 get("/search") do
   term = params.fetch("term")
   current_route = request.path
@@ -233,6 +228,11 @@ get("/search") do
 
   return @results.to_json
 end
+
+# get '/index_all' do
+#   index_all_collections
+#   "All collections have been indexed in Algolia."
+# end
 
 get "/meal-plan" do
   @meal_plan = MealPlanGenerator.new(@current_user).generate
@@ -328,9 +328,10 @@ def render_component(component_name, parent_component_props, inherited_props_dat
 
         _yield = nested_component.fetch(component_key, {}).fetch("yield", false)
         if _yield
-          locals[component_key] = component_props.fetch(component_key.to_sym, {}).keys.map do |yielded_component_name|
+          replacement_component = component_props.fetch(component_key.to_sym, {})
+          locals[component_key] = replacement_component.keys.map do |yielded_component_name|
             # Ignore inherited props if yield is true
-            render_component(yielded_component_name, component_props.fetch(yielded_component_name, {}), {}).to_s
+            render_component(yielded_component_name, replacement_component, {}).to_s
           end.join
         end
       end
@@ -345,7 +346,7 @@ def render_component(component_name, parent_component_props, inherited_props_dat
 
   component_props.merge!(:current_user => @current_user, :session => @session, :breadcrumbs => @breadcrumbs)
 
-  ERB.new(component_template).result_with_hash(component_props.merge(locals))
+  #ERB.new(component_template).result_with_hash(component_props.merge(locals))
 end
 
 get "/*" do

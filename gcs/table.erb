@@ -112,19 +112,19 @@
       <!-- Drag icon -->
     </div>
 
-    <% Array(@data).each do |x| %>
-      <div class="grid-row sortable-row" data-resource="<%= @resource %>" data-id="<%= x.fetch('id') %>">
+    <% Array(data).each do |x| %>
+      <div class="grid-row sortable-row" data-resource="<%= @resource %>" data-id="<%= x.fetch(:id) %>">
         <% Array(@columns).each do |y| %>
-          <div class="content-cell" data-<%= y[:name] %>="<%= x.fetch(y[:id], '') %>" data-row-id="<%= x.fetch('id') %>">
+          <div class="content-cell" data-<%= y[:name] %>="<%= x.fetch(y[:id], '') %>" data-row-id="<%= x.fetch(:id) %>">
             <%= x.fetch(y[:id], '') %>
           </div>
         <% end %>
         <div class="icon-column">
-          <a class="edit-link" data-id="<%= x.fetch('id') %>" data-row-id="<%= x.fetch('id') %>"><i class="fas fa-edit"></i></a>
+          <a class="edit-link" data-id="<%= x.fetch(:id) %>" data-row-id="<%= x.fetch(:id) %>"><i class="fas fa-edit"></i></a>
         </div>
         <div class="icon-column">
           <form action="/delete/<%= @resource %>" method="post">
-            <input type="hidden" name="id" value="<%= x.fetch('id') %>">
+            <input type="hidden" name="id" value="<%= x.fetch(:id) %>">
             <button type="submit"><i class="fas fa-trash"></i></button>
           </form>
         </div>
