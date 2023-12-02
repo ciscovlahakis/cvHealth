@@ -102,6 +102,6 @@ helpers do
   
     component_props.merge!(:current_user => @current_user, :session => @session, :breadcrumbs => @breadcrumbs)
   
-    #ERB.new(component_template).result_with_hash(component_props.merge(locals))
+    ERB.new(component_template).result_with_hash(component_props.merge(locals))
   end
 end

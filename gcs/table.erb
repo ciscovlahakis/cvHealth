@@ -87,82 +87,8 @@
   }
 </style>
 
-<div style="display: flex;">
-  <div>
-    <h2 style="margin-bottom: 0;"><%= @title %></h2>
-    <% if @description && !@description.empty? %>
-      <p class="description" style="margin-top: 1;"><%= @description %></p>
-    <% end %>
-  </div>
-</div>
+<div id="results">
 
-<div class="button-table-container">
-  <input type="hidden" id="enableMove" value="<%= @enable_move %>">
-  <button id="create-btn" class="button table-button rounded-shadow font"><i class="fas fa-plus-circle"></i> <%= @create_title %></button>
-
-  <div class="grid-table rounded-shadow">
-    <div class="grid-row">
-      <% Array(@columns).each do |x| %>
-        <div class="header"><%= x[:name] %></div>
-      <% end %>
-      <div class="header icon-header"></div>
-      <!-- Edit icon -->
-      <div class="header icon-header"></div>
-      <!-- Delete icon-->
-      <div class="header icon-header"></div>
-      <!-- Drag icon -->
-    </div>
-
-    <% Array(data).each do |x| %>
-      <div class="grid-row sortable-row" data-resource="<%= @resource %>" data-id="<%= x.fetch(:id) %>">
-        <% Array(@columns).each do |y| %>
-          <div class="content-cell" data-<%= y[:name] %>="<%= x.fetch(y[:id], '') %>" data-row-id="<%= x.fetch(:id) %>">
-            <%= x.fetch(y[:id], '') %>
-          </div>
-        <% end %>
-        <div class="icon-column">
-          <a class="edit-link" data-id="<%= x.fetch(:id) %>" data-row-id="<%= x.fetch(:id) %>"><i class="fas fa-edit"></i></a>
-        </div>
-        <div class="icon-column">
-          <form action="/delete/<%= @resource %>" method="post">
-            <input type="hidden" name="id" value="<%= x.fetch(:id) %>">
-            <button type="submit"><i class="fas fa-trash"></i></button>
-          </form>
-        </div>
-        <div class="icon-column drag-handle">
-          <% if @enable_move %>
-            <i class="fas fa-bars"></i>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
-  </div>
-</div>
-
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <h2 id="modal-title"><%= @create_title %></h2>
-    <div class="form-container">
-      <form id="modal-form" class="<%= @resource %>-form" action="" method="post">
-        <input type="hidden" name="id" value="">
-        <% Array(@columns).each do |column| %>
-          <label for="<%= column[:id] %>"><%= column[:name] %>:</label>
-          <% if column[:type] == Integer %>
-            <input type="number" id="<%= column[:id] %>" name="<%= column[:id] %>">
-          <% else %>
-            <input type="text" id="<%= column[:id] %>" name="<%= column[:id] %>">
-          <% end %>
-        <% end %>
-
-        <%= recurrence %>
-
-        <div class="button-group">
-          <button type="button" id="cancel-button">Cancel</button>
-          <input type="submit" value="Create">
-        </div>
-      </form>
-    </div>
-  </div>
 </div>
 
 <script>
