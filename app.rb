@@ -145,55 +145,6 @@ helpers do
     redirect to("/") unless user && user[:admin]
   end
 
-  def render_component(component_name, page_data)
-    locals = {}
-    component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
-    metadata_string = component_template.scan(/<!--(.*?)-->/m).first
-
-    if metadata_string
-      begin
-        component_metadata = JSON.parse(metadata_string.first)
-      rescue
-        return "Error parsing metadata for #{component_name}"
-      end
-
-      rendered_nested_components = component_metadata.map do |nested_component|
-        if nested_component.is_a?(Hash)
-          nested_component_name = nested_component.keys.at(0)
-          if nested_component.fetch(nested_component_name)["yield"]
-            nested_component_data = page_data.fetch(component_name.to_sym, {}).fetch(nested_component_name.to_sym, {})
-            nested_component_data.keys.map do |yielded_component_name|
-              render_component(yielded_component_name, nested_component_data.fetch(yielded_component_name, {}))
-            end.join
-          else
-            render_component(nested_component_name, page_data.fetch(component_name.to_sym, {}))
-          end
-        else
-          render_component(nested_component, page_data.fetch(component_name.to_sym, {}))
-        end
-      end
-
-      component_metadata.each_with_index do |nested_component, index|
-        if nested_component.is_a?(Hash)
-          nested_component_name = nested_component.keys.at(0)
-          locals[nested_component_name] = rendered_nested_components.at(index)
-        else
-          locals[nested_component] = rendered_nested_components.at(index)
-        end
-      end
-    end
-
-    component_properties = page_data.fetch(component_name.to_sym, {})
-    
-    component_properties[:current_user] = @current_user
-    component_properties[:session] = @session
-    component_properties[:breadcrumbs] = @breadcrumbs
-    
-    locals = component_properties.merge(locals)
-    rendered_component = ERB.new(component_template).result_with_hash(locals)
-    return rendered_component
-  end
-
   def search(term, priority_module = nil)
     term = params.fetch("term")
     priority_module = request.path
@@ -296,6 +247,16 @@ get "/favicon.ico" do
   # Handle favicon.ico requests separately
 end
 
+def get_root_name(data)
+  root_name = data.keys.at(0)
+  if data && root_name && data.fetch(root_name).is_a?(Hash)
+    return root_name
+  else
+    puts "Error: First key does not exist or is not a Hash in #{root_name}"
+    return nil
+  end
+end
+
 def deep_merge(hash1, hash2)
   if hash1.is_a?(Hash) && hash2.is_a?(Hash)
     hash1.merge(hash2) do |key, oldval, newval| 
@@ -310,66 +271,56 @@ def deep_merge(hash1, hash2)
   end
 end
 
-def get_root_name(data)
-  root_name = data.keys.at(0)
-  if data && root_name && data.fetch(root_name).is_a?(Hash)
-    return root_name
-  else
-    puts "Error: First key does not exist or is not a Hash in #{root_name}"
-    return nil
-  end
-end
-
-def merge_template_into_properties(page_properties, template_data)
-  root_name = get_root_name(template_data)
+def merge_props_into_properties(page_properties, props_data)
+  root_name = get_root_name(props_data)
   if root_name
-    page_properties = deep_merge(template_data, page_properties)
+    page_properties = deep_merge(props_data, page_properties)
   end
   return page_properties, root_name
 end
 
-def fetch_inherited_template(inheritsFrom)
+def fetch_inherited_props(inheritsFrom)
   inherited_page_properties = fetch_page_data(inheritsFrom)
   return nil unless inherited_page_properties
-  inherited_template_data = fetch_template_data(inherited_page_properties.fetch(:template, nil))
-  return nil unless inherited_template_data
-  inherited_template_data = replace_inherit_values(inherited_template_data, inherited_page_properties)
-  return inherited_template_data
+  inherited_props_data = fetch_props_data(inherited_page_properties.fetch(:props, nil))
+  return nil unless inherited_props_data
+  inherited_props_data = replace_inherit_values(inherited_props_data, inherited_page_properties)
+  return inherited_props_data
 end
 
-def replace_inherit_values(template_data, page_properties)
-  return nil if template_data.nil?
-  template_data.each do |key, value|
+def replace_inherit_values(props_data, page_properties)
+  return nil if props_data.nil?
+  props_data.each do |key, value|
     if value.is_a?(Hash)
       replace_inherit_values(value, page_properties)
     elsif value == "__inherit__" && page_properties.key?(key)
-      template_data.store(key, page_properties.fetch(key))
+      props_data.store(key, page_properties.fetch(key))
     end
   end
-  return template_data
+  return props_data
 end
 
-def fetch_template_data(template_id)
-  return nil if template_id.nil? || template_id.empty?
-  templates_col = $db.col("templates")
-  template_doc = templates_col.doc(template_id)
-  template_exists = template_doc.get.exists?
-  template_data = template_exists ? template_doc.get.data : nil
-  return template_data
+def fetch_props_data(props_id)
+  return nil if props_id.nil? || props_id.empty?
+  props_col = $db.col("props")
+  props_doc = props_col.doc(props_id)
+  props_exists = props_doc.get.exists?
+  props_data = props_exists ? props_doc.get.data : nil
+  return props_data
 end
 
-def process_template(page_data)
-  template_id = page_data.fetch(:template, '')
-  template_data = fetch_template_data(template_id)
-  template_data = replace_inherit_values(template_data, page_data)
+def process_props(page_data)
+  props_id = page_data.fetch(:props, '')
+  props_data = fetch_props_data(props_id)
+  props_data = replace_inherit_values(props_data, page_data)
 
-  inherited_template_data = fetch_inherited_template(page_data.fetch(:inherits_from, nil))
+  inherited_props_data = fetch_inherited_props(page_data.fetch(:inherits_from, nil))
 
-  # Merge the two templates together
-  merged_template_data, _ = merge_template_into_properties(inherited_template_data, template_data)
+  # Merge the two props together
+  merged_props_data, _ = merge_props_into_properties(inherited_props_data, props_data)
 
-  # Merge the final template with the page's properties
-  page_properties, root_component = merge_template_into_properties(page_data, merged_template_data)
+  # Merge the final props with the page's properties
+  page_properties, root_component = merge_props_into_properties(page_data, merged_props_data)
 
   return page_properties, root_component
 end
@@ -379,6 +330,54 @@ def fetch_page_data(route)
   matching_pages = pages_col.where("route", "=", route).get
   page_data = matching_pages.first
   return page_data ? page_data.data : nil
+end
+
+def render_component(component_name, parent_component_props)
+  locals = {}
+  component_props = parent_component_props.fetch(component_name.to_sym, {})
+
+  component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
+  metadata_string = component_template.scan(/<!--(.*?)-->/m).first
+  if metadata_string
+    begin
+      component_metadata = JSON.parse(metadata_string.first)
+    rescue
+      return "Error parsing metadata for #{component_name}"
+    end
+
+    rendered_nested_components = component_metadata.map do |nested_component|
+      if nested_component.is_a?(Hash)
+        nested_component_name = nested_component.keys.at(0)
+        if nested_component.fetch(nested_component_name)["yield"]
+          nested_component_data = component_props.fetch(nested_component_name.to_sym, {})
+          nested_component_data.keys.map do |yielded_component_name|
+            render_component(yielded_component_name, nested_component_data.fetch(yielded_component_name, {}))
+          end.join
+        else
+          render_component(nested_component_name, component_props)
+        end
+      else
+        render_component(nested_component, component_props)
+      end
+    end
+
+    component_metadata.each_with_index do |nested_component, index|
+      if nested_component.is_a?(Hash)
+        nested_component_name = nested_component.keys.at(0)
+        locals[nested_component_name] = rendered_nested_components.at(index)
+      else
+        locals[nested_component] = rendered_nested_components.at(index)
+      end
+    end
+  end
+
+  component_props[:current_user] = @current_user
+  component_props[:session] = @session
+  component_props[:breadcrumbs] = @breadcrumbs
+  
+  locals = component_props.merge(locals)
+  rendered_component = ERB.new(component_template).result_with_hash(locals)
+  return rendered_component
 end
 
 get "/*" do
@@ -397,7 +396,7 @@ get "/*" do
     next if page_data.nil?
 
     if breadcrumb_route == route
-      @page_properties, root_component = process_template(page_data)
+      @page_properties, root_component = process_props(page_data)
       current_page = page_data
     end
 
@@ -410,7 +409,6 @@ get "/*" do
     erb :page, :locals => { :html_content => "" }
   else
     html_content = render_component(root_component, @page_properties)
-    puts "HTML content type: #{html_content.class}, value: #{html_content}"
     erb :page, :locals => { :html_content => html_content }
   end
 end
