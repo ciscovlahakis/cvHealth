@@ -99,6 +99,7 @@
 <div class="button-table-container">
   <input type="hidden" id="enableMove" value="<%= @enable_move %>">
   <button id="create-btn" class="button table-button rounded-shadow font"><i class="fas fa-plus-circle"></i> <%= @create_title %></button>
+
   <div class="grid-table rounded-shadow">
     <div class="grid-row">
       <% Array(@columns).each do |x| %>
@@ -163,3 +164,18 @@
     </div>
   </div>
 </div>
+
+<script>
+  function createRowWithData(data) {
+    var row = document.createElement('tr');
+    for (var key in data) {
+      var cell = createElementWithText('td', data[key]);
+      row.appendChild(cell);
+    }
+    return row;
+  }
+
+  function renderResults(data, container, searchTerm) {
+    renderDataOrNoResults(data, container, searchTerm, createRowWithData, createNoResultsElement);
+  }
+</script>

@@ -15,3 +15,17 @@
 </style>
 
 <div id="results" />
+
+<script>
+  function createResultElement(title) {
+    var resultElement = document.createElement('div');
+    resultElement.classList.add('result');
+    var titleElement = createElementWithText('h2', title);
+    appendChildren(resultElement, [titleElement]);
+    return resultElement;
+  }
+
+  function renderResults(data, container, searchTerm) {
+    renderDataOrNoResults(data, container, searchTerm, createResultElement, createNoResultsElement);
+  }
+</script>

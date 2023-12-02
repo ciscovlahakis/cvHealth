@@ -83,3 +83,33 @@ firestore
     .catch((err) => {
       console.log("Error getting documents", err);
     });
+
+get "/meal-plan" do
+  @meal_plan = MealPlanGenerator.new(@current_user).generate
+  erb :meal_plan
+end
+
+# def render_page(path, columns)
+#   ref = $db.col(path)
+#   @data = get_data(ref, path)
+#   erb :"shared/page"
+# end
+
+# def get_data(ref, resource)
+#   output = []
+#   ref.get do |doc|
+#     data = doc.data
+#     data_with_id = data.merge({ "id" => doc.document_id })
+#     string_data = data_with_id.transform_keys(&:to_s) # Convert all keys to Strings
+#     output << string_data
+#   end
+
+#   # Sort the output array based on the 'position' field
+#   output = output.sort_by { |item| item.fetch("position", 0) }
+#   return output
+# end
+
+# get "/:resource" do
+#   resource, attributes = resource_and_attributes()
+#   render_page(resource, attributes)
+# end

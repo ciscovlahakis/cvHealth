@@ -47,3 +47,102 @@
   </div>
   <%= results %>
 </div>
+
+<script>
+  function createNoResultsElement(searchTerm) {
+    var noResultsElement = document.createElement('div');
+    noResultsElement.classList.add('result');
+
+    var noResultsMessage = createElementWithText('h2', 'Sorry, we couldn\'t find results for "' + searchTerm + '".');
+
+    var suggestionsList = document.createElement('ul');
+    var suggestions = [
+      'Check your search for typos.',
+      'Use more generic search terms.',
+      'Try different search terms.',
+      'Try fewer search terms.',
+      'Need help finding something? Contact us.'
+    ];
+    suggestions.forEach(function(suggestion) {
+      var listItem = createElementWithText('li', suggestion);
+      suggestionsList.appendChild(listItem);
+    });
+
+    appendChildren(noResultsElement, [noResultsMessage, suggestionsList]);
+    return noResultsElement;
+  }
+
+  function createElementWithText(type, text) {
+    var element = document.createElement(type);
+    element.innerText = text;
+    return element;
+  }
+
+  function appendChildren(parent, children) {
+    children.forEach(function(child) {
+      parent.appendChild(child);
+    });
+  }
+
+  function renderDataOrNoResults(data, container, searchTerm, renderDataFunction, createNoResultsElement) {
+    if (data.length > 0) {
+      appendChildren(container, data.map(renderDataFunction));
+    } else {
+      container.appendChild(createNoResultsElement(searchTerm));
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var resultsContainer = document.getElementById('results');
+    var activityIndicator = document.getElementById('activityIndicator');
+
+    var url = "/collection";
+
+    activityIndicator.style.display = 'flex';
+
+    fetch(url)
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(data) {
+        activityIndicator.style.display = 'none';
+        /* Clear previous results */
+        while (resultsContainer.firstChild) {
+          resultsContainer.removeChild(resultsContainer.firstChild);
+        }
+        renderResults(data, resultsContainer, "");
+      });
+
+    document.querySelector("input[name='search']").addEventListener("keyup", function(event) {
+      var searchTerm = event.target.value;
+      var currentRoute = window.location.pathname;
+
+      resultsContainer.innerHTML = '';
+      var activityIndicator = document.getElementById('activityIndicator');
+
+      /* If the search term is empty, clear the results and return early */
+      if (searchTerm.trim() === '') {
+        activityIndicator.style.display = 'none';
+        return;
+      }
+
+      var url = "/search?term=" + searchTerm + "&route=" + currentRoute;
+
+      activityIndicator.style.display = 'flex';
+
+      fetch(url)
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(data) {
+          activityIndicator.style.display = 'none';
+          
+          /* Clear previous results */
+          while (resultsContainer.firstChild) {
+            resultsContainer.removeChild(resultsContainer.firstChild);
+          }
+          renderResults(data, resultsContainer, searchTerm);
+        });
+    });
+  });
+</script>

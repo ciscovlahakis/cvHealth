@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "google/cloud/storage"
 
 Google::Cloud::Storage.configure do |config|
