@@ -247,36 +247,15 @@ get "/favicon.ico" do
   # Handle favicon.ico requests separately
 end
 
-def deep_merge(hash1, hash2)
-  if hash1.is_a?(Hash) && hash2.is_a?(Hash)
-    hash1.merge(hash2) do |key, oldval, newval| 
-      if oldval.is_a?(Hash) && newval.is_a?(Hash)
-        deep_merge(oldval, newval)
-      else
-        newval
-      end
-    end
-  else
-    hash1 || hash2
-  end
-end
-
-def get_root_name(data)
-  root_name = data.keys.at(0)
-  if data && root_name && data.fetch(root_name).is_a?(Hash)
-    return root_name
-  else
-    puts "Error: First key does not exist or is not a Hash in #{root_name}"
+def fetch_page_data(route)
+  matching_pages = $db.col("pages").where("route", "=", route).get
+  first_page = matching_pages.first
+  if first_page.nil?
+    puts "No pages found for route #{route}"
     return nil
+  else
+    return first_page.data
   end
-end
-
-def merge_props_into_properties(page_data, props_data)
-  root_component_name = get_root_name(props_data)
-  if root_component_name
-    page_data = deep_merge(props_data, page_data)
-  end
-  return page_data, root_component_name
 end
 
 def replace_inherit_values(props_data, page_data)
@@ -299,30 +278,14 @@ def get_props_data(id, defaults)
   return replace_inherit_values(props_data, defaults)
 end
 
-def get_page_data_with_props_and_root_component_name(page_data)
-  # Get props data for current page
-  current_props_data = get_props_data(page_data.fetch(:props, ''), page_data)
-
-  # Get props data for inherited page, if any
-  inherits_from = page_data.fetch(:inherits_from, nil)
-  inherited_page_data = $db.col("pages").where("route", "=", inherits_from).get.first if inherits_from
-  inherited_props_data = get_props_data(inherited_page_data.data.fetch(:props, '')) if inherited_page_data
-
-  # Merge the two props together
-  merged_props_data, _ = merge_props_into_properties(inherited_props_data || {}, current_props_data || {})
-
-  # Merge the final props with the page's properties
-  current_page_data_with_props, root_component_name = merge_props_into_properties(page_data, merged_props_data)
-
-  return current_page_data_with_props, root_component_name
-end
-
-def render_component(component_name, parent_component_props)
-  # component_name: "content"
-  # parent_component_props: { :sidebar => {...}, :content => { :results => { :table => {} } } }
-  
+def render_component(component_name, parent_component_props, inherited_props_data = {}, page_data, inherited_page_data)
   locals = {}
-  component_props = parent_component_props.fetch(component_name.to_sym, {}) # { :results => { :table => {} } }
+
+  component_props = parent_component_props.fetch(component_name.to_sym, {})
+  inherited_component_props = inherited_props_data.fetch(component_name.to_sym, {})
+
+  component_props = replace_inherit_values(component_props, page_data)
+  inherited_component_props = replace_inherit_values(inherited_component_props, inherited_page_data)
 
   component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
   metadata_string = component_template.scan(/<!--(.*?)-->/m).first
@@ -336,22 +299,21 @@ def render_component(component_name, parent_component_props)
 
     component_metadata.each do |nested_component|
       component_key = nested_component.is_a?(Hash) ? nested_component.keys.at(0) : nested_component
-      # { "results": { "yield": true } } : "header"
       locals[component_key] = if nested_component.is_a?(Hash) && nested_component.fetch(component_key)["yield"]
         component_props.fetch(component_key.to_sym, {}).keys.map do |yielded_component_name|
-          # ("table", { :cells => [...] })
-          render_component(yielded_component_name, component_props.fetch(yielded_component_name, {})).to_s
+          # Ignore inherited props if yield is true
+          render_component(yielded_component_name, component_props.fetch(yielded_component_name, {}), {}, page_data, inherited_page_data).to_s
         end.join
       else
-        # ("header", { :content => { :results => ...} })
-        render_component(component_key, component_props).to_s
+        # Shallow merge props
+        merged_component_props = inherited_component_props.merge(component_props)
+        render_component(component_key, merged_component_props, inherited_props_data.fetch(component_key, {}), page_data, inherited_page_data).to_s
       end
     end
   end
 
   component_props.merge!(:current_user => @current_user, :session => @session, :breadcrumbs => @breadcrumbs)
-  
-  # Merge locals into component_props and render the component_template with those props
+
   ERB.new(component_template).result_with_hash(component_props.merge(locals))
 end
 
@@ -360,7 +322,7 @@ get "/*" do
   route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..]
 
   @breadcrumbs = []
-  current_page_data_with_props = root_component_name = nil
+  html_content = ""
 
   route_components.each_with_index do |component, index|
     breadcrumb_route = route_components[0..index].join("")
@@ -368,18 +330,25 @@ get "/*" do
 
     breadcrumb_page_data = fetch_page_data(breadcrumb_route)
     next if breadcrumb_route.nil? || breadcrumb_page_data.nil?
-    
-    if breadcrumb_route == route
-      current_page_data_with_props, root_component_name = get_page_data_with_props_and_root_component_name(breadcrumb_page_data)
-    end
 
     @breadcrumbs.push(breadcrumb_page_data)
-  end
+    
+    if breadcrumb_route == route
+      current_props_data = get_props_data(breadcrumb_page_data.fetch(:props, ''), breadcrumb_page_data)
 
-  html_content = ""
+      inherits_from = breadcrumb_page_data.fetch(:inherits_from, nil)
+      inherited_page_data = {}
+      inherited_props_data = {}
 
-  if current_page_data_with_props && root_component_name
-    html_content = render_component(root_component_name, current_page_data_with_props)
+      if inherits_from
+        inherited_page_data = fetch_page_data(inherits_from)
+        inherited_props_data = get_props_data(inherited_page_data.fetch(:props, ''), inherited_page_data) if inherited_page_data
+      end
+
+      if breadcrumb_page_data && current_props_data
+        html_content = render_component(current_props_data.keys.at(0), current_props_data, inherited_props_data, breadcrumb_page_data, inherited_page_data)
+      end
+    end
   end
 
   erb :page, :locals => { :html_content => html_content }
