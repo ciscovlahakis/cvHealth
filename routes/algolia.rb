@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-get("/search") do
+get "/search" do
   term = params.fetch("term")
   current_route = request.path
   @results = search(term, current_route)
@@ -10,7 +10,7 @@ get("/search") do
   return @results.to_json
 end
 
-# get '/index_all' do
+# get "/index_all" do
 #   index_all_collections
 #   "All collections have been indexed in Algolia."
 # end
