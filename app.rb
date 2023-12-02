@@ -294,7 +294,8 @@ def render_component(component_name, parent_component_props, inherited_props_dat
   if metadata_string
     begin
       component_metadata = YAML.load(metadata_string)
-      puts component_metadata.inspect
+      # remove the metadata string from the component template
+      component_template.gsub!(/---(.*?)---/m, '')
     rescue
       return "Error parsing metadata for #{component_name}"
     end
@@ -317,7 +318,6 @@ def render_component(component_name, parent_component_props, inherited_props_dat
             component_value = component_props.fetch(component_key.to_sym, {}).fetch(render_if_exists_key.to_sym, nil)
             inherited_component_value = inherited_component_props.fetch(component_key.to_sym, {}).fetch(render_if_exists_key.to_sym, nil)
             render_if_exists_value = component_value || inherited_component_value
-
             !(render_if_exists_value == "__inherit__" || !render_if_exists_value || (render_if_exists_value.respond_to?(:empty?) && render_if_exists_value.empty?))
           end
           if !should_render
