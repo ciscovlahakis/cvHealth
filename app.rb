@@ -8,6 +8,7 @@ require "sinatra/reloader"
 require_relative 'config/google_cloud_storage'
 require_relative "config/firestore_server"
 require_relative "models/meal_plan_generator"
+require 'yaml'
 require 'bcrypt'
 require 'http'
 require 'json'
@@ -288,11 +289,12 @@ def render_component(component_name, parent_component_props, inherited_props_dat
   inherited_component_props = replace_inherit_values(inherited_component_props, @inherited_page_data)
 
   component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
-  metadata_string = component_template.scan(/<!--(.*?)-->/m).at(0)
+  metadata_string = component_template[/---(.*?)---/m, 1]
 
   if metadata_string
     begin
-      component_metadata = JSON.parse(metadata_string.first)
+      component_metadata = YAML.load(metadata_string)
+      puts component_metadata.inspect
     rescue
       return "Error parsing metadata for #{component_name}"
     end
