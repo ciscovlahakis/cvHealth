@@ -1,10 +1,11 @@
 <!--
 [
+  "header",
   { "results": { "yield": true } }
 ]
 -->
 <style>
-  .header_flatlist {
+  .content {
     display: flex;
     flex-direction: column;
     position: relative;
@@ -12,136 +13,10 @@
     padding-left: var(--padding);
     padding-right: var(--padding);
   }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    width: 100%;
-    margin-bottom: 20px; /* Add space below the header */
-  }
-
-  .search-tag-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    margin-right: 10px;
-  }
-
-  .search-bar {
-    padding-bottom: 10px;
-    position: relative;
-    display: flex;
-    border-bottom: 2px solid black;
-    width: 100%;
-  }
-
-  .breadcrumb-container {
-    display: flex;
-    gap: 10px;
-    margin-right: 10px;
-    justify-content: center;
-    align-items; center;
-  }
-
-  .breadcrumb, .tag {
-    display: flex;
-    align-items: center;
-    padding: 10px 20px;
-    border: none;
-    background-color: white;
-    color: black;
-    border-radius: 15px;
-    font-size: 1rem;
-    box-shadow: 0 4px 6px 0 hsla(0, 0%, 0%, 0.2);
-  }
-
-  .search-bar input {
-    flex: 1;
-    border: none;
-    padding: 10px;
-    outline: none;
-    border-radius: 15px;
-    font-size: 1rem;
-    box-shadow: 0 4px 6px 0 hsla(0, 0%, 0%, 0.2);
-  }
-
-  .tag-container {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-  }
-
-  #user-icon {
-    position: relative;
-    height: 50px;
-    width: 50px;
-  }
-
-  #user-image {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-  }
-
-  #admin-gear,
-  #super-admin-crown {
-    width: 16px;
-    height: 16px;
-    position: absolute;
-    bottom: 0;
-    right: 0;
-  }
-
-  .breadcrumb img,
-  .breadcrumb-thumbnail,
-  .tag-thumbnail {
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-  }
-
-  .breadcrumb-thumbnail-with-title,
-  .tag-thumbnail-with-title {
-    margin-right: 5px;
-  }
-
-  .breadcrumb-icon {
-    font-size: 1.5em;
-    line-height: 1;
-    display: inline-block;
-    vertical-align: middle; /* Align the icon with the text */
-  }
-
-  .breadcrumb-icon-with-title {
-    margin-right: 7px;
-  }
-
-  .tag {
-    transition: all 0.3s cubic-bezier(.25,.8,.25,1); /* Add transition */
-  }
-
-  .tag:hover { /* Add hover effect */
-    background-color: #f5f5f5; /* Light grey background */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); /* Slightly elevated look */
-  }
-
-  .result {
-    border: 1px solid black;
-    margin-bottom: 10px;
-    padding: 10px;
-  }
-
-  .result li {
-    margin-bottom: 10px;
-  }
 
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
-
-  #results {
-    flex-grow: 1;
   }
   
   #activityIndicator {
@@ -164,165 +39,12 @@
     height: 60px;
     animation: spin 2s linear infinite;
   }
-
-  .breadcrumb a,
-  .clickable {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .breadcrumb-content {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center; /* Add this to center the items vertically */
-  }
-
-  a:hover .breadcrumb {
-    background-color: #f5f5f5; /* Light grey background */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); /* Slightly elevated look */
-    transition: all 0.3s cubic-bezier(.25,.8,.25,1); /* Smooth transition */
-  }
 </style>
 
-<div class="header_flatlist">
-  <div class="header">
-    <div class="search-tag-container">
-      <div class="search-bar">
-      <% unless Array(breadcrumbs).empty? %>
-        <div class="breadcrumb-container">
-          <% Array(breadcrumbs).each do |breadcrumb| %>
-            <% img_src = breadcrumb.fetch(:img_src, nil) %>
-            <% icon = breadcrumb.fetch(:icon, nil) %>
-            <% title = breadcrumb.fetch(:title, nil) %>
-            <a href="<%= breadcrumb.fetch(:route) %>" class="clickable">
-              <span class="breadcrumb breadcrumb-content">
-                <% if img_src && !img_src.empty? %>
-                  <img src="<%= img_src %>" alt="Thumbnail" class="breadcrumb-thumbnail <%= title && !title.empty? ? 'breadcrumb-thumbnail-with-title' : '' %>">
-                <% elsif icon && !icon.empty? %>
-                  <i class="<%= icon %> breadcrumb-icon <%= title && !title.empty? ? 'breadcrumb-icon-with-title' : '' %>"></i>
-                <% else %>
-                  <img src="https://via.placeholder.com/150" alt="" class="breadcrumb-thumbnail <%= title && !title.empty? ? 'breadcrumb-thumbnail-with-title' : '' %>">
-                <% end %>
-                <% if title && !title.empty? %>
-                  <%= title %>
-                <% end %>
-              </span>
-            </a>
-          <% end %>
-        </div>
-        <% end %>
-        <input type="search" name="search" placeholder="Search...">
-      </div>
-      <div class="tag-container">
-        <span class="tag">
-          <img src="https://via.placeholder.com/150" alt="Thumbnail" class="tag-thumbnail <%= 'tag-thumbnail-with-title' unless 'Create Nutritional Component'.empty? %>">
-          Create Nutritional Component
-        </span>
-        <span class="tag">
-          <img src="https://via.placeholder.com/150" alt="Thumbnail" class="tag-thumbnail <%= 'tag-thumbnail-with-title' unless 'Tag 2'.empty? %>">
-          Tag 2
-        </span>
-      </div>
-    </div>
-
-    <% current_user = current_user || {} %>
-    <% session = session || {} %>
-
-    <div id="user-icon" 
-      data-username="<%= current_user[:username] || '' %>" 
-      data-user-id="<%= current_user[:id] || '' %>" 
-      data-profile-picture="<%= current_user[:profile_picture] || '' %>" 
-      data-signed-in="<%= session.fetch("user_id", nil) ? "true" : "false" %>">
-
-      <% if current_user.any? %>
-          <% bucket = "cisco-vlahakis.appspot.com" %>
-          <img id="user-image" 
-              class="user-image" 
-              src="https://storage.googleapis.com/<%= bucket %>/uploads/<%= current_user[:id] %>/<%= current_user[:profile_picture] %>">
-          
-          <% if current_user[:admin] && !current_user[:super_admin] %>
-              <i id="admin-gear" class="fas fa-cog"></i>
-          <% end %>
-
-          <% if current_user[:super_admin] %>
-              <i id="super-admin-crown" class="fas fa-crown"></i>
-          <% end %>
-      <% else %>
-          <img id="user-image" class="user-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-      <% end %>
-    </div>
-  </div>
+<div class="content">
+  <%= header %>
   <div id="activityIndicator">
     <div class="spinner"></div>
   </div>
   <%= results %>
-  <div id="results">
-  </div>
 </div>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    document.querySelector("input[name='search']").addEventListener("keyup", function(event) {
-      var searchTerm = event.target.value;
-      var currentRoute = window.location.pathname;
-
-      var resultsContainer = document.getElementById('results');
-      resultsContainer.innerHTML = '';
-      var activityIndicator = document.getElementById('activityIndicator');
-
-      // If the search term is empty, clear the results and return early
-      if (searchTerm.trim() === '') {
-        activityIndicator.style.display = 'none';
-        return;
-      }
-
-      var url = "/search?term=" + searchTerm + "&route=" + currentRoute;
-
-      activityIndicator.style.display = 'flex';
-
-      fetch(url)
-        .then(function(response) {
-          return response.json();
-        })
-        .then(function(data) {
-          activityIndicator.style.display = 'none';
-          if (data.length > 0) {
-            data.forEach(function(result) {
-              var resultElement = document.createElement('div');
-              resultElement.classList.add('result');
-
-              var titleElement = document.createElement('h2');
-              titleElement.innerText = result['title'];
-
-              resultElement.appendChild(titleElement);
-              resultsContainer.appendChild(resultElement);
-            });
-          } else {
-            var noResultsElement = document.createElement('div');
-            noResultsElement.classList.add('result');
-
-            var noResultsMessage = document.createElement('h2');
-            noResultsMessage.innerText = 'Sorry, we couldn\'t find results for "' + searchTerm + '".';
-
-            var suggestionsList = document.createElement('ul');
-            var suggestions = [
-              'Check your search for typos.',
-              'Use more generic search terms.',
-              'Try different search terms.',
-              'Try fewer search terms.',
-              'Need help finding something? Contact us.'
-            ];
-            suggestions.forEach(function(suggestion) {
-              var listItem = document.createElement('li');
-              listItem.innerText = suggestion;
-              suggestionsList.appendChild(listItem);
-            });
-
-            noResultsElement.appendChild(noResultsMessage);
-            noResultsElement.appendChild(suggestionsList);
-            resultsContainer.appendChild(noResultsElement);
-          }
-        });
-    });
-  });
-</script>
