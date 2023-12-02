@@ -271,33 +271,33 @@ def deep_merge(hash1, hash2)
   end
 end
 
-def merge_props_into_properties(page_properties, props_data)
-  root_name = get_root_name(props_data)
-  if root_name
-    page_properties = deep_merge(props_data, page_properties)
+def merge_props_into_properties(page_data, props_data)
+  root_component_name = get_root_name(props_data)
+  if root_component_name
+    page_data = deep_merge(props_data, page_data)
   end
-  return page_properties, root_name
+  return page_data, root_component_name
 end
 
-def fetch_inherited_props(inheritsFrom)
-  inherited_page_properties = fetch_page_data(inheritsFrom)
-  return nil unless inherited_page_properties
-  inherited_props_data = fetch_props_data(inherited_page_properties.fetch(:props, nil))
-  return nil unless inherited_props_data
-  inherited_props_data = replace_inherit_values(inherited_props_data, inherited_page_properties)
-  return inherited_props_data
-end
-
-def replace_inherit_values(props_data, page_properties)
+def replace_inherit_values(props_data, page_data)
   return nil if props_data.nil?
   props_data.each do |key, value|
     if value.is_a?(Hash)
-      replace_inherit_values(value, page_properties)
-    elsif value == "__inherit__" && page_properties.key?(key)
-      props_data.store(key, page_properties.fetch(key))
+      replace_inherit_values(value, page_data)
+    elsif value == "__inherit__" && page_data.key?(key)
+      props_data.store(key, page_data.fetch(key))
     end
   end
   return props_data
+end
+
+def fetch_inherited_props_data(inheritsFrom)
+  inherited_page_data = fetch_page_data(inheritsFrom)
+  return nil unless inherited_page_data
+  inherited_props_data = fetch_props_data(inherited_page_data.fetch(:props, nil))
+  return nil unless inherited_props_data
+  inherited_props_data = replace_inherit_values(inherited_props_data, inherited_page_data)
+  return inherited_props_data
 end
 
 def fetch_props_data(props_id)
@@ -309,27 +309,27 @@ def fetch_props_data(props_id)
   return props_data
 end
 
-def process_props(page_data)
-  props_id = page_data.fetch(:props, '')
-  props_data = fetch_props_data(props_id)
-  props_data = replace_inherit_values(props_data, page_data)
-
-  inherited_props_data = fetch_inherited_props(page_data.fetch(:inherits_from, nil))
-
-  # Merge the two props together
-  merged_props_data, _ = merge_props_into_properties(inherited_props_data, props_data)
-
-  # Merge the final props with the page's properties
-  page_properties, root_component = merge_props_into_properties(page_data, merged_props_data)
-
-  return page_properties, root_component
-end
-
 def fetch_page_data(route)
   pages_col = $db.col("pages")
   matching_pages = pages_col.where("route", "=", route).get
   page_data = matching_pages.first
   return page_data ? page_data.data : nil
+end
+
+def get_current_page_data_with_props_and_root_component_name(page_data)
+  current_props_id = page_data.fetch(:props, '')
+  current_props_data = fetch_props_data(current_props_id)
+  current_props_data = replace_inherit_values(current_props_data, page_data)
+
+  inherited_props_data = fetch_inherited_props_data(page_data.fetch(:inherits_from, nil))
+
+  # Merge the two props together
+  merged_props_data, _ = merge_props_into_properties(inherited_props_data, current_props_data)
+
+  # Merge the final props with the page's properties
+  current_page_data_with_props, root_component_name = merge_props_into_properties(page_data, merged_props_data)
+
+  return current_page_data_with_props, root_component_name
 end
 
 def render_component(component_name, parent_component_props)
@@ -375,7 +375,7 @@ get "/*" do
   route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..]
 
   @breadcrumbs = []
-  current_page_data = root_component_name = nil
+  current_page_data_with_props = root_component_name = nil
 
   route_components.each_with_index do |component, index|
     breadcrumb_route = route_components[0..index].join("")
@@ -385,7 +385,7 @@ get "/*" do
     next if breadcrumb_route.nil? || breadcrumb_page_data.nil?
     
     if breadcrumb_route == route
-      current_page_data, root_component_name = process_props(breadcrumb_page_data)
+      current_page_data_with_props, root_component_name = get_current_page_data_with_props_and_root_component_name(breadcrumb_page_data)
     end
 
     @breadcrumbs.push(breadcrumb_page_data)
@@ -393,8 +393,8 @@ get "/*" do
 
   html_content = ""
 
-  if current_page_data && root_component_name
-    html_content = render_component(root_component_name, current_page_data)
+  if current_page_data_with_props && root_component_name
+    html_content = render_component(root_component_name, current_page_data_with_props)
   end
 
   erb :page, :locals => { :html_content => html_content }
