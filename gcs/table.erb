@@ -73,7 +73,7 @@
     background: none;
   }
 
-  .button-table-container {
+  #button-table-container {
     display: flex;
     flex-direction: column;
   }
@@ -91,10 +91,8 @@
   }
 </style>
 
-<div class="button-table-container">
+<div id="button-table-container">
   <input type="hidden" id="enableMove" value="<%= enable_move %>">
-  <button id="create-btn" class="button table-button rounded-shadow font"><i class="fas fa-plus-circle"></i> <%= create_title %></button>
-  
   <div class="grid-table rounded-shadow" id="results">
     <div class="grid-row">
       <% columns.each do |x| %>
@@ -105,8 +103,7 @@
       <div class="header icon-header"></div>
     </div>
 
-    <!-- This is the template row that will be cloned by JavaScript -->
-    <div id="template-row" class="grid-row sortable-row" style="display: none;">
+    <div id="template-row" class="grid-row sortable-row">
       <div class="content-cell"></div>
 
       <div class="icon-column">
@@ -126,7 +123,9 @@
       <div class="icon-column drag-handle">
         <i class="fas fa-bars"></i>
       </div>
+
     </div>
+
   </div>
 </div>
 
@@ -139,6 +138,7 @@
     row.dataset.id = data.id;
 
     var cell = row.querySelector('.content-cell');
+    
     for (var key in data) {
       cell.dataset[key] = data[key];
       cell.dataset.rowId = data.id;

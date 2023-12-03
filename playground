@@ -1,3 +1,9 @@
+
+
+
+
+
+
 <div style="display: flex;">
   <div>
     <h2 style="margin-bottom: 0;"><%= @title %></h2>
