@@ -89,8 +89,6 @@ def render_component(component_name, parent_component_props, inherited_props_dat
       component_metadata.delete_at(0)
     end
 
-    puts "YOOHOO: " + component_props.inspect
-
     # Iterate through the component metadata
     component_metadata.each do |nested_component|
       component_key = nested_component

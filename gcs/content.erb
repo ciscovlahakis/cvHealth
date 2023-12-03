@@ -6,7 +6,7 @@
     yield: true
 ---
 <style>
-  .content {
+  #content {
     display: flex;
     flex-direction: column;
     position: relative;
@@ -42,7 +42,7 @@
   }
 </style>
 
-<div class="content">
+<div id="content" data-index-name="<%= index_name %>">
   <%= header %>
   <div id="activityIndicator">
     <div class="spinner"></div>
@@ -98,7 +98,9 @@
     var resultsContainer = document.getElementById('results');
     var activityIndicator = document.getElementById('activityIndicator');
 
-    var url = "/search/" + index_name;
+    var indexName = document.getElementById('content').dataset.indexName;
+
+    var url = "/search/" + indexName;
 
     activityIndicator.style.display = 'flex';
 
@@ -128,7 +130,7 @@
         return;
       }
 
-      var url = "/search/" + index_name + "?term=" + searchTerm;
+      var url = "/search/" + indexName + "?term=" + searchTerm;
 
       activityIndicator.style.display = 'flex';
 

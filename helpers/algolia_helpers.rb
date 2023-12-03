@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 def search(index_name, term = '', priority_module = nil)
-  algolia = Algolia::Client.new({ :application_id => ENV["ALGOLIA_APPLICATION_ID"], :api_key => ENV["ALGOLIA_SEARCH_ONLY_API_KEY"] })
+  algolia = Algolia::Client.new({ :application_id => ENV["ALGOLIA_APPLICATION_ID"], :api_key => ENV["ALGOLIA_ADMIN_API_KEY"] })
   
   index = algolia.init_index(index_name)
 
