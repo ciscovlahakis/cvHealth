@@ -20,8 +20,8 @@ def replace_inherit_values(props_data, page_data)
   props_data.each do |key, value|
     if value.is_a?(Hash)
       replace_inherit_values(value, page_data)
-    elsif value == "__inherit__" && page_data.key?(key)
-      props_data.store(key, page_data.fetch(key))
+    elsif value == "__inherit__"
+      props_data.store(key, page_data.fetch(key, nil))
     end
   end
   return props_data
@@ -115,8 +115,7 @@ def render_component(component_name, parent_component_props, inherited_props_dat
           end
         end
 
-        _yield = nested_component.fetch(component_key, {}).fetch("yield", false)
-        if _yield
+        if nested_component.fetch(component_key, {}).fetch("yield", false)
           replacement_component = component_props.fetch(component_key.to_sym, {})
           locals[component_key] = replacement_component.keys.map do |yielded_component_name|
             # Ignore inherited props if yield is true

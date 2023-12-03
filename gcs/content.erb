@@ -94,14 +94,7 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", function() {
-    var resultsContainer = document.getElementById('results');
-    var activityIndicator = document.getElementById('activityIndicator');
-
-    var indexName = document.getElementById('content').dataset.indexName;
-
-    var url = "/search/" + indexName;
-
+  function fetchSearchResults(url, searchTerm, resultsContainer, activityIndicator) {
     activityIndicator.style.display = 'flex';
 
     fetch(url)
@@ -115,38 +108,33 @@
         while (resultsContainer.firstChild) {
           resultsContainer.removeChild(resultsContainer.firstChild);
         }
-        renderResults(data, resultsContainer, "");
+        renderResults(data, resultsContainer, searchTerm);
       });
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var resultsContainer = document.getElementById('results');
+    var activityIndicator = document.getElementById('activityIndicator');
+    var indexName = document.getElementById('content').dataset.index_name;
+    var url = "/search/" + indexName;
+
+    fetchSearchResults(url, "", resultsContainer, activityIndicator);
 
     document.querySelector("input[name='search']").addEventListener("keyup", function(event) {
-      var searchTerm = event.target.value;
-
-      resultsContainer.innerHTML = '';
-      var activityIndicator = document.getElementById('activityIndicator');
-
+      var searchTerm = event.target.value.trim();
+      
       /* If the search term is empty, clear the results and return early */
-      if (searchTerm.trim() === '') {
+      if (searchTerm === '') {
         activityIndicator.style.display = 'none';
+        while (resultsContainer.firstChild) {
+          resultsContainer.removeChild(resultsContainer.firstChild);
+        }
         return;
       }
 
       var url = "/search/" + indexName + "?term=" + searchTerm;
-
-      activityIndicator.style.display = 'flex';
-
-      fetch(url)
-        .then(function(response) {
-          return response.json();
-        })
-        .then(function(data) {
-          activityIndicator.style.display = 'none';
-          
-          /* Clear previous results */
-          while (resultsContainer.firstChild) {
-            resultsContainer.removeChild(resultsContainer.firstChild);
-          }
-          renderResults(data, resultsContainer, searchTerm);
-        });
+      
+      fetchSearchResults(url, searchTerm, resultsContainer, activityIndicator);
     });
   });
 </script>

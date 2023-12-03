@@ -17,7 +17,7 @@
 
   .grid-row {
     display: grid;
-    grid-template-columns: <%= "repeat(#{Array(columns).count}, 1fr) repeat(3, 0.5fr);" %>;
+    grid-template-columns: <%= "repeat(#{columns.count}, 1fr) repeat(3, 0.5fr);" %>;
     width: 100%;
   }
 
@@ -94,69 +94,63 @@
 <div class="button-table-container">
   <input type="hidden" id="enableMove" value="<%= enable_move %>">
   <button id="create-btn" class="button table-button rounded-shadow font"><i class="fas fa-plus-circle"></i> <%= create_title %></button>
-
+  
   <div class="grid-table rounded-shadow" id="results">
-    <!-- Rows will be inserted here by JS -->
+    <div class="grid-row">
+      <% columns.each do |x| %>
+        <div class="header"><%= x&.fetch(:name, nil) %></div>
+      <% end %>
+      <div class="header icon-header"></div>
+      <div class="header icon-header"></div>
+      <div class="header icon-header"></div>
+    </div>
+
+    <!-- This is the template row that will be cloned by JavaScript -->
+    <div id="template-row" class="grid-row sortable-row" style="display: none;">
+      <div class="content-cell"></div>
+
+      <div class="icon-column">
+        <a class="edit-link">
+          <i class="fas fa-edit"></i>
+        </a>
+      </div>
+
+      <div class="icon-column">
+        <form class="delete-form" method="post">
+          <button type="submit">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+      </div>
+
+      <div class="icon-column drag-handle">
+        <i class="fas fa-bars"></i>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
   function createRowWithData(data) {
-    var row = document.createElement('div');
-    row.className = "grid-row sortable-row";
+    var templateRow = document.getElementById('template-row');
+    var row = templateRow.cloneNode(true);
+    row.style.display = "";
     row.dataset.resource = data.resource;
     row.dataset.id = data.id;
-    
+
+    var cell = row.querySelector('.content-cell');
     for (var key in data) {
-      var cell = document.createElement('div');
-      cell.className = "content-cell";
       cell.dataset[key] = data[key];
       cell.dataset.rowId = data.id;
       cell.textContent = data[key];
-      row.appendChild(cell);
     }
 
-    /* Add the three icon columns */
-    var editColumn = document.createElement('div');
-    editColumn.className = "icon-column";
-    var editLink = document.createElement('a');
-    editLink.className = "edit-link";
+    var editLink = row.querySelector('.edit-link');
     editLink.dataset.id = data.id;
     editLink.dataset.rowId = data.id;
 
-    /* Add the edit icon to the edit link */
-    var editIcon = document.createElement('i');
-    editIcon.className = "fas fa-edit";
-    editLink.appendChild(editIcon);
-    editColumn.appendChild(editLink);
-    row.appendChild(editColumn);
-
-    /* Add the delete column */
-    var deleteColumn = document.createElement('div');
-    deleteColumn.className = "icon-column";
-    var deleteForm = document.createElement('form');
+    var deleteForm = row.querySelector('.delete-form');
     deleteForm.action = "/delete/" + data.resource;
-    deleteForm.method = "post";
-
-    /* Add the delete icon to the delete form */
-    var deleteIcon = document.createElement('i');
-    deleteIcon.className = "fas fa-trash";
-    var deleteButton = document.createElement('button');
-    deleteButton.type = "submit";
-    deleteButton.appendChild(deleteIcon);
-    deleteForm.appendChild(deleteButton);
-    deleteColumn.appendChild(deleteForm);
-    row.appendChild(deleteColumn);
-
-    /* Add the drag column */
-    var dragColumn = document.createElement('div');
-    dragColumn.className = "icon-column drag-handle";
-
-    /* Add the drag icon to the drag column */
-    var dragIcon = document.createElement('i');
-    dragIcon.className = "fas fa-bars";
-    dragColumn.appendChild(dragIcon);
-    row.appendChild(dragColumn);
 
     return row;
   }
