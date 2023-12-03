@@ -1,3 +1,9 @@
+---
+- __props__:
+    breadcrumbs: Array
+    current_user: Hash
+    session: Hash
+---
 <style>
   .header {
     display: flex;
@@ -135,9 +141,9 @@
 <div class="header">
   <div class="search-tag-container">
     <div class="search-bar">
-    <% unless Array(breadcrumbs).empty? %>
+    <% unless breadcrumbs.empty? %>
       <div class="breadcrumb-container">
-        <% Array(breadcrumbs).each do |breadcrumb| %>
+        <% breadcrumbs.each do |breadcrumb| %>
           <% img_src = breadcrumb.fetch(:img_src, nil) %>
           <% icon = breadcrumb.fetch(:icon, nil) %>
           <% title = breadcrumb.fetch(:title, nil) %>
@@ -171,9 +177,6 @@
       </span>
     </div>
   </div>
-
-  <% current_user = current_user || {} %>
-  <% session = session || {} %>
 
   <div id="user-icon" 
     data-username="<%= current_user[:username] || '' %>" 

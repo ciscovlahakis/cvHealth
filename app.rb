@@ -11,7 +11,10 @@ set :sessions, key: 'my_app_key', expire_after: 1440, secret: '902aaebd6da3f5260
 
 directories = %w[config helpers routes]
 directories.each do |directory|
-  Dir[File.join(File.dirname(__FILE__), directory, '*.rb')].each { |file| require file }
+  Dir[File.join(File.dirname(__FILE__), directory, '*.rb')].each do |file|
+    also_reload file # DEVELOPMENT ONLY
+    require file
+  end
 end
 
 before do

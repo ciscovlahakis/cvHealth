@@ -1,12 +1,3 @@
-<div style="display: flex;">
-  <div>
-    <h2 style="margin-bottom: 0;"><%= @title %></h2>
-    <% if @description && !@description.empty? %>
-      <p class="description" style="margin-top: 1;"><%= @description %></p>
-    <% end %>
-  </div>
-</div>
-
 <div class="button-table-container">
   <input type="hidden" id="enableMove" value="<%= @enable_move %>">
   <button id="create-btn" class="button table-button rounded-shadow font"><i class="fas fa-plus-circle"></i> <%= @create_title %></button>
@@ -46,6 +37,26 @@
           <% end %>
         </div>
       </div>
+    <% end %>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+<div style="display: flex;">
+  <div>
+    <h2 style="margin-bottom: 0;"><%= @title %></h2>
+    <% if @description && !@description.empty? %>
+      <p class="description" style="margin-top: 1;"><%= @description %></p>
     <% end %>
   </div>
 </div>

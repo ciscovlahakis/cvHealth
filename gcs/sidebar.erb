@@ -1,3 +1,12 @@
+---
+- __props__:
+    links: Array
+    admin-links: Boolean
+    route: String
+    img_src: String
+    icon: String
+    current_user: Hash
+---
 <style>
   #sidebar-container {
     width: 20vw;
@@ -69,12 +78,12 @@
   }
 </style>
 
-<div id="sidebar-container" data-links='<%= links ? links.to_json : {} %>' data-admin-links='<%= admin_links ? admin_links.to_json : {} %>'>
+<div id="sidebar-container" data-links='<%= links.to_json %>' data-admin-links='<%= admin_links.to_json %>'>
   <div class="sidebar-heading text-center">
     <a href="<%= route %>" class="clickable">
-      <% if img_src && !img_src.empty? %>
+      <% if !img_src.empty? %>
         <img src="<%= img_src %>" alt="Logo" class="logo-thumbnail">
-      <% elsif icon && !icon.empty? %>
+      <% elsif !icon.empty? %>
         <i class="<%= icon %>"></i>
       <% else %>
         <img src="https://via.placeholder.com/150" alt="Placeholder" class="logo-thumbnail">
@@ -83,7 +92,7 @@
   </div>
   <div id="menuContainer">
   </div>
-  <% if current_user && current_user[:admin] %>
+  <% if current_user[:admin] %>
     <div class="list-group-item no-hover">
       <input type="checkbox" id="adminMenuCheckbox">
       <label for="adminMenuCheckbox"> Admin Menu </label>

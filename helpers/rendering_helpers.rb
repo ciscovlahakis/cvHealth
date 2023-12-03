@@ -34,6 +34,21 @@ helpers do
     props_data = props_doc.data if props_doc.exists?
     return replace_inherit_values(props_data, defaults)
   end
+
+  def get_default(type_string)
+    case type_string
+    when "Array"
+      return []
+    when "Boolean"
+      return nil
+    when "String"
+      return ""
+    when "Hash"
+      return {}
+    else
+      raise "Unknown type: #{type_string}"
+    end
+  end
   
   def render_component(component_name, parent_component_props, inherited_props_data = {})
     locals = {}
@@ -43,6 +58,8 @@ helpers do
   
     component_props = replace_inherit_values(component_props, @page_data)
     inherited_component_props = replace_inherit_values(inherited_component_props, @inherited_page_data)
+
+    component_props.merge!(:current_user => @current_user, :session => @session, :breadcrumbs => @breadcrumbs)
   
     component_template = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb").to_s
     metadata_string = component_template[/---(.*?)---/m, 1]
@@ -55,7 +72,23 @@ helpers do
       rescue
         return "Error parsing metadata for #{component_name}"
       end
-  
+
+      # Extract props from metadata
+      component_metadata_props = component_metadata.at(0)
+
+      # Check if component_props_metadata is the props object
+      if component_metadata_props.is_a?(Hash) && component_metadata_props.key?("__props__")
+        # Convert and Merge props from metadata into component_props
+        component_metadata_props["__props__"].each do |key, value|
+          unless component_props.has_key?(key.to_sym) && !component_props.fetch(key.to_sym, nil).nil?
+            component_props.store(key.to_sym, get_default(value))
+          end
+        end
+        
+        # Remove props from component_metadata
+        component_metadata.delete_at(0)
+      end
+
       # Iterate through the component metadata
       component_metadata.each do |nested_component|
         component_key = nested_component
@@ -99,8 +132,6 @@ helpers do
         end
       end
     end
-  
-    component_props.merge!(:current_user => @current_user, :session => @session, :breadcrumbs => @breadcrumbs)
   
     ERB.new(component_template).result_with_hash(component_props.merge(locals))
   end
