@@ -6,6 +6,12 @@ require 'erb'
 get "/favicon.ico" do
 end
 
+get "/__sinatra__" do
+end
+
+get "/__sinatra__500.png" do
+end
+
 get "/*" do
   route = request.path_info
   route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..]

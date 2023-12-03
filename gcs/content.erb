@@ -1,4 +1,6 @@
 ---
+- __props__:
+    index_name: String
 - header
 - results:
     yield: true
@@ -96,8 +98,7 @@
     var resultsContainer = document.getElementById('results');
     var activityIndicator = document.getElementById('activityIndicator');
 
-    var indexName = "modules";
-    var url = "/search/" + indexName;
+    var url = "/search/" + index_name;
 
     activityIndicator.style.display = 'flex';
 
@@ -127,7 +128,7 @@
         return;
       }
 
-      var url = "/search/" + indexName + "?term=" + searchTerm;
+      var url = "/search/" + index_name + "?term=" + searchTerm;
 
       activityIndicator.style.display = 'flex';
 
