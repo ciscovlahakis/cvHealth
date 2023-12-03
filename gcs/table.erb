@@ -2,7 +2,6 @@
 - __props__:
     columns: Array
     enable_move: Boolean
-    create_title: String
 - recurrence
 ---
 <style>
@@ -91,46 +90,54 @@
   }
 </style>
 
-<div id="button-table-container">
-  <input type="hidden" id="enableMove" value="<%= enable_move %>">
-  <div class="grid-table rounded-shadow" id="results">
-    <div class="grid-row">
-      <% columns.each do |x| %>
-        <div class="header"><%= x&.fetch(:name, nil) %></div>
-      <% end %>
-      <div class="header icon-header"></div>
-      <div class="header icon-header"></div>
-      <div class="header icon-header"></div>
+
+<% unless columns.empty? %>
+  <div id="button-table-container" data-columns="<%= columns.to_json %>">
+    <input type="hidden" id="enableMove" value="<%= enable_move %>">
+    <div class="grid-table rounded-shadow" id="results">
+      <div class="grid-row">
+        <% columns.each do |x| %>
+          <div class="header"><%= x&.fetch(:property, nil) %></div>
+        <% end %>
+        <div class="header icon-header"></div>
+        <div class="header icon-header"></div>
+        <div class="header icon-header"></div>
+      </div>
+
+      <div id="template-row" class="grid-row sortable-row">
+        <div class="content-cell"></div>
+
+        <div class="icon-column">
+          <a class="edit-link">
+            <i class="fas fa-edit"></i>
+          </a>
+        </div>
+
+        <div class="icon-column">
+          <form class="delete-form" method="post">
+            <button type="submit">
+              <i class="fas fa-trash"></i>
+            </button>
+          </form>
+        </div>
+
+        <div class="icon-column drag-handle">
+          <i class="fas fa-bars"></i>
+        </div>
+
+      </div>
+
     </div>
-
-    <div id="template-row" class="grid-row sortable-row">
-      <div class="content-cell"></div>
-
-      <div class="icon-column">
-        <a class="edit-link">
-          <i class="fas fa-edit"></i>
-        </a>
-      </div>
-
-      <div class="icon-column">
-        <form class="delete-form" method="post">
-          <button type="submit">
-            <i class="fas fa-trash"></i>
-          </button>
-        </form>
-      </div>
-
-      <div class="icon-column drag-handle">
-        <i class="fas fa-bars"></i>
-      </div>
-
-    </div>
-
   </div>
-</div>
+<% end %>
 
 <script>
   function createRowWithData(data) {
+    var columns = JSON.parse(document.getElementById('button-table-container').dataset.columns);
+console.log(columns)
+
+
+
     var templateRow = document.getElementById('template-row');
     var row = templateRow.cloneNode(true);
     row.style.display = "";
