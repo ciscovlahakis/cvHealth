@@ -24,8 +24,6 @@ get "/*" do
     breadcrumb_route = "/" if breadcrumb_route == ""
 
     @page_data = fetch_page_data(breadcrumb_route)
-    puts @page_data.inspect
-    # puts @page_data[:columns] if @page_data
     next if breadcrumb_route.nil? || @page_data.nil?
 
     @breadcrumbs.push(@page_data)

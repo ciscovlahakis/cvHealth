@@ -90,14 +90,14 @@
   }
 </style>
 
-
+<%= puts "Columns: #{columns.inspect}" %>
 <% unless columns.empty? %>
-  <div id="button-table-container" data-columns="<%= columns.to_json %>">
+  <div id="button-table-container" data-columns="<%= CGI.escapeHTML(columns.to_json) %>">
     <input type="hidden" id="enableMove" value="<%= enable_move %>">
     <div class="grid-table rounded-shadow" id="results">
-      <div class="grid-row">
+      <div class="grid-row" id="headers">
         <% columns.each do |x| %>
-          <div class="header"><%= x&.fetch(:property, nil) %></div>
+          <div class="header"><%= x&.fetch(:title, nil) %></div>
         <% end %>
         <div class="header icon-header"></div>
         <div class="header icon-header"></div>
@@ -133,11 +133,6 @@
 
 <script>
   function createRowWithData(data) {
-    var columns = JSON.parse(document.getElementById('button-table-container').dataset.columns);
-console.log(columns)
-
-
-
     var templateRow = document.getElementById('template-row');
     var row = templateRow.cloneNode(true);
     row.style.display = "";

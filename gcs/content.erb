@@ -107,7 +107,7 @@
         /* Clear previous results, but leave the template row */
         var children = Array.from(resultsContainer.children);
         children.forEach(function(child) {
-          if (child.id !== 'template-row') {
+          if (child.id !== 'template-row' && child.id !== 'headers') {
             resultsContainer.removeChild(child);
           }
         });
