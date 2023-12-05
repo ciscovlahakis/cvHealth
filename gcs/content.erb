@@ -1,7 +1,6 @@
 ---
 - __props__:
     index_name: String
-- header
 - results:
     yield: true
 ---
@@ -9,10 +8,10 @@
   #content {
     display: flex;
     flex-direction: column;
-    position: relative;
     width: 100%;
+    position: relative;
     padding-left: var(--padding);
-    padding-right: var(--padding);
+    padding-right: calc(var(--padding) /2);
   }
 
   @keyframes spin {
@@ -43,7 +42,6 @@
 </style>
 
 <div id="content" data-index-name="<%= index_name %>">
-  <%= header %>
   <div id="activityIndicator">
     <div class="spinner"></div>
   </div>
@@ -51,7 +49,6 @@
 </div>
 
 <script>
-
   function createNoResultsElement(searchTerm) {
     var noResultsElement = document.createElement('div');
     noResultsElement.classList.add('result');

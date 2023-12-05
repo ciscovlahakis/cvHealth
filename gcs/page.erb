@@ -1,17 +1,19 @@
 ---
-- sidebar:
-    render_if_exists: links
+- header
+- sidebar
 - content
 ---
 <style>
   .page {
     display: flex;
     flex-direction: row;
-    width: 100%;
   }
 </style>
 
-<div class="page">
-  <%= sidebar %>
-  <%= content %>
+<div>
+  <%= header %>
+  <div class="page">
+    <%= sidebar %>
+    <%= content %>
+  </div>
 </div>
