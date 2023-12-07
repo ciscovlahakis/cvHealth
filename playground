@@ -1,4 +1,27 @@
+<div class="sidebar-heading text-center">
+  <a href="<%= route %>" class="clickable-tab sidebar-tab">
+    <% if !img_src.empty? %>
+      <img src="<%= img_src %>" alt="Logo" class="logo-thumbnail">
+    <% elsif !icon.empty? %>
+      <i class="<%= icon %>"></i>
+    <% else %>
+      <img src="https://via.placeholder.com/150" alt="Placeholder" class="logo-thumbnail">
+    <% end %>
+  </a>
+</div>
 
+
+<div class="dropdown">
+  <div class="link dropdown-toggle">
+    <span class="caret">&#9660;</span>
+    Cisco Vlahakis
+  </div>
+  <div class="dropdown-menu show">
+    <div class="link dropdown-item">Anonymous Mode</div>
+    <div class="link dropdown-item">Switch User</div>
+    <div class="link dropdown-item">Log Out</div>
+  </div>
+</div>
 
 
 
@@ -38,6 +61,12 @@
     </div>
   </div>
 </div>
+
+window.firebaseInitialized.then(() => {
+  renderSidebar();
+}).catch(error => {
+  console.error('Error during Firebase initialization:', error);
+});
 
 
 

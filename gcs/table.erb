@@ -13,19 +13,18 @@
     transition: all 0.3s cubic-bezier(.25,.8,.25,1);
   }
 
-.grid-row {
-  display: grid;
-  grid-template-columns: <%= "repeat(#{columns.count}, 1fr) 100px;" %>;
-  width: 100%;
-}
+  .grid-row {
+    display: grid;
+    grid-template-columns: <%= "100px repeat(#{columns.count}, 1fr);" %>;
+    width: 100%;
+  }
 
   .grid-row .content-cell {
     background-color: #fff;
-    padding: 10px;
-    text-align: center;
+    padding: 15x;
     transition: all 0.3s;
     min-width: 100px; /* adjust based on your needs */
-    min-height: 50px; /* adjust based on your needs */
+    min-height: 20px; /* adjust based on your needs */
   }
 
   .grid-row .content-cell:hover {
@@ -34,8 +33,6 @@
   }
 
   .grid-row .header {
-    text-align: center;
-    padding: 10px; /* adjust based on your needs */
     background-color: black;
     color: #fff;
     font-size: 18px;
@@ -48,7 +45,7 @@
     text-align: left;
     transition: all 0.3s;
     min-width: 50px; /* adjust based on your needs */
-    min-height: 50px; /* adjust based on your needs */
+    min-height: 20px; /* adjust based on your needs */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -61,23 +58,12 @@
 
   .grid-table i {
     color: black;
-    font-size: 1.2em;
-    margin: 0 10px;
-  }
-
-  .grid-table button {
-    border: none;
-    padding: 0;
-    background: none;
+    font-size: 1em;
   }
 
   #button-table-container {
     display: flex;
     flex-direction: column;
-  }
-
-  .table-button {
-    align-self: flex-end;
   }
 
   .grid-row > div {
@@ -119,6 +105,12 @@
     var columnsJson = document.getElementById('button-table-container').dataset.columns;
     var columns = JSON.parse(columnsJson);
 
+    /* Add the icon column for the drag handle */
+    var iconColumn = document.createElement('div');
+    iconColumn.className = 'icon-column drag-handle';
+    iconColumn.innerHTML = '<i class="fas fa-bars"></i>';
+    row.appendChild(iconColumn);
+
     columns.forEach(function(column) {
       var cell = document.createElement('div');
       cell.className = 'content-cell';
@@ -128,12 +120,6 @@
       cell.textContent = cellValue || '';
       row.appendChild(cell);
     });
-
-    /* Add the icon column for the drag handle */
-    var iconColumn = document.createElement('div');
-    iconColumn.className = 'icon-column drag-handle';
-    iconColumn.innerHTML = '<i class="fas fa-bars"></i>';
-    row.appendChild(iconColumn);
 
     return row;
   }

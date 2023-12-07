@@ -1,153 +1,83 @@
 ---
 - __props__:
-    links: Array
+    title: String
     route: String
     img_src: String
     icon: String
+    pages: Array
+    actions: Array
     current_user: Hash
     session: Hash
 ---
 <style>
-  #sidebar-container {
+  #sidebar {
     width: 20vw;
     height: 100vh;
-    min-height: 100vh;
     background-color: black;
     color: #fff;
-  }
-
-  #sidebar-container .sidebar-heading {
     display: flex;
-    justify-content: center;
-    align-itmes: center;
-    font-size: calc(1.275rem + .3vw)!important;
-    border-bottom: 1px solid gainsboro;
+    padding-top: 5px;
+    flex-direction: column;
   }
-
-  #sidebar-container .list-group-item {
+  
+  #sidebar .tab {
     display: flex;
     text-decoration: none;
     color: white;
     transition: background-color 0.3s;
     border: none;
-    font-size: 1rem;
+    font-size: 14px;
+    height: 32px;
+    align-items: center;
+    cursor: pointer;
+    justify-content: flex-start;
   }
 
-  #sidebar-container .sidebar-heading,
-  #sidebar-container .list-group-item {
-    padding: 1.25rem;
-  }
-
-  #sidebar-container .list-group-item:hover,
-  #sidebar-container .list-group-item.active {
+  #sidebar .tab:hover,
+  #sidebar .tab.active {
     background-color: #343a40;
   }
 
-  #sidebar-container .list-group-item,
-  #sidebar-container .list-group-item.no-hover:hover {
-    background-color: black;
+  #sidebar .tab i {
+    font-size: 1em;
+    margin-right: 6px;
   }
 
-  #sidebar-container .list-group-item.no-hover {
-    border-bottom: 1px solid #EEEEEE;
+  .dropdown .dropdown-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  
+  .dropdown .dropdown-toggle .caret {
+    margin-right: 6px;
+    transition: transform 0.3s ease;
   }
 
-  #sidebar-container .list-group-item i {
-    font-size: 1.2em;
+  .dropdown .dropdown-menu {
+    display: none; /* Initially hidden */
+    flex-direction: column;
   }
 
-  #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
-    margin: 0px;
-    width: 16px;
-    height: 16px;
+  .dropdown .dropdown-menu.show {
+    display: flex; /* Show when active */
   }
 
-  #sidebar-container .list-group-item i,
-  #sidebar-container .list-group-item.no-hover input[type='checkbox'] {
-    margin-right: 12px;
+  #sidebar .tab.dropdown-item {
+    padding-left: 27px;
   }
 
-  .logo-thumbnail {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-  }
-
-  .clickable {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  #user-icon {
-    position: relative;
-    height: 50px;
-    width: 50px;
-  }
-
-  #user-image {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-  }
-
-  #admin-gear,
-  #super-admin-crown {
-    width: 16px;
-    height: 16px;
-    position: absolute;
-    bottom: 0;
-    right: 0;
+  #sidebar .tab.dropdown-toggle {
+    padding-left: 10px;
   }
 </style>
 
-<div id="sidebar-container" data-links='<%= links.to_json %>'>
-  <div class="sidebar-heading text-center">
-    <a href="<%= route %>" class="clickable">
-      <% if !img_src.empty? %>
-        <img src="<%= img_src %>" alt="Logo" class="logo-thumbnail">
-      <% elsif !icon.empty? %>
-        <i class="<%= icon %>"></i>
-      <% else %>
-        <img src="https://via.placeholder.com/150" alt="Placeholder" class="logo-thumbnail">
-      <% end %>
-    </a>
-  </div>
-  <div id="menuContainer">
-  </div>
-  <% if current_user[:admin] %>
-    <div class="list-group-item no-hover">
-      <input type="checkbox" id="adminMenuCheckbox">
-      <label for="adminMenuCheckbox"> Admin Menu </label>
-    </div>
-  <% end %>
-  <div id="user-icon" 
-    data-username="<%= current_user[:username] || '' %>" 
-    data-user-id="<%= current_user[:id] || '' %>" 
-    data-profile-picture="<%= current_user[:profile_picture] || '' %>" 
-    data-signed-in="<%= session.fetch("user_id", nil) ? "true" : "false" %>">
 
-    <% if current_user.any? %>
-        <% bucket = "cisco-vlahakis.appspot.com" %>
-        <img id="user-image" 
-            class="user-image" 
-            src="https://storage.googleapis.com/<%= bucket %>/uploads/<%= current_user[:id] %>/<%= current_user[:profile_picture] %>">
-        
-        <% if current_user[:admin] && !current_user[:super_admin] %>
-            <i id="admin-gear" class="fas fa-cog"></i>
-        <% end %>
-
-        <% if current_user[:super_admin] %>
-            <i id="super-admin-crown" class="fas fa-crown"></i>
-        <% end %>
-    <% else %>
-        <img id="user-image" class="user-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-    <% end %>
-  </div>
+<div id="sidebar">
 </div>
 
 <script>
   function fetchPageData(route) {
-    var promise = window.db.collection("pages").where("route", "==", route).get();
     return window.db.collection("pages").where("route", "==", route).get()
       .then(function(querySnapshot) {
         var title = '';
@@ -163,26 +93,63 @@
       });
   }
 
-  function createTab(data) {
-    var link = document.createElement('a');
-    link.href = data.route;
-    link.className = "list-group-item sidebar-link";
-    var icon = document.createElement('i');
-    icon.className = data.icon;
-    link.appendChild(icon);
-    link.appendChild(document.createTextNode(data.title));
-    var menuContainer = document.getElementById('menuContainer');
-    menuContainer.appendChild(link);
+  function createDropdownOption(pageData) {
+    var menuItem = document.createElement('a');
+    menuItem.className = 'tab dropdown-item';
+    menuItem.textContent = pageData.title;
+    menuItem.href = pageData.route;
+    return menuItem;
   }
 
   function renderSidebar() {
-    var sidebar = document.getElementById('sidebar-container');
-    if (sidebar.dataset.links) {
-      var links = JSON.parse(sidebar.dataset.links);
-      links.forEach(function(link) {
-        fetchPageData(link).then(createTab);
+    var title = '<%= title %>';
+    var route = '<%= route %>';
+    var icon = '<%= icon %>';
+    var routes = <%= pages.to_json %>;
+    var sidebar = document.getElementById('sidebar');
+
+    var dropdown = document.createElement('div');
+    dropdown.className = 'dropdown';
+  
+    var toggle = document.createElement('div');
+    toggle.className = 'tab dropdown-toggle';
+    toggle.innerHTML = '<span class="caret">&#9660;</span>' + title;
+
+    var menu = document.createElement('div');
+    menu.className = 'dropdown-menu show';
+    dropdown.appendChild(toggle);
+    dropdown.appendChild(menu);
+    sidebar.appendChild(dropdown);
+
+    toggle.addEventListener('click', function() {
+      var caret = this.querySelector('.caret');
+      if (menu.classList.contains('show')) {
+        menu.classList.remove('show');
+        menu.style.display = 'none';
+        caret.innerHTML = '&#9654;'; // Change caret to point to the right
+      } else {
+        menu.classList.add('show');
+        menu.style.display = 'flex';
+        caret.innerHTML = '&#9660;'; // Change caret to point down
+      }
+    });
+
+    var homeOption = createDropdownOption(
+      {
+        title: "Home",
+        route: route,
+        icon: icon
+      }
+    );
+    homeOption.classList.add('active');
+    menu.appendChild(homeOption);
+
+    routes.forEach(function(route) {
+      fetchPageData(route).then(function(pageData) {
+        var dropdownOption = createDropdownOption(pageData);
+        menu.appendChild(dropdownOption);
       });
-    }
+    });
   }
 
   window.firebaseInitialized.then(() => {

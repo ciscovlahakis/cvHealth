@@ -80,6 +80,7 @@ def render_component(component_name, parent_component_props, inherited_props_dat
     if component_metadata_props.is_a?(Hash) && component_metadata_props.key?("__props__")
       # Convert and Merge props from metadata into component_props
       component_metadata_props["__props__"].each do |key, value|
+        
         unless component_props.has_key?(key.to_sym) && !component_props.fetch(key.to_sym, nil).nil?
           component_props.store(key.to_sym, get_default(value))
         end
