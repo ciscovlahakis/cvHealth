@@ -133,5 +133,7 @@ def render_component(component_name, parent_component_props, inherited_props_dat
     end
   end
 
+  puts component_props.inspect
+
   ERB.new(component_template).result_with_hash(component_props.merge(locals))
 end

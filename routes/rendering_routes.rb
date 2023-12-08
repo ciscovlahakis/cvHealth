@@ -26,7 +26,14 @@ get "/*" do
     @page_data = fetch_page_data(breadcrumb_route)
     next if breadcrumb_route.nil? || @page_data.nil?
 
-    @breadcrumbs.push(@page_data)
+    breadcrumb = {
+      "title": @page_data.fetch(:title, nil),
+      "icon": @page_data.fetch(:icon, nil),
+      "img_src": @page_data.fetch(:img_src, nil),
+      "route": @page_data.fetch(:route, nil)
+    }
+
+    @breadcrumbs.push(breadcrumb)
     
     if breadcrumb_route == route
       current_props_data = get_props_data(@page_data.fetch(:props, ''), @page_data)
