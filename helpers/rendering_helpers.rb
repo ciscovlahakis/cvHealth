@@ -25,52 +25,33 @@ end
 
 def build_components_structure(component_data)
   # If the component_data has a direct 'components' key, return its value
+  if component_data && component_data.is_a?(Hash)
+    if component_data.key?(:components)
+      return component_data.fetch(:components)
+    # If the component_data has a 'componentId', fetch the related component
+    elsif component_data.key?(:componentId)
+      nested_component_data = get_data(component_data.fetch(:componentId), "components")
 
-  if component_data.key?(:components)
-    return component_data.fetch(:components)
-  
-  # If the component_data has a 'componentId', fetch the related component
-  elsif component_data.key?(:componentId)
-    nested_component_data = get_data(component_data.fetch(:componentId), "components")
-    
-    if nested_component_data
-      # If the fetched component has its own 'components' key, build the structure from it
-      if nested_component_data.key?(:components)
-        nested_structure = nested_component_data.fetch(:components)
-      
-      # If the fetched component has another 'componentId', recursively resolve it
-      elsif nested_component_data.key?(:componentId)
-        nested_structure = build_components_structure(nested_component_data)
+      if nested_component_data
+        if component_data.key?(:_yield)
+          yield_content = component_data.fetch(:_yield, nil)
+          if yield_content
+            replace_yield(nested_component_data, yield_content)
+          end
+        end
+        return build_components_structure(nested_component_data)
       end
-      
-      # If the original component_data has a '_yield', replace it in the nested structure
-      if component_data.key?(:_yield) && nested_structure
-        yield_content = component_data.fetch(:_yield)
-        return replace_yield(nested_structure, yield_content)
-      else
-        # If there's no '_yield', return the nested structure as is
-        return nested_structure
-      end
-    else
-      # If no data is found for the nested component, return an empty array
-      return []
     end
-  else
-    # If neither 'components' nor 'componentId' keys exist, return an empty array
-    return []
   end
 end
 
 def replace_yield(structure, yield_content)
-  structure.map do |row|
-    if row[:row].is_a?(Array) # Check if the row contains multiple components
-      # Replace "_yield" with yield_content in the array of components
-      components = row[:row].map { |component| component == "_yield" ? yield_content : component }
-      { :row => components }
+  structure.fetch(:components, []).map do |row|
+    next unless row && row.is_a?(Hash) && row.fetch(:row, nil)
+    if row[:row].is_a?(Array)
+      row[:row].map! { |value| value == "_yield" ? yield_content : value }
     else
-      # Replace "_yield" with yield_content if the single component matches
-      component = row[:row] == "_yield" ? yield_content : row[:row]
-      { :row => component }
+      row[:row] = row[:row] == "_yield" ? yield_content : row[:row]
     end
   end
 end

@@ -121,7 +121,6 @@
   end
 
   route = request.path_info
-  puts route.inspect
   route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..-1]
 
   breadcrumbs = route_components.each_with_index.map do |component, index|
