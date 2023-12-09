@@ -24,24 +24,20 @@ def get_data(id, col)
 end
 
 def build_components_structure(component_data)
-  # If the component_data has a direct 'components' key, return its value
-  if component_data && component_data.is_a?(Hash)
-    if component_data.key?(:components)
-      return component_data.fetch(:components)
-    # If the component_data has a 'componentId', fetch the related component
-    elsif component_data.key?(:componentId)
-      nested_component_data = get_data(component_data.fetch(:componentId), "components")
-
-      if nested_component_data
-        if component_data.key?(:_yield)
-          yield_content = component_data.fetch(:_yield, nil)
-          if yield_content
-            replace_yield(nested_component_data, yield_content)
-          end
-        end
-        return build_components_structure(nested_component_data)
-      end
+  return unless component_data.is_a?(Hash)
+  
+  if component_data.key?(:components)
+    return component_data.fetch(:components)
+  elsif component_data.key?(:componentId)
+    nested_component_data = get_data(component_data.fetch(:componentId), "components")
+    return unless nested_component_data
+    
+    if component_data.key?(:_yield)
+      yield_content = component_data.fetch(:_yield, nil)
+      replace_yield(nested_component_data, yield_content) if yield_content
     end
+    
+    build_components_structure(nested_component_data)
   end
 end
 
