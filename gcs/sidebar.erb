@@ -81,18 +81,15 @@
       });
   }
 
-  function createDropdownOption(pageData) {
-    var menuItem = document.createElement('a');
-    menuItem.className = 'dropdown-item tab';
-    menuItem.textContent = pageData.title || 'Untitled';
-    menuItem.href = pageData.route || '#';
-    return menuItem;
+  function createAnchorElement(textContent, href, className) {
+    var anchor = document.createElement('a');
+    anchor.className = className;
+    anchor.textContent = textContent;
+    anchor.href = href;
+    return anchor;
   }
 
-  function createDropdownComponent(properties) {
-    var dropdown = document.createElement('div');
-    dropdown.className = 'dropdown';
-
+  function createToggle(properties) {
     var toggle = document.createElement('div');
     toggle.className = 'tab dropdown-toggle';
     toggle.id = 'dropdownMenu' + (properties.title || '').replace(/\s+/g, '');
@@ -100,17 +97,26 @@
     toggle.setAttribute('aria-haspopup', 'true');
     toggle.setAttribute('aria-expanded', 'false');
     toggle.innerHTML = '<span class="caret">&#9660;</span> ' + properties.title;
+    return toggle;
+  }
 
+  function createMenu(toggleId) {
     var menu = document.createElement('div');
     menu.className = 'dropdown-menu show';
-    menu.setAttribute('aria-labelledby', toggle.id);
+    menu.setAttribute('aria-labelledby', toggleId);
+    return menu;
+  }
 
-    // Check if the properties contain a route, and if so, prepend a Home tab
-    if (properties.route) {
-      var homeTab = document.createElement('a');
-      homeTab.className = 'dropdown-item tab';
-      homeTab.textContent = 'Home';
-      homeTab.href = properties.route;
+  function createDropdownComponent(properties) {
+    var dropdown = document.createElement('div');
+    dropdown.className = 'dropdown';
+
+    var toggle = createToggle(properties);
+    var menu = createMenu(toggle.id);
+
+    var route = properties.route;
+    if (route) {
+      var homeTab = createAnchorElement('Home', route, 'dropdown-item tab');
       menu.prepend(homeTab);
     }
 
@@ -124,7 +130,7 @@
 
     (properties.pages || []).concat(properties.actions || []).forEach(function(item) {
       fetchPageData(item).then(function(pageData) {
-        var menuItem = createDropdownOption(pageData);
+        var menuItem = createAnchorElement(pageData.title || 'Untitled', pageData.route || '#', 'dropdown-item tab');
         menu.appendChild(menuItem);
       });
     });
@@ -136,26 +142,26 @@
     return (properties.pages && properties.pages.length > 0) || (properties.actions && properties.actions.length > 0);
   }
 
+  function createAndAppendDropdown(sidebar, properties) {
+    if (shouldCreateDropdown(properties)) {
+      var dropdown = createDropdownComponent(properties);
+      sidebar.appendChild(dropdown);
+    }
+  }
+
   function initializeSidebar() {
     var sidebar = document.getElementById('sidebar');
     var pageData = <%= page_data.to_json %>;
-    if (shouldCreateDropdown(pageData)) {
-        var initialDropdown = createDropdownComponent(pageData, 'initial');
-        sidebar.appendChild(initialDropdown);
-      }
+    createAndAppendDropdown(sidebar, pageData);
+
     var allComponentProperties = <%= all_component_properties.to_json %>;
     Object.keys(allComponentProperties).forEach(function(component_name) {
       var properties = allComponentProperties[component_name];
-      if (shouldCreateDropdown(properties)) {
-          var componentDropdown = createDropdownComponent(properties, component_name);
-          sidebar.appendChild(componentDropdown);
-        }
+      createAndAppendDropdown(sidebar, properties);
     });
   }
 
-  window.firebaseInitialized.then(() => {
-    initializeSidebar();
-  }).catch(function(error) {
+  window.firebaseInitialized.then(initializeSidebar).catch(function(error) {
     console.error('Error during Firebase initialization:', error);
   });
 </script>
