@@ -1,9 +1,20 @@
 ---
-- __props__:
-    columns: Array
-    enable_move: Boolean
-- recurrence
+title: "Table"
+pages:
+  - "/about"
+  - "/page2"
+actions:
+  - "action1"
+  - "action2"
+additional_info:
+  key1: "value1"
+  key2: "value2"
 ---
+
+<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
+<% columns = page_data.fetch(:columns, []) %>
+<% enable_move = true %>
+
 <style>
   .grid-table {
     display: grid;
@@ -64,6 +75,7 @@
   #button-table-container {
     display: flex;
     flex-direction: column;
+    width: 100%;
   }
 
   .grid-row > div {

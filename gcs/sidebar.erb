@@ -1,14 +1,6 @@
----
-- __props__:
-    title: String
-    route: String
-    img_src: String
-    icon: String
-    pages: Array
-    actions: Array
-    current_user: Hash
-    session: Hash
----
+<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
+<% all_component_properties = defined?(all_component_properties) && !all_component_properties.nil? ? all_component_properties : {} %>
+
 <style>
   #sidebar {
     width: 20vw;
@@ -55,12 +47,12 @@
   }
 
   .dropdown .dropdown-menu {
-    display: none; /* Initially hidden */
+    display: none;
     flex-direction: column;
   }
 
   .dropdown .dropdown-menu.show {
-    display: flex; /* Show when active */
+    display: flex;
   }
 
   #sidebar .tab.dropdown-item {
@@ -72,7 +64,6 @@
   }
 </style>
 
-
 <div id="sidebar">
 </div>
 
@@ -80,13 +71,10 @@
   function fetchPageData(route) {
     return window.db.collection("pages").where("route", "==", route).get()
       .then(function(querySnapshot) {
-        var title = '';
-        var icon = '';
-        querySnapshot.forEach(function(doc) {
-          title = doc.data().title;
-          icon = doc.data().icon;
+        var data = querySnapshot.docs.map(function(doc) {
+          return doc.data();
         });
-        return { title: title, icon: icon, route: route };
+        return data.length > 0 ? data[0] : {};
       })
       .catch(function(error) {
         console.error("Error getting documents from Firebase: ", error);
@@ -95,66 +83,71 @@
 
   function createDropdownOption(pageData) {
     var menuItem = document.createElement('a');
-    menuItem.className = 'tab dropdown-item';
-    menuItem.textContent = pageData.title;
-    menuItem.href = pageData.route;
+    menuItem.className = 'dropdown-item tab';
+    menuItem.textContent = pageData.title || 'Untitled';
+    menuItem.href = pageData.route || '#';
     return menuItem;
   }
 
-  function renderSidebar() {
-    var title = '<%= title %>';
-    var route = '<%= route %>';
-    var icon = '<%= icon %>';
-    var routes = <%= pages.to_json %>;
-    var sidebar = document.getElementById('sidebar');
-
+  function createDropdownComponent(properties, component_name) {
     var dropdown = document.createElement('div');
     dropdown.className = 'dropdown';
-  
+
     var toggle = document.createElement('div');
     toggle.className = 'tab dropdown-toggle';
-    toggle.innerHTML = '<span class="caret">&#9660;</span>' + title;
+    toggle.id = 'dropdownMenu' + component_name;
+    toggle.setAttribute('data-toggle', 'dropdown');
+    toggle.setAttribute('aria-haspopup', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.innerHTML = '<span class="caret">&#9660;</span> ' + properties.title;
 
     var menu = document.createElement('div');
     menu.className = 'dropdown-menu show';
+    menu.setAttribute('aria-labelledby', 'dropdownMenu' + component_name);
+
     dropdown.appendChild(toggle);
     dropdown.appendChild(menu);
-    sidebar.appendChild(dropdown);
 
     toggle.addEventListener('click', function() {
-      var caret = this.querySelector('.caret');
-      if (menu.classList.contains('show')) {
-        menu.classList.remove('show');
-        menu.style.display = 'none';
-        caret.innerHTML = '&#9654;'; // Change caret to point to the right
-      } else {
-        menu.classList.add('show');
-        menu.style.display = 'flex';
-        caret.innerHTML = '&#9660;'; // Change caret to point down
-      }
+      menu.classList.toggle('show');
+      toggle.querySelector('.caret').textContent = menu.classList.contains('show') ? '\u25BC' : '\u25B6';
     });
 
-    var homeOption = createDropdownOption(
-      {
-        title: "Home",
-        route: route,
-        icon: icon
-      }
-    );
-    homeOption.classList.add('active');
-    menu.appendChild(homeOption);
-
-    routes.forEach(function(route) {
-      fetchPageData(route).then(function(pageData) {
-        var dropdownOption = createDropdownOption(pageData);
-        menu.appendChild(dropdownOption);
+    (properties.pages || []).concat(properties.actions || []).forEach(function(item) {
+      fetchPageData(item).then(function(pageData) {
+        var menuItem = createDropdownOption(pageData);
+        menu.appendChild(menuItem);
       });
+    });
+
+    return dropdown;
+  }
+
+  function shouldCreateDropdown(properties) {
+    return (properties.pages && properties.pages.length > 0) || (properties.actions && properties.actions.length > 0);
+  }
+
+  function initializeSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var pageData = <%= page_data.to_json %>;
+    if (shouldCreateDropdown(pageData)) {
+        var initialDropdown = createDropdownComponent(pageData, 'initial');
+        sidebar.appendChild(initialDropdown);
+      }
+
+    var allComponentProperties = <%= all_component_properties.to_json %>;
+    Object.keys(allComponentProperties).forEach(function(component_name) {
+      var properties = allComponentProperties[component_name];
+      if (shouldCreateDropdown(properties)) {
+          var componentDropdown = createDropdownComponent(properties, component_name);
+          sidebar.appendChild(componentDropdown);
+        }
     });
   }
 
   window.firebaseInitialized.then(() => {
-    renderSidebar();
-  }).catch(error => {
+    initializeSidebar();
+  }).catch(function(error) {
     console.error('Error during Firebase initialization:', error);
   });
 </script>

@@ -3,17 +3,4 @@
 <head>
     <title>Page Not Found</title>
 </head>
-<body>
-    <div class="breadcrumb-container">
-        <% breadcrumbs.each do |breadcrumb| %>
-            <span class="breadcrumb">
-                <a href="<%= breadcrumb.fetch(:path) %>">
-                    <img src="<%= breadcrumb.fetch(:icon) %>" alt="Thumbnail" style="width: 20px; height: 20px;">
-                    <%= breadcrumb.fetch(:title) %>
-                </a>
-            </span>
-        <% end %>
-    </div>
-    <h1>404 Page Not Found</h1>
-</body>
 </html>
