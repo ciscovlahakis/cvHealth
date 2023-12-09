@@ -80,29 +80,69 @@
     transition: all 0.3s cubic-bezier(.25,.8,.25,1); /* Smooth transition */
   }
 
-    #activityIndicator {
-      display: none;
-      justify-content: center;
-      align-items: center;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 1000;
-    }
-    
-    .spinner {
-      border: 8px solid #f3f3f3;
-      border-top: 8px solid #000000;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      animation: spin 2s linear infinite;
-    }
+  #activityIndicator {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+  }
+  
+  .spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #000000;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+  }
 </style>
 
-<% breadcrumbs = [] %>
+<%
+  def fetch_page_data(route)
+    matching_pages = $db.col("pages").where("route", "=", route).get
+    first_page = matching_pages.first
+    if first_page.nil?
+      puts "PAGE NOT FOUND FOR: #{route}"
+      return nil
+    else
+      return first_page.data
+    end
+  end
+
+  # Define a method to fetch the page data if it's not the current page.
+  def safe_fetch_page_data(route, current_page_data)
+    return current_page_data if current_page_data["route"] == route
+    fetch_page_data(route) || {}
+  end
+
+  route = request.path_info
+  puts route.inspect
+  route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..-1]
+
+  breadcrumbs = route_components.each_with_index.map do |component, index|
+    breadcrumb_route = route_components[0..index].join
+    breadcrumb_route = "/" if breadcrumb_route.empty?
+
+    # Fetch page data if necessary.
+    current_page_data = safe_fetch_page_data(breadcrumb_route, page_data)
+
+    # Skip if no data is present for the breadcrumb.
+    next if current_page_data.empty?
+
+    {
+      :title => current_page_data[:title],
+      :icon => current_page_data[:icon],
+      :img_src => current_page_data[:img_src],
+      :route => breadcrumb_route
+    }
+  end.compact # Remove any nil items from the array.
+%>
+
 <div class="header">
   <div class="search-bar">
     <% unless breadcrumbs.empty? %>
@@ -111,7 +151,7 @@
           <% img_src = breadcrumb.fetch(:img_src, nil) %>
           <% icon = breadcrumb.fetch(:icon, nil) %>
           <% title = breadcrumb.fetch(:title, nil) %>
-          <a href="<%= breadcrumb.fetch(:route) %>" class="clickable">
+          <a href="<%= breadcrumb.fetch(:route, '/') %>" class="clickable">
             <span class="breadcrumb breadcrumb-content">
               <% if img_src && !img_src.empty? %>
                 <img src="<%= img_src %>" alt="Thumbnail" class="breadcrumb-thumbnail <%= title && !title.empty? ? 'breadcrumb-thumbnail-with-title' : '' %>">

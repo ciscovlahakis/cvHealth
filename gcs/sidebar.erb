@@ -89,13 +89,13 @@
     return menuItem;
   }
 
-  function createDropdownComponent(properties, component_name) {
+  function createDropdownComponent(properties) {
     var dropdown = document.createElement('div');
     dropdown.className = 'dropdown';
 
     var toggle = document.createElement('div');
     toggle.className = 'tab dropdown-toggle';
-    toggle.id = 'dropdownMenu' + component_name;
+    toggle.id = 'dropdownMenu' + (properties.title || '').replace(/\s+/g, '');
     toggle.setAttribute('data-toggle', 'dropdown');
     toggle.setAttribute('aria-haspopup', 'true');
     toggle.setAttribute('aria-expanded', 'false');
@@ -103,7 +103,16 @@
 
     var menu = document.createElement('div');
     menu.className = 'dropdown-menu show';
-    menu.setAttribute('aria-labelledby', 'dropdownMenu' + component_name);
+    menu.setAttribute('aria-labelledby', toggle.id);
+
+    // Check if the properties contain a route, and if so, prepend a Home tab
+    if (properties.route) {
+      var homeTab = document.createElement('a');
+      homeTab.className = 'dropdown-item tab';
+      homeTab.textContent = 'Home';
+      homeTab.href = properties.route;
+      menu.prepend(homeTab);
+    }
 
     dropdown.appendChild(toggle);
     dropdown.appendChild(menu);
@@ -134,7 +143,6 @@
         var initialDropdown = createDropdownComponent(pageData, 'initial');
         sidebar.appendChild(initialDropdown);
       }
-
     var allComponentProperties = <%= all_component_properties.to_json %>;
     Object.keys(allComponentProperties).forEach(function(component_name) {
       var properties = allComponentProperties[component_name];
