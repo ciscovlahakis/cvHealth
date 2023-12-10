@@ -16,6 +16,9 @@ components:
   <%= header %>
   <div class="page">
     <%= sidebar %>
-    <%= _yield %>
+    <div style="width: 100%;">
+      <div id="_fragment"></div>
+      <%= _yield %>
+    </div>
   </div>
 </div>

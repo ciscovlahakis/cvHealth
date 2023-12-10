@@ -64,8 +64,7 @@
   }
 </style>
 
-<div id="sidebar">
-</div>
+<div id="sidebar"></div>
 
 <script>
   function fetchDataFromCollection(collectionName, field, operator, value) {
@@ -108,12 +107,12 @@
   }
 
   function appendChildrenToMenu(menu, data, collectionName) {
-    if (collectionName !== "pages" && collectionName !== "actions") return;
+    if (collectionName !== "pages" && collectionName !== "fragments") return;
     data = (data || {})[collectionName];
-    var field = collectionName === "pages" ? "route" : "fragment";
+    var field = collectionName === "pages" ? "route" : "hash";
     (data || []).forEach(function(value) {
       fetchDataFromCollection(collectionName, field, "==", value).then(function(data) {
-        var path = data.route ? "/" + data.route : "#" + data.fragment
+        var path = data.route ? "/" + data.route : "#" + data.hash
         path = path || "#";
         var menuItem = createAnchorElement(
           data.title || "Resource Not Found",
@@ -147,14 +146,14 @@
     });
 
     appendChildrenToMenu(menu, properties, "pages");
-    appendChildrenToMenu(menu, properties, "actions");
+    appendChildrenToMenu(menu, properties, "fragments");
 
     return dropdown;
   }
 
   function shouldCreateDropdown(properties) {
     return (properties.pages && properties.pages.length > 0) ||
-      (properties.actions && properties.actions.length > 0);
+      (properties.fragments && properties.fragments.length > 0);
   }
 
   function appendChildrenToDropdown(sidebar, properties) {
