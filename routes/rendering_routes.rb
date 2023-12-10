@@ -65,12 +65,30 @@ get "/*" do |path|
   # Extract YAML front matter and the HTML content
   front_matter, html_content = parse_yaml_front_matter(template_content)
 
-  # Render each component and define a method in the current context
-  components = front_matter["components"] || []
+  # Initialize the resource_properties hash
+  resource_properties = {}
+
+  # Prepare the components array, including _yield if it exists
+  components = front_matter.fetch("components", [])
+  _yield_component_name = page_data.fetch(:_yield, nil)
+  components << _yield_component_name unless !_yield_component_name
+
+  # Loop to collect properties for all components, including _yield
   components.each do |component|
-    # Fetch and render component
+    # Fetch component template content
     component_template_content = fetch_template(component)
-    _, component_html_content = parse_yaml_front_matter(component_template_content)
+    component_front_matter, component_html_content = parse_yaml_front_matter(component_template_content)
+
+    # Store the component's properties in the resource_properties hash
+    resource_properties.store(component, component_front_matter)
+  end
+
+  # Render components with the full resource_properties context
+  components.each do |component|
+    # Fetch component template content again
+    _, component_html_content = parse_yaml_front_matter(fetch_template(component))
+
+    # Render the component with access to the resource_properties hash
     rendered_content = ERB.new(component_html_content).result(binding)
 
     # Define a method within the current context
@@ -78,23 +96,17 @@ get "/*" do |path|
       rendered_content
     end
   end
- 
-  # Fetch and render the _yield component, if it exists
-  if page_data[:_yield]
-    yield_component_name = page_data[:_yield]
-    yield_component_template = fetch_template(yield_component_name)
-    _, yield_component_html_content = parse_yaml_front_matter(yield_component_template)
-    _yield_content = ERB.new(yield_component_html_content).result(binding)
 
-    # Define a method for the yield content
+  # Special handling for _yield to replace it with the specified component content
+  if _yield_component_name
     define_singleton_method('_yield') do
-      _yield_content
+      send(_yield_component_name)
     end
   end
- 
-   # Render the main template content using the current context
-   @html_content = ERB.new(html_content).result(binding)
- 
-   # Render the final HTML content with the layout
-   erb :layout
- end
+
+  # Render the main template content using the current context
+  @html_content = ERB.new(html_content).result(binding)
+
+  # Render the final HTML content with the layout
+  erb :layout
+end
