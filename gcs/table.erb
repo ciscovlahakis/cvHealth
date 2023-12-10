@@ -1,14 +1,11 @@
 ---
 title: "Table"
-pages:
-  - "/about"
-  - "/page2"
 actions:
-  - "action1"
-  - "action2"
-additional_info:
-  key1: "value1"
-  key2: "value2"
+  - "add-items"
+  - "edit-items"
+  - "delete-items"
+  - "switch-items"
+  - "list-view"
 ---
 
 <% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
@@ -26,7 +23,8 @@ additional_info:
 
   .grid-row {
     display: grid;
-    grid-template-columns: <%= "100px repeat(#{columns.count}, 1fr);" %>;
+    /* Adjust the first value if you need a wider icon column */
+    grid-template-columns: 100px repeat(<%= columns.count %>, 1fr);
     width: 100%;
   }
 
@@ -92,10 +90,11 @@ additional_info:
     <input type="hidden" id="enableMove" value="<%= enable_move %>">
     <div class="grid-table rounded-shadow" id="results">
       <div class="grid-row" id="headers">
+        <!-- Add an empty div for the icon column -->
+        <div class="header"></div>
         <% columns.each do |x| %>
-          <div class="header"><%= x&.fetch(:title, nil) %></div>
+          <div class="header"><%= x.fetch(:title, nil) %></div>
         <% end %>
-        <div class="header" />
       </div>
       <div id="template-row" class="grid-row sortable-row" style="display: none;">
         <div class="icon-column drag-handle">

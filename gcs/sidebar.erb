@@ -1,5 +1,5 @@
 <% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
-<% all_component_properties = defined?(all_component_properties) && !all_component_properties.nil? ? all_component_properties : {} %>
+<% resource_properties = defined?(resource_properties) && !resource_properties.nil? ? resource_properties : {} %>
 
 <style>
   #sidebar {
@@ -68,8 +68,8 @@
 </div>
 
 <script>
-  function fetchPageData(route) {
-    return window.db.collection("pages").where("route", "==", route).get()
+  function fetchDataFromCollection(collectionName, field, operator, value) {
+    return window.db.collection(collectionName).where(field, operator, value).get()
       .then(function(querySnapshot) {
         var data = querySnapshot.docs.map(function(doc) {
           return doc.data();
@@ -77,7 +77,7 @@
         return data.length > 0 ? data[0] : {};
       })
       .catch(function(error) {
-        console.error("Error getting documents from Firebase: ", error);
+        console.error("Error getting documents: ", error);
       });
   }
 
@@ -107,6 +107,24 @@
     return menu;
   }
 
+  function appendChildrenToMenu(menu, data, collectionName) {
+    if (collectionName !== "pages" && collectionName !== "actions") return;
+    data = (data || {})[collectionName];
+    var field = collectionName === "pages" ? "route" : "fragment";
+    (data || []).forEach(function(value) {
+      fetchDataFromCollection(collectionName, field, "==", value).then(function(data) {
+        var path = data.route ? "/" + data.route : "#" + data.fragment
+        path = path || "#";
+        var menuItem = createAnchorElement(
+          data.title || "Resource Not Found",
+          path,
+          'dropdown-item tab'
+        );
+        menu.appendChild(menuItem);
+      });
+    });
+  }
+
   function createDropdownComponent(properties) {
     var dropdown = document.createElement('div');
     dropdown.className = 'dropdown';
@@ -116,7 +134,7 @@
 
     var route = properties.route;
     if (route) {
-      var homeTab = createAnchorElement('Home', route, 'dropdown-item tab');
+      var homeTab = createAnchorElement("Home", route, 'dropdown-item tab');
       menu.prepend(homeTab);
     }
 
@@ -128,21 +146,18 @@
       toggle.querySelector('.caret').textContent = menu.classList.contains('show') ? '\u25BC' : '\u25B6';
     });
 
-    (properties.pages || []).concat(properties.actions || []).forEach(function(item) {
-      fetchPageData(item).then(function(pageData) {
-        var menuItem = createAnchorElement(pageData.title || 'Untitled', pageData.route || '#', 'dropdown-item tab');
-        menu.appendChild(menuItem);
-      });
-    });
+    appendChildrenToMenu(menu, properties, "pages");
+    appendChildrenToMenu(menu, properties, "actions");
 
     return dropdown;
   }
 
   function shouldCreateDropdown(properties) {
-    return (properties.pages && properties.pages.length > 0) || (properties.actions && properties.actions.length > 0);
+    return (properties.pages && properties.pages.length > 0) ||
+      (properties.actions && properties.actions.length > 0);
   }
 
-  function createAndAppendDropdown(sidebar, properties) {
+  function appendChildrenToDropdown(sidebar, properties) {
     if (shouldCreateDropdown(properties)) {
       var dropdown = createDropdownComponent(properties);
       sidebar.appendChild(dropdown);
@@ -152,16 +167,18 @@
   function initializeSidebar() {
     var sidebar = document.getElementById('sidebar');
     var pageData = <%= page_data.to_json %>;
-    createAndAppendDropdown(sidebar, pageData);
+    appendChildrenToDropdown(sidebar, pageData);
 
-    var allComponentProperties = <%= all_component_properties.to_json %>;
+    var allComponentProperties = <%= resource_properties.to_json %>;
     Object.keys(allComponentProperties).forEach(function(component_name) {
       var properties = allComponentProperties[component_name];
-      createAndAppendDropdown(sidebar, properties);
+      appendChildrenToDropdown(sidebar, properties);
     });
   }
 
-  window.firebaseInitialized.then(initializeSidebar).catch(function(error) {
-    console.error('Error during Firebase initialization:', error);
-  });
+  window.firebaseInitialized
+    .then(initializeSidebar).
+    catch(function(error) {
+      console.error('Error during Firebase initialization:', error);
+    });
 </script>

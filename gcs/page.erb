@@ -1,7 +1,9 @@
 ---
-- header
-- sidebar
-- content
+title: "Page"
+type: "template"
+components:
+  - "header"
+  - "sidebar"
 ---
 <style>
   .page {
@@ -14,6 +16,6 @@
   <%= header %>
   <div class="page">
     <%= sidebar %>
-    <%= content %>
+    <%= _yield %>
   </div>
 </div>
