@@ -1,3 +1,8 @@
+- "edit-items"
+- "delete-items"
+- "switch-items"
+- "list-view"
+
 <div class="sidebar-heading text-center">
   <a href="<%= route %>" class="clickable-tab sidebar-tab">
     <% if !img_src.empty? %>

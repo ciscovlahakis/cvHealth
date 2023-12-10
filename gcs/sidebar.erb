@@ -1,5 +1,6 @@
 <% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
 <% resource_properties = defined?(resource_properties) && !resource_properties.nil? ? resource_properties : {} %>
+<% fragments_data = defined?(fragments_data) && !fragments_data.nil? ? fragments_data : {} %>
 
 <style>
   #sidebar {
@@ -67,6 +68,9 @@
 <div id="sidebar"></div>
 
 <script>
+  // Object to store the HTML content of fragments provided by the server
+  var fragmentsData = <%= fragments_data.to_json %>;
+
   function fetchDataFromCollection(collectionName, field, operator, value) {
     return window.db.collection(collectionName).where(field, operator, value).get()
       .then(function(querySnapshot) {
@@ -78,6 +82,11 @@
       .catch(function(error) {
         console.error("Error getting documents: ", error);
       });
+  }
+
+  function shouldCreateDropdown(properties) {
+    return (properties.pages && properties.pages.length > 0) ||
+      (properties.fragments && properties.fragments.length > 0);
   }
 
   function createAnchorElement(textContent, href, className) {
@@ -106,24 +115,7 @@
     return menu;
   }
 
-  function appendChildrenToMenu(menu, data, collectionName) {
-    if (collectionName !== "pages" && collectionName !== "fragments") return;
-    data = (data || {})[collectionName];
-    var field = collectionName === "pages" ? "route" : "hash";
-    (data || []).forEach(function(value) {
-      fetchDataFromCollection(collectionName, field, "==", value).then(function(data) {
-        var path = data.route ? "/" + data.route : "#" + data.hash
-        path = path || "#";
-        var menuItem = createAnchorElement(
-          data.title || "Resource Not Found",
-          path,
-          'dropdown-item tab'
-        );
-        menu.appendChild(menuItem);
-      });
-    });
-  }
-
+  // Existing function to create a dropdown component (slightly modified)
   function createDropdownComponent(properties) {
     var dropdown = document.createElement('div');
     dropdown.className = 'dropdown';
@@ -131,10 +123,42 @@
     var toggle = createToggle(properties);
     var menu = createMenu(toggle.id);
 
-    var route = properties.route;
-    if (route) {
-      var homeTab = createAnchorElement("Home", route, 'dropdown-item tab');
+    // Append the Home tab if a route is provided
+    if (properties.route) {
+      var homeTab = createAnchorElement("Home", properties.route, 'dropdown-item tab');
       menu.prepend(homeTab);
+    }
+
+    // Process and append routes to the menu
+    if (properties.pages && properties.pages.length > 0) {
+      properties.pages.forEach(function(route) {
+        if (!route) return;
+        fetchDataFromCollection("pages", "route", "==", route).then(function(page) {
+          var menuItem = createAnchorElement(
+            page.title || "Resource Not Found",
+            `/${route}`,
+            'dropdown-item tab'
+          );
+          menu.appendChild(menuItem);
+        });
+      });
+    }
+
+    // Process and append hashes to the menu
+    if (properties.fragments && properties.fragments.length > 0) {
+      properties.fragments.forEach(function(fragmentHash) {
+        var fragment = fragmentsData[fragmentHash];
+        if (!fragment) return;
+        var menuItem = createAnchorElement(
+          fragment.title || "Resource Not Found",
+          `#${fragmentHash}`,
+          'dropdown-item tab'
+        );
+        menu.appendChild(menuItem);
+        menuItem.addEventListener('click', function() {
+          renderFragmentByHash(fragmentHash);
+        });
+      });
     }
 
     dropdown.appendChild(toggle);
@@ -145,36 +169,52 @@
       toggle.querySelector('.caret').textContent = menu.classList.contains('show') ? '\u25BC' : '\u25B6';
     });
 
-    appendChildrenToMenu(menu, properties, "pages");
-    appendChildrenToMenu(menu, properties, "fragments");
-
     return dropdown;
   }
 
-  function shouldCreateDropdown(properties) {
-    return (properties.pages && properties.pages.length > 0) ||
-      (properties.fragments && properties.fragments.length > 0);
-  }
-
-  function appendChildrenToDropdown(sidebar, properties) {
-    if (shouldCreateDropdown(properties)) {
-      var dropdown = createDropdownComponent(properties);
-      sidebar.appendChild(dropdown);
+  // Function to render a fragment based on its hash (file name)
+  function renderFragmentByHash(hash) {
+    var fragment = fragmentsData[hash];
+    if (fragment && fragment.content) {
+      document.getElementById('_fragment').innerHTML = fragment.content;
+    } else {
+      console.error("Fragment not found for hash: " + hash);
     }
   }
 
+  // Function to initialize the sidebar with fetched fragments and routes
   function initializeSidebar() {
     var sidebar = document.getElementById('sidebar');
     var pageData = <%= page_data.to_json %>;
-    appendChildrenToDropdown(sidebar, pageData);
+    var resourceProperties = <%= resource_properties.to_json %>;
 
-    var allComponentProperties = <%= resource_properties.to_json %>;
-    Object.keys(allComponentProperties).forEach(function(component_name) {
-      var properties = allComponentProperties[component_name];
-      appendChildrenToDropdown(sidebar, properties);
+    if (shouldCreateDropdown(pageData)) {
+      var dropdown = createDropdownComponent(pageData);
+      sidebar.appendChild(dropdown);
+    }
+
+    Object.keys(resourceProperties).forEach(function(component_name) {
+      var properties = resourceProperties[component_name];
+      if (shouldCreateDropdown(properties)) {
+        var dropdown = createDropdownComponent(properties);
+        sidebar.appendChild(dropdown);
+      }
     });
+
+    // Check for an initial hash when the page loads
+    if (window.location.hash) {
+      renderFragmentByHash(window.location.hash.substring(1));
+    }
   }
 
+  // Event listener for hash changes
+  window.onhashchange = function() {
+    // Decode the hash to handle URL encoding
+    var decodedHash = decodeURIComponent(window.location.hash.substring(1)); // Remove the '#' prefix
+    renderFragmentByHash(decodedHash);
+  };
+
+  // Initialize the sidebar after the DOM is fully loaded
   window.firebaseInitialized
     .then(initializeSidebar).
     catch(function(error) {

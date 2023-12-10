@@ -6,8 +6,7 @@
 
 # Ignore GOOGLE_APPLICATION_CREDENTIALS
 /service-account-file.json
-
-config/keyfile.json
+/cors-config.json
 
 # Ignore bundler config.
 /.bundle

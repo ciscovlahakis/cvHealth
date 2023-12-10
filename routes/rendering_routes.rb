@@ -30,7 +30,7 @@ def fetch_template(component_name)
     return response.to_s
   else
     error_message = "Failed to fetch template: #{response.status}"
-    raise error_message
+    puts error_message
   end
 end
 
@@ -68,6 +68,9 @@ get "/*" do |path|
   # Initialize the resource_properties hash
   resource_properties = {}
 
+  # Initialize the fragments_data hash
+  fragments_data = {}
+
   # Prepare the components array, including _yield if it exists
   components = front_matter.fetch("components", [])
   _yield_component_name = page_data.fetch(:_yield, nil)
@@ -77,10 +80,24 @@ get "/*" do |path|
   components.each do |component|
     # Fetch component template content
     component_template_content = fetch_template(component)
+    next unless component_template_content
     component_front_matter, component_html_content = parse_yaml_front_matter(component_template_content)
 
     # Store the component's properties in the resource_properties hash
     resource_properties.store(component, component_front_matter)
+
+    fragment_file_names = component_front_matter.fetch("fragments", [])
+    # Fetch the content of each fragment
+    fragment_file_names.each do |fragment_file_name|
+      fragment_content = fetch_template(fragment_file_name)
+      next unless fragment_content
+      fragment_front_matter, fragment_html_content = parse_yaml_front_matter(fragment_content)
+      # Store the fragment's content in the fragments_data hash
+      fragments_data[fragment_file_name] = {
+        :title => fragment_front_matter["title"],
+        :content => fragment_html_content
+      }
+    end
   end
 
   # Render components with the full resource_properties context
@@ -110,3 +127,7 @@ get "/*" do |path|
   # Render the final HTML content with the layout
   erb :layout
 end
+
+# get "/*" do |path|
+#   erb :layout
+# end
