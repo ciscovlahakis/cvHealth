@@ -1,5 +1,5 @@
 <% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
-<% resource_properties = defined?(resource_properties) && !resource_properties.nil? ? resource_properties : {} %>
+<% component_properties = defined?(component_properties) && !component_properties.nil? ? component_properties : {} %>
 <% fragments_data = defined?(fragments_data) && !fragments_data.nil? ? fragments_data : {} %>
 
 <style>
@@ -188,15 +188,15 @@
   function initializeSidebar() {
     var sidebar = document.getElementById('sidebar');
     var pageData = <%= page_data.to_json %>;
-    var resourceProperties = <%= resource_properties.to_json %>;
+    var componentProperties = <%= component_properties.to_json %>;
 
     if (shouldCreateDropdown(pageData)) {
       var dropdown = createDropdownComponent(pageData);
       sidebar.appendChild(dropdown);
     }
 
-    Object.keys(resourceProperties).forEach(function(component_name) {
-      var properties = resourceProperties[component_name];
+    Object.keys(componentProperties).forEach(function(component_name) {
+      var properties = componentProperties[component_name];
       if (shouldCreateDropdown(properties)) {
         var dropdown = createDropdownComponent(properties);
         sidebar.appendChild(dropdown);
