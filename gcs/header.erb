@@ -5,7 +5,7 @@
     padding-left: calc(var(--padding) /2);
     padding-right: calc(var(--padding) /2);
     margin-top: calc(var(--padding) /2);
-    margin-bottom: var(--padding);
+    margin-bottom: calc(var(--padding) /2);
   }
 
   .search-bar {
@@ -139,7 +139,7 @@
       :img_src => current_page_data[:img_src],
       :route => breadcrumb_route
     }
-  end.compact # Remove any nil items from the array.
+  end.compact
 %>
 
 <div class="header">
