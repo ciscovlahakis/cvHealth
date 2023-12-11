@@ -279,6 +279,7 @@ DEPENDENCIES
   grade_runner
   http
   i18n
+  nokogiri
   pry
   puma (~> 5.0)
   rspec

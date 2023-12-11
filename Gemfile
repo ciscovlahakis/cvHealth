@@ -13,6 +13,7 @@ gem 'bcrypt'
 gem 'http'
 gem 'dotenv'
 gem 'algoliasearch'
+gem 'nokogiri'
 
 # Use Puma as the app server
 gem 'puma', '~> 5.0'

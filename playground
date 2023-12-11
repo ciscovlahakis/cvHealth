@@ -1,7 +1,4 @@
-- "edit-items"
-- "delete-items"
-- "switch-items"
-- "list-view"
+
 
 <div class="sidebar-heading text-center">
   <a href="<%= route %>" class="clickable-tab sidebar-tab">
@@ -14,22 +11,6 @@
     <% end %>
   </a>
 </div>
-
-
-<div class="dropdown">
-  <div class="link dropdown-toggle">
-    <span class="caret">&#9660;</span>
-    Cisco Vlahakis
-  </div>
-  <div class="dropdown-menu show">
-    <div class="link dropdown-item">Anonymous Mode</div>
-    <div class="link dropdown-item">Switch User</div>
-    <div class="link dropdown-item">Log Out</div>
-  </div>
-</div>
-
-
-
 
 
 <div style="display: flex;">

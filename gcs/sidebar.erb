@@ -176,7 +176,9 @@
   function renderFragmentByHash(hash) {
     var fragment = fragmentsData[hash];
     if (fragment && fragment.content) {
-      document.getElementById('_fragment').innerHTML = fragment.content;
+      var fragmentElement = document.getElementById('_fragment');
+      if (!fragmentElement) return;
+      fragmentElement.innerHTML = fragment.content;
     } else {
       console.error("Fragment not found for hash: " + hash);
     }

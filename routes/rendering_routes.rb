@@ -2,6 +2,7 @@
 
 require "sinatra/reloader"
 require 'erb'
+require 'nokogiri'
 
 get "/favicon.ico" do
 end
@@ -12,55 +13,18 @@ end
 get "/__sinatra__500.png" do
 end
 
-def fetch_page_data(route)
-  matching_pages = $db.col("pages").where("route", "=", route).get
-  first_page = matching_pages.first
-  if first_page.nil?
-    puts "PAGE NOT FOUND FOR: #{route}"
-    return nil
-  else
-    return first_page.data
-  end
-end
-
-# Fetch the template from Google Cloud Storage
-def fetch_template(component_name)
-  response = HTTP.get("https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb")
-  if response.status.success?
-    return response.to_s
-  else
-    error_message = "Failed to fetch template: #{response.status}"
-    puts error_message
-  end
-end
-
-# Parse the YAML front matter from the template
-def parse_yaml_front_matter(template_content)
-  # Check if the file starts with the YAML front matter delimiter '---'
-  if template_content.strip.start_with?("---")
-    # Split on the YAML delimiters, ignoring the first split which is empty
-    front_matter, content = template_content.split(/---\s*/, 3)[1..]
-    parsed_front_matter = YAML.load(front_matter)
-    [parsed_front_matter, content.strip]
-  else
-    # If there is no YAML front matter, return an empty front matter and the whole content
-    [{}, template_content.strip]
-  end
-end
-
 get "/*" do |path|
   # Fetch the page data from Firestore
   page_data = fetch_page_data("/#{path}")
+  return halt(404, "Page not found") if page_data.nil?
 
   # Extract the template name from the page data
   template_name = page_data.fetch(:template, nil)
-  if template_name.nil?
-    puts "Template name not specified in page data for path: #{path}"
-    halt 404, "Template not specified"
-  end
+  return halt(404, "Template not specified") if template_name.nil?
 
   # Fetch the template content from GCS
   template_content = fetch_template(template_name)
+  return halt(404, "Template content not found") if template_content.nil?
 
   # Extract YAML front matter and the HTML content
   front_matter, html_content = parse_yaml_front_matter(template_content)
@@ -74,7 +38,7 @@ get "/*" do |path|
   # Prepare the components array, including _yield if it exists
   components = front_matter.fetch("components", [])
   _yield_component_name = page_data.fetch(:_yield, nil)
-  components << _yield_component_name unless !_yield_component_name
+  components << _yield_component_name unless _yield_component_name.nil?
 
   # Loop to collect properties for all components, including _yield
   components.each do |component|
@@ -93,10 +57,10 @@ get "/*" do |path|
       next unless fragment_content
       fragment_front_matter, fragment_html_content = parse_yaml_front_matter(fragment_content)
       # Store the fragment's content in the fragments_data hash
-      fragments_data[fragment_file_name] = {
+      fragments_data.store(fragment_file_name, {
         :title => fragment_front_matter["title"],
         :content => fragment_html_content
-      }
+      })
     end
   end
 
@@ -121,8 +85,25 @@ get "/*" do |path|
     end
   end
 
+  # Parse the main HTML content and look for placeholders
+  doc = Nokogiri::HTML(html_content)
+  doc.css('div[data-component]').each do |placeholder|
+    component_name = placeholder['data-component']
+    
+    # Check if the component method is defined
+    if respond_to?(component_name)
+      # Replace the placeholder div with the rendered component content
+      placeholder.replace(Nokogiri::HTML::DocumentFragment.parse(send(component_name)))
+    else
+      puts "Component method not defined for: #{component_name}"
+    end
+  end
+
+  # After replacing all placeholders, convert the Nokogiri document back to HTML
+  html_content_with_components = doc.to_html
+
   # Render the main template content using the current context
-  @html_content = ERB.new(html_content).result(binding)
+  @html_content = ERB.new(html_content_with_components).result(binding)
 
   # Render the final HTML content with the layout
   erb :layout

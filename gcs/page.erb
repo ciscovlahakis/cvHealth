@@ -13,12 +13,12 @@ components:
 </style>
 
 <div>
-  <%= header %>
+  <div id="_fragment"></div>
+  <div data-component="header"></div>
   <div class="page">
-    <%= sidebar %>
+    <div data-component="sidebar"></div>
     <div style="width: 100%;">
-      <div id="_fragment"></div>
-      <%= _yield %>
+      <div data-component="_yield"></div>
     </div>
   </div>
 </div>
