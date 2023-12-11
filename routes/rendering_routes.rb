@@ -13,6 +13,15 @@ end
 get "/__sinatra__500.png" do
 end
 
+def render_component_or_fragment(content, nested_content = nil)
+  doc = Nokogiri::HTML(content)
+  yieldable_area = doc.at('div[data-yield]')
+  if yieldable_area && nested_content
+    yieldable_area.replace(nested_content)
+  end
+  doc.to_html
+end
+
 get "/*" do |path|
   # Fetch the page data from Firestore
   page_data = fetch_page_data("/#{path}")
@@ -53,6 +62,48 @@ get "/*" do |path|
       fragment_content = fetch_template(fragment_file_name)
       next unless fragment_content
       fragment_front_matter, fragment_html_content = parse_yaml_front_matter(fragment_content)
+    
+
+
+      # Process nested components within the fragment
+      nested_components = fragment_front_matter.fetch("components", [])
+      nested_components.each do |nested_component_name|
+        nested_component_template_content = fetch_template(nested_component_name)
+        next unless nested_component_template_content
+        _, nested_component_html_content = parse_yaml_front_matter(nested_component_template_content)
+      
+        # Prepare the Nokogiri document for the nested component
+        nested_doc = Nokogiri::HTML(nested_component_html_content)
+        nested_placeholder = nested_doc.at("div[data-yield]")
+      
+        # Check for nested content within the parent component's placeholder
+        fragment_doc = Nokogiri::HTML(fragment_html_content)
+        parent_placeholder = fragment_doc.at("div[data-component='#{nested_component_name}']")
+      
+        # If nested content exists, extract it
+        child_content = parent_placeholder.inner_html if parent_placeholder && !parent_placeholder.inner_html.strip.empty?
+      
+        # Render the nested component with any child content
+        rendered_nested_component = if nested_placeholder && child_content
+                                      # Replace the placeholder in the nested component with the child content
+                                      nested_placeholder.replace(child_content)
+                                      nested_doc.to_html
+                                    else
+                                      # No nested content; render the component as it is
+                                      ERB.new(nested_component_html_content).result(binding)
+                                    end
+      
+        # Replace the placeholder for the nested component in the parent's content
+        parent_placeholder.replace(rendered_nested_component) if parent_placeholder
+      
+        # Update the fragment_html_content with the modified document
+        fragment_html_content = fragment_doc.to_html
+      end
+
+
+
+      
+      # Store the fully rendered fragment content
       fragments_data.store(fragment_file_name, {
         :title => fragment_front_matter["title"],
         :content => fragment_html_content
