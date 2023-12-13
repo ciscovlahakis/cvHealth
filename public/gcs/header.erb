@@ -1,0 +1,267 @@
+<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
+
+<style>
+  .header {
+    padding-left: calc(var(--padding) /2);
+    padding-right: calc(var(--padding) /2);
+    margin-top: calc(var(--padding) /2);
+    margin-bottom: calc(var(--padding) /2);
+  }
+
+  .search-bar {
+    display: flex;
+  }
+
+  .breadcrumb-container {
+    display: flex;
+    gap: calc(var(--padding) /2);
+    margin-right: calc(var(--padding) /2);
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    border: none;
+    background-color: white;
+    color: black;
+    border-radius: 15px;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px 0 hsla(0, 0%, 0%, 0.2);
+  }
+
+  .search-bar input {
+    flex: 1;
+    border: none;
+    padding: 10px;
+    outline: none;
+    border-radius: 15px;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px 0 hsla(0, 0%, 0%, 0.2);
+  }
+
+  .breadcrumb img,
+  .breadcrumb-thumbnail {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+  }
+
+  .breadcrumb-thumbnail-with-title {
+    margin-right: 5px;
+  }
+
+  .breadcrumb-icon {
+    font-size: 1.5em;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle; /* Align the icon with the text */
+  }
+
+  .breadcrumb-icon-with-title {
+    margin-right: 7px;
+  }
+
+  .breadcrumb a,
+  .clickable {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .breadcrumb-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; /* Add this to center the items vertically */
+  }
+
+  a:hover .breadcrumb {
+    background-color: #f5f5f5; /* Light grey background */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); /* Slightly elevated look */
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1); /* Smooth transition */
+  }
+
+  #activityIndicator {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+  }
+  
+  .spinner {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #000000;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+  }
+</style>
+
+<%
+  def fetch_page_data(route)
+    matching_pages = $db.col("pages").where("route", "=", route).get
+    first_page = matching_pages.first
+    if first_page.nil?
+      puts "PAGE NOT FOUND FOR: #{route}"
+      return nil
+    else
+      return first_page.data
+    end
+  end
+
+  # Define a method to fetch the page data if it's not the current page.
+  def safe_fetch_page_data(route, current_page_data)
+    return current_page_data if current_page_data["route"] == route
+    fetch_page_data(route) || {}
+  end
+
+  route = request.path_info
+  route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..-1]
+
+  breadcrumbs = route_components.each_with_index.map do |component, index|
+    breadcrumb_route = route_components[0..index].join
+    breadcrumb_route = "/" if breadcrumb_route.empty?
+
+    # Fetch page data if necessary.
+    current_page_data = safe_fetch_page_data(breadcrumb_route, page_data)
+
+    # Skip if no data is present for the breadcrumb.
+    next if current_page_data.empty?
+
+    {
+      :title => current_page_data[:title],
+      :icon => current_page_data[:icon],
+      :img_src => current_page_data[:img_src],
+      :route => breadcrumb_route
+    }
+  end.compact
+%>
+
+<div class="header">
+  <div class="search-bar">
+    <% unless breadcrumbs.empty? %>
+      <div class="breadcrumb-container">
+        <% breadcrumbs.each do |breadcrumb| %>
+          <% img_src = breadcrumb.fetch(:img_src, nil) %>
+          <% icon = breadcrumb.fetch(:icon, nil) %>
+          <% title = breadcrumb.fetch(:title, nil) %>
+          <a href="<%= breadcrumb.fetch(:route, '/') %>" class="clickable">
+            <span class="breadcrumb breadcrumb-content">
+              <% if img_src && !img_src.empty? %>
+                <img src="<%= img_src %>" alt="Thumbnail" class="breadcrumb-thumbnail <%= title && !title.empty? ? 'breadcrumb-thumbnail-with-title' : '' %>">
+              <% elsif icon && !icon.empty? %>
+                <i class="<%= icon %> breadcrumb-icon <%= title && !title.empty? ? 'breadcrumb-icon-with-title' : '' %>"></i>
+              <% else %>
+                <img src="https://via.placeholder.com/150" alt="" class="breadcrumb-thumbnail <%= title && !title.empty? ? 'breadcrumb-thumbnail-with-title' : '' %>">
+              <% end %>
+              <% if title && !title.empty? %>
+                <%= title %>
+              <% end %>
+            </span>
+          </a>
+        <% end %>
+      </div>
+    <% end %>
+    <input type="search" name="search" placeholder="Search...">
+  </div>
+  <div id="activityIndicator">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<script>
+  function createNoResultsElement(searchTerm) {
+    var noResultsElement = document.createElement('div');
+    noResultsElement.classList.add('result');
+    var noResultsMessage = createElementWithText('h2', 'Sorry, we couldn\'t find results for "' + searchTerm + '".');
+
+
+    var suggestionsList = document.createElement('ul');
+    var suggestions = [
+      'Check your search for typos.',
+      'Use more generic search terms.',
+      'Try different search terms.',
+      'Try fewer search terms.',
+      'Need help finding something? Contact us.'
+    ];
+    suggestions.forEach(function(suggestion) {
+      var listItem = createElementWithText('li', suggestion);
+      suggestionsList.appendChild(listItem);
+    });
+
+    appendChildren(noResultsElement, [noResultsMessage, suggestionsList]);
+    return noResultsElement;
+  }
+
+  function createElementWithText(type, text) {
+    var element = document.createElement(type);
+    element.innerText = text;
+    return element;
+  }
+
+  function appendChildren(parent, children) {
+    children.forEach(function(child) {
+      parent.appendChild(child);
+    });
+  }
+
+  function renderDataOrNoResults(data, container, searchTerm, renderDataFunction, createNoResultsElement) {
+    if (data.length > 0) {
+      appendChildren(container, data.map(renderDataFunction));
+    } else {
+      container.appendChild(createNoResultsElement(searchTerm));
+    }
+  }
+
+  function fetchSearchResults(url, searchTerm, resultsContainer, activityIndicator) {
+    activityIndicator.style.display = 'flex';
+    fetch(url)
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(data) {
+        activityIndicator.style.display = 'none';
+
+        /* Clear previous results, but leave the template row */
+        var children = Array.from(resultsContainer.children);
+        children.forEach(function(child) {
+          if (child.id !== 'template-row' && child.id !== 'headers') {
+            resultsContainer.removeChild(child);
+          }
+        });
+
+        renderResults(data, resultsContainer, searchTerm);
+      });
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var resultsContainer = document.getElementById('results');
+    var activityIndicator = document.getElementById('activityIndicator');
+    var indexName = '<%= page_data.fetch(:index_name, nil) %>';
+    var url = "/search/" + indexName;
+
+    fetchSearchResults(url, "", resultsContainer, activityIndicator);
+
+    document.querySelector("input[name='search']").addEventListener("keyup", function(event) {
+      var searchTerm = event.target.value.trim();
+      
+      /* If the search term is empty, clear the results and return early */
+      if (searchTerm === '') {
+        activityIndicator.style.display = 'none';
+        while (resultsContainer.firstChild) {
+          resultsContainer.removeChild(resultsContainer.firstChild);
+        }
+        return;
+      }
+
+      var url = "/search/" + indexName + "?term=" + searchTerm;
+      
+      fetchSearchResults(url, searchTerm, resultsContainer, activityIndicator);
+    });
+  });
+</script>

@@ -1,0 +1,24 @@
+---
+title: "Page"
+type: "template"
+components:
+  - "header"
+  - "sidebar"
+---
+<style>
+  .page {
+    display: flex;
+    flex-direction: row;
+  }
+</style>
+
+<div>
+  <div id="_fragment"></div>
+  <div data-component="header"></div>
+  <div class="page">
+    <div data-component="sidebar"></div>
+    <div>
+      <div data-component="_yield"></div>
+    </div>
+  </div>
+</div>
