@@ -70,10 +70,9 @@ fragments:
     font-size: 1em;
   }
 
-  #button-table-container {
+  #table-container {
     display: flex;
     flex-direction: column;
-    width: 100%;
   }
 
   .grid-row > div {
@@ -86,7 +85,7 @@ fragments:
 </style>
 
 <% unless columns.empty? %>
-  <div id="button-table-container" data-columns="<%= CGI.escapeHTML(columns.to_json) %>">
+  <div id="table-container" data-columns="<%= CGI.escapeHTML(columns.to_json) %>">
     <input type="hidden" id="enableMove" value="<%= enable_move %>">
     <div class="grid-table rounded-shadow" id="results">
       <div class="grid-row" id="headers">
@@ -113,7 +112,7 @@ fragments:
     row.dataset.id = data.objectID; /* Use Algolia's objectID as the row identifier */
 
     /* Create a cell for each column in the columns array. The columns JSON is already safe to parse. */
-    var columnsJson = document.getElementById('button-table-container').dataset.columns;
+    var columnsJson = document.getElementById('table-container').dataset.columns;
     var columns = JSON.parse(columnsJson);
 
     /* Add the icon column for the drag handle */

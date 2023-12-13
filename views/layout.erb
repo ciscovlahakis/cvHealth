@@ -68,9 +68,6 @@
           var script = document.createElement('script');
           script.src = '/gcs/' + scriptName + '.js';
           script.type = 'text/javascript';
-          script.onload = function() {
-            console.log('Script for component ' + scriptName + ' loaded successfully.');
-          };
           script.onerror = function() {
             console.error('Error loading script for component:', scriptName);
           };
