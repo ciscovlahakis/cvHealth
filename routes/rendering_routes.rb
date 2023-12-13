@@ -13,14 +13,9 @@ end
 get "/__sinatra__500.png" do
 end
 
-def render_component_or_fragment(content, nested_content = nil)
-  doc = Nokogiri::HTML(content)
-  yieldable_area = doc.at('div[data-yield]')
-  if yieldable_area && nested_content
-    yieldable_area.replace(nested_content)
-  end
-  doc.to_html
-end
+# get "/*" do |path|
+#   erb :layout
+# end
 
 get "/*" do |path|
   # Fetch the page data from Firestore
@@ -41,6 +36,7 @@ get "/*" do |path|
   # Initialize the component_properties and fragments_data hashes
   component_properties = {}
   fragments_data = {}
+  @component_scripts = []
 
   # Prepare the components array
   components = front_matter.fetch("components", [])
@@ -71,13 +67,13 @@ get "/*" do |path|
         nested_component_template_content = fetch_template(nested_component_name)
         next unless nested_component_template_content
         _, nested_component_html_content = parse_yaml_front_matter(nested_component_template_content)
-      
+
         # Prepare the Nokogiri document for the nested component
-        nested_doc = Nokogiri::HTML(nested_component_html_content)
+        nested_doc = Nokogiri::HTML::DocumentFragment.parse(nested_component_html_content)
         nested_placeholder = nested_doc.at("div[data-yield]")
       
         # Check for nested content within the parent component's placeholder
-        fragment_doc = Nokogiri::HTML(fragment_html_content)
+        fragment_doc = Nokogiri::HTML::DocumentFragment.parse(fragment_html_content)
         parent_placeholder = fragment_doc.at("div[data-component='#{nested_component_name}']")
       
         # If nested content exists, extract it
@@ -98,21 +94,21 @@ get "/*" do |path|
       
         # Update the fragment_html_content with the modified document
         fragment_html_content = fragment_doc.to_html
+
+        @component_scripts << nested_component_name if File.exist?("./public/gcs/#{nested_component_name}.js")
       end
-
-
-
       
       # Store the fully rendered fragment content
       fragments_data.store(fragment_file_name, {
         :title => fragment_front_matter["title"],
         :content => fragment_html_content
       })
+      @component_scripts << fragment_file_name if File.exist?("./public/gcs/#{fragment_file_name}.js")
     end
   end
 
   # Parse the main HTML content with Nokogiri
-  doc = Nokogiri::HTML(html_content)
+  doc = Nokogiri::HTML::DocumentFragment.parse(html_content)
 
   # Second loop to render components and replace placeholders
   components.each do |component_name|
@@ -129,14 +125,15 @@ get "/*" do |path|
                          ERB.new(component_html_content).result(binding)
                        else
                          # Nested content found, treat the component as a parent
-                         component_doc = Nokogiri::HTML(component_html_content)
-                         yieldable_area = component_doc.at('div[data-yield]') # Adjust this selector based on your HTML structure
+                         component_doc = Nokogiri::HTML::DocumentFragment.parse(component_html_content)
+                         yieldable_area = component_doc.at('div[data-yield]')
                          yieldable_area.replace(placeholder.inner_html)
                          component_doc.to_html
                        end
 
     # Replace the placeholder in the main document with the rendered content
     placeholder.replace(Nokogiri::HTML::DocumentFragment.parse(rendered_content))
+    @component_scripts << component_name if File.exist?("./public/gcs/#{component_name}.js")
   end
 
   # After replacing all placeholders, convert the Nokogiri document back to HTML
@@ -145,10 +142,8 @@ get "/*" do |path|
   # Final rendering of the page
   @html_content = ERB.new(html_content_with_components).result(binding)
 
+  @component_scripts.uniq!
+
   # Render the final HTML content with the layout
   erb :layout
 end
-
-# get "/*" do |path|
-#   erb :layout
-# end

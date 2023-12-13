@@ -59,6 +59,23 @@
             console.error('There has been a problem with your fetch operation:', error);
           });
         });
+        
+        // Now add the dynamic loading of component scripts
+        // Assume that @component_scripts is an array of component names passed from the server
+        // This array should be defined in your server-side Ruby code where you process the components
+        var componentScripts = <%= @component_scripts.to_json %>;
+        componentScripts.forEach(function(scriptName) {
+          var script = document.createElement('script');
+          script.src = '/gcs/' + scriptName + '.js';
+          script.type = 'text/javascript';
+          script.onload = function() {
+            console.log('Script for component ' + scriptName + ' loaded successfully.');
+          };
+          script.onerror = function() {
+            console.error('Error loading script for component:', scriptName);
+          };
+          document.body.appendChild(script);
+        });
       });
     </script>
   </body>

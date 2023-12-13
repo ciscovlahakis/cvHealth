@@ -69,6 +69,21 @@
 <div id="sidebar"></div>
 
 <script>
+  // Function to render a fragment based on its hash (file name)
+  function renderFragmentByHash(hash) {
+    var fragment = fragmentsData[hash];
+    if (fragment && fragment.content) {
+      var fragmentElement = document.getElementById('_fragment');
+      if (!fragmentElement) {
+        console.log("No fragment element found.");
+        return;
+      }
+      fragmentElement.innerHTML = fragment.content;
+    } else {
+      console.error("Fragment not found for hash: " + hash);
+    }
+  }
+
   // Object to store the HTML content of fragments provided by the server
   var fragmentsData = <%= fragments_data.to_json %>;
 
@@ -171,18 +186,6 @@
     });
 
     return dropdown;
-  }
-
-  // Function to render a fragment based on its hash (file name)
-  function renderFragmentByHash(hash) {
-    var fragment = fragmentsData[hash];
-    if (fragment && fragment.content) {
-      var fragmentElement = document.getElementById('_fragment');
-      if (!fragmentElement) return;
-      fragmentElement.innerHTML = fragment.content;
-    } else {
-      console.error("Fragment not found for hash: " + hash);
-    }
   }
 
   // Function to initialize the sidebar with fetched fragments and routes
