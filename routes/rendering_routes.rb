@@ -59,8 +59,6 @@ get "/*" do |path|
       next unless fragment_content
       fragment_front_matter, fragment_html_content = parse_yaml_front_matter(fragment_content)
     
-
-
       # Process nested components within the fragment
       nested_components = fragment_front_matter.fetch("components", [])
       nested_components.each do |nested_component_name|
@@ -82,7 +80,7 @@ get "/*" do |path|
         # Render the nested component with any child content
         rendered_nested_component = if nested_placeholder && child_content
                                       # Replace the placeholder in the nested component with the child content
-                                      nested_placeholder.replace(child_content)
+                                      nested_placeholder.inner_html = child_content
                                       nested_doc.to_html
                                     else
                                       # No nested content; render the component as it is
@@ -90,7 +88,7 @@ get "/*" do |path|
                                     end
       
         # Replace the placeholder for the nested component in the parent's content
-        parent_placeholder.replace(rendered_nested_component) if parent_placeholder
+        parent_placeholder.inner_html = rendered_nested_component if parent_placeholder
       
         # Update the fragment_html_content with the modified document
         fragment_html_content = fragment_doc.to_html
@@ -127,12 +125,12 @@ get "/*" do |path|
                          # Nested content found, treat the component as a parent
                          component_doc = Nokogiri::HTML::DocumentFragment.parse(component_html_content)
                          yieldable_area = component_doc.at('div[data-yield]')
-                         yieldable_area.replace(placeholder.inner_html)
-                         component_doc.to_html
+                         yieldable_area.inner_html = placeholder.inner_html # Only replace the inner content
+                         rendered_content = component_doc.to_html
                        end
 
-    # Replace the placeholder in the main document with the rendered content
-    placeholder.replace(Nokogiri::HTML::DocumentFragment.parse(rendered_content))
+    # Replace the placeholder inner in the main document with the rendered content
+    placeholder.inner_html = rendered_content if placeholder
     @component_scripts << component_name if File.exist?("./public/gcs/#{component_name}.js")
   end
 
