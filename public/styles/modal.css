@@ -1,20 +1,19 @@
 .modal {
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.5);
-  position: fixed;
+  display: none; /* Hidden by default */
+  position: fixed; /* Fixed position to cover the whole screen */
   top: 0;
+  left: 0;
   right: 0;
   bottom: 0;
-  left: 0;
-  overflow: auto;
+  z-index: 1000; /* Make sure this is lower than the z-index of .utility-panel */
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  flex-direction: column; /* Add this to stack children vertically */
+  justify-content: flex-start; /* Align to the top */
+  align-items: center; /* Center items horizontally */
+  overflow: auto; /* Scroll if needed */
 }
 
 .modal-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   background-color: white;
   padding: 20px;
   border-radius: 10px;
@@ -22,7 +21,7 @@
   max-width: 500px;
   margin: auto;
   max-height: 90vh;
-  overflow: visible;
+  overflow-y: auto; /* Scroll inside if needed */
 }
 
 .button-group {
