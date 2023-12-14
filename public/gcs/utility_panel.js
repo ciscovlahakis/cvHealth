@@ -36,15 +36,25 @@ function initializeUtilityPanel() {
       if (isContentVisible) {
         // Minimize the content
         toggleDisplay(content, 'none');
+        utilityPanel.classList.remove('modal');
+        utilityContent.classList.remove('modal-content');
+        utilityPanel.classList.add('utility-panel');
         utilityPanel.style.height = 'auto';
+        // Do not change lastState here, it should remember the last expanded state
       } else {
-        // Maximize the content to the last state
+        // Restore to the last non-minimized state
         toggleDisplay(content, 'block');
-        utilityPanel.style.height = lastState === 'expanded' ? '' : '400px';
         if (lastState === 'expanded') {
           utilityPanel.classList.add('modal');
           utilityContent.classList.add('modal-content');
           utilityPanel.classList.remove('utility-panel');
+          utilityPanel.style.height = ''; // Remove inline height style
+        } else {
+          // If there's another non-minimized state to consider, handle it here
+          utilityPanel.classList.add('utility-panel');
+          utilityContent.classList.remove('modal-content');
+          utilityPanel.classList.remove('modal');
+          utilityPanel.style.height = '400px'; // Or whatever the original height is
         }
       }
     }
@@ -59,14 +69,13 @@ function initializeUtilityPanel() {
   document.addEventListener('click', function(event) {
     var isModal = utilityPanel.classList.contains('modal');
     var isClickInsideUtilityContent = utilityContent.contains(event.target);
-
-    if (isModal && !isClickInsideUtilityContent && event.target.id !== 'expand') {
-      // Minimize the utility panel
+  
+    if (isModal && !isClickInsideUtilityContent && event.target.id !== 'expand' && event.target.id !== 'minimize') {
+      // Minimize the utility panel if it's expanded and the click is outside
       toggleDisplay(utilityContent, 'none');
       utilityPanel.classList.add('utility-panel');
       utilityContent.classList.remove('modal-content');
       utilityPanel.classList.remove('modal');
-      lastState = 'original'; // Update the last non-minimized state
       utilityPanel.style.height = 'auto';
     }
   }, true);
