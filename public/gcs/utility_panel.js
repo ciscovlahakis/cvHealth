@@ -9,7 +9,7 @@ function initializeUtilityPanel() {
 
   document.body.addEventListener('click', function(event) {
     var content = utilityPanel.querySelector('[data-yield]');
-    
+  
     if (event.target.id === 'close') {
       toggleDisplay(utilityPanel, 'none');
     } else if (event.target.id === 'expand') {
@@ -28,7 +28,7 @@ function initializeUtilityPanel() {
         utilityPanel.classList.remove('modal');
         utilityContent.classList.remove('modal-content');
         toggleDisplay(utilityPanel, 'block');
-        utilityPanel.style.height = '400px'; // Reset the height
+        utilityPanel.style.height = ''; // Clear any inline height style
       }
     } else if (event.target.id === 'minimize') {
       var isContentHidden = content.style.display === 'none';
@@ -40,8 +40,8 @@ function initializeUtilityPanel() {
         utilityPanel.classList.add('utility-panel');
         utilityPanel.classList.remove('modal');
         utilityContent.classList.remove('modal-content');
-        toggleDisplay(utilityPanel, 'block'); // This might be redundant, but ensures visibility
       }
+      toggleDisplay(utilityPanel, 'block'); // This might be redundant, but ensures visibility
     }
   });
 
@@ -51,6 +51,22 @@ function initializeUtilityPanel() {
       event.stopPropagation(); // Prevent clicks inside the content from closing it
     });
   }
+
+  document.addEventListener('click', function(event) {
+    // Check if the utility panel is in a modal state
+    if (utilityPanel.classList.contains('modal')) {
+      // Check if the click is directly on the modal backdrop (`.modal`), not its children
+      if (event.target.classList.contains('modal')) {
+        // Minimize the utility panel
+        var content = utilityPanel.querySelector('[data-yield]');
+        toggleDisplay(content, 'none'); // Hide the content
+        utilityPanel.style.height = 'auto'; // Reset the height for the minimized state
+        utilityPanel.classList.remove('modal');
+        utilityContent.classList.remove('modal-content');
+        utilityPanel.classList.add('utility-panel'); // Add back the utility-panel class
+      }
+    }
+  }, true);
 }
 
 window.firebaseInitialized
