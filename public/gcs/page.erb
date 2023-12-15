@@ -11,17 +11,18 @@ components:
     flex-direction: row;
   }
   .yield {
+    position: relative;
     margin: calc(var(--padding)/2);
     width: 100%;
   }
 </style>
 
 <div>
-  <div id="_fragment"></div>
   <div data-component="header"></div>
   <div class="page">
     <div data-component="sidebar"></div>
     <div class="yield">
+      <div id="_fragment">
       <div data-component="_yield"></div>
     </div>
   </div>
