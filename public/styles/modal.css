@@ -5,7 +5,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000; /* Make sure this is lower than the z-index of .utility-panel */
+  z-index: var(--zindex-modal);
   background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
   flex-direction: column; /* Add this to stack children vertically */
   justify-content: flex-start; /* Align to the top */

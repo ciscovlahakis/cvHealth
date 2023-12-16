@@ -58,8 +58,6 @@ get "/*" do |path|
       fragment_content = fetch_template(fragment_file_name)
       next unless fragment_content
       fragment_front_matter, fragment_html_content = parse_yaml_front_matter(fragment_content)
-    
-
 
       # Process nested components within the fragment
       nested_components = fragment_front_matter.fetch("components", [])

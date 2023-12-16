@@ -2,6 +2,10 @@
   --padding: 1rem !important;
   --border-radius: 10px;
   --bs-font-sans-serif: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+  --zindex-utility-panel: 10;
+  --zindex-modal: 20;
+  --zindex-modal-dropdown: 30;
+  --zindex-activity-indicator: 40;
 }
 
 body {

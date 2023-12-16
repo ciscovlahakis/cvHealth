@@ -22,8 +22,7 @@
   position: absolute;
   padding: 0;
   margin: 0;
-  z-index: 9999;
-  /* Add this line */
+  z-index: var(--zindex-modal-dropdown);
 }
 
 .dropdown-content p {
