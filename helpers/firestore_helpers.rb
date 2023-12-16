@@ -42,6 +42,30 @@ def resource_and_attributes
   return @resource, attributes
 end
 
+def fetch_collection_data(collection_name, query_params = nil)
+  collection_ref = $db.col(collection_name)
+
+  if query_params
+    documents = collection_ref.where(query_params[:field], query_params[:operator], query_params[:value]).get
+  else
+    documents = collection_ref.get
+  end
+
+  documents.map(&:data)
+end
+
+def fetch_document_data(collection_name, field_value = nil)
+  if field_value
+    fetch_collection_data(collection_name, {
+      :field => field_value[:field], 
+      :operator => "=", 
+      :value => field_value[:value]
+    }).first
+  else
+    fetch_collection_data(collection_name)
+  end
+end
+
 def create_item(collection_name, attributes)
   new_item = attributes.each_with_object({}) do |attribute, hash|
     id = attribute.fetch(:id)

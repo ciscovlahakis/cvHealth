@@ -103,47 +103,32 @@
 </style>
 
 <%
-  def fetch_page_data(route)
-    matching_pages = $db.col("pages").where("route", "=", route).get
-    first_page = matching_pages.first
-    if first_page.nil?
-      puts "PAGE NOT FOUND FOR: #{route}"
-      return nil
-    else
-      return first_page.data
-    end
+  def build_breadcrumbs(route, page_data)
+    route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..-1]
+
+    breadcrumbs = route_components.each_with_index.map do |component, index|
+      breadcrumb_route = route_components[0..index].join
+      breadcrumb_route = "/" if breadcrumb_route.empty?
+
+      breadcrumb_page_data = component == page_data[:route] ? page_data : fetch_document_data("pages", { :field => "route", :value => breadcrumb_route })
+
+      next if breadcrumb_page_data.nil?
+
+      {
+        :title => breadcrumb_page_data[:title],
+        :icon => breadcrumb_page_data[:icon],
+        :img_src => breadcrumb_page_data[:img_src],
+        :route => breadcrumb_route
+      }
+    end.compact
+
+    breadcrumbs
   end
-
-  # Define a method to fetch the page data if it's not the current page.
-  def safe_fetch_page_data(route, current_page_data)
-    return current_page_data if current_page_data["route"] == route
-    fetch_page_data(route) || {}
-  end
-
-  route = request.path_info
-  route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..-1]
-
-  breadcrumbs = route_components.each_with_index.map do |component, index|
-    breadcrumb_route = route_components[0..index].join
-    breadcrumb_route = "/" if breadcrumb_route.empty?
-
-    # Fetch page data if necessary.
-    current_page_data = safe_fetch_page_data(breadcrumb_route, page_data)
-
-    # Skip if no data is present for the breadcrumb.
-    next if current_page_data.empty?
-
-    {
-      :title => current_page_data[:title],
-      :icon => current_page_data[:icon],
-      :img_src => current_page_data[:img_src],
-      :route => breadcrumb_route
-    }
-  end.compact
 %>
 
 <div class="header">
   <div class="search-bar">
+    <% breadcrumbs = build_breadcrumbs(request.path_info, page_data) %>
     <% unless breadcrumbs.empty? %>
       <div class="breadcrumb-container">
         <% breadcrumbs.each do |breadcrumb| %>
@@ -242,7 +227,7 @@
   document.addEventListener("DOMContentLoaded", function() {
     var resultsContainer = document.getElementById('results');
     var activityIndicator = document.getElementById('activityIndicator');
-    var indexName = '<%= page_data.fetch(:index_name, nil) %>';
+    var indexName = '<%= page_data.fetch(:collection, nil) %>';
     var url = "/search/" + indexName;
 
     fetchSearchResults(url, "", resultsContainer, activityIndicator);

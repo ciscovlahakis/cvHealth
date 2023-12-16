@@ -19,7 +19,10 @@ end
 
 get "/*" do |path|
   # Fetch the page data from Firestore
-  page_data = fetch_page_data("/#{path}")
+  page_data = fetch_document_data("pages", {
+    :field => "route",
+    :value => "/#{path}"
+  })
   return halt(404, "Page not found") if page_data.nil?
 
   # Extract the template name from the page data
@@ -30,13 +33,19 @@ get "/*" do |path|
   template_content = fetch_template(template_name)
   return halt(404, "Template content not found") if template_content.nil?
 
+  # Fetch the collection configuration if needed
+  collection_name = page_data.fetch(:collection, nil)
+  collection_config = fetch_document_data("collections", {
+    :field => "name",
+    :value => collection_name
+  }) if collection_name
+
   # Extract YAML front matter and the HTML content
   front_matter, html_content = parse_yaml_front_matter(template_content)
 
-  # Initialize the component_properties and fragments_data hashes
+  @component_scripts = []
   component_properties = {}
   fragments_data = {}
-  @component_scripts = []
 
   # Prepare the components array
   components = front_matter.fetch("components", [])
@@ -141,6 +150,8 @@ get "/*" do |path|
   @html_content = ERB.new(html_content_with_components).result(binding)
 
   @component_scripts.uniq!
+
+  @fragments_data = fragments_data;
 
   # Render the final HTML content with the layout
   erb :layout

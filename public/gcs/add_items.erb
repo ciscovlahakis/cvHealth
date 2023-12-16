@@ -3,6 +3,9 @@ title: "Add Item(s)"
 components:
   - "utility_panel"
 ---
+
+<% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch(:display, true) } : [] %>
+
 <style>
   .form-container {
     background: #fff;
@@ -76,21 +79,21 @@ components:
 <div data-component="utility_panel">
   <div class="form-container">
     <h2>Add Item</h2>
-    <form action="/add-item" method="post">
-      <div class="form-group">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required>
-      </div>
-      
-      <div class="form-group">
-        <label for="route">Route</label>
-        <input type="text" id="route" name="route" required>
-      </div>
-      
+    <% unless fields.empty? %>
+      <form action="/add-item" method="post">
+      <% fields.each do |field| %>
+        <% if field.fetch(:editable, true) %>
+          <div class="form-group">
+            <label for="<%= field.fetch(:name) %>"><%= field.fetch(:title) %></label>
+            <input type="<%= field.fetch(:type, 'text') %>" id="<%= field.fetch(:name) %>" name="<%= field.fetch(:name) %>" required>
+          </div>
+        <% end %>
+      <% end %>
       <div class="form-actions">
         <input type="submit" value="Save">
         <button type="button" onclick="location.href='/cancel-action'">Cancel</button>
       </div>
     </form>
+    <% end %>
   </div>
 </div>

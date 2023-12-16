@@ -8,8 +8,7 @@ fragments:
   - "list_view"
 ---
 
-<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
-<% columns = page_data.fetch(:columns, []) %>
+<% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch(:display, true) } : [] %>
 <% enable_move = true %>
 
 <style>
@@ -24,7 +23,7 @@ fragments:
   .grid-row {
     display: grid;
     /* Adjust the first value if you need a wider icon column */
-    grid-template-columns: 100px repeat(<%= columns.count %>, 1fr);
+    grid-template-columns: 100px repeat(<%= fields.count %>, 1fr);
     width: 100%;
   }
 
@@ -32,8 +31,8 @@ fragments:
     background-color: #fff;
     padding: 15x;
     transition: all 0.3s;
-    min-width: 100px; /* adjust based on your needs */
-    min-height: 20px; /* adjust based on your needs */
+    min-width: 100px;
+    min-height: 20px;
   }
 
   .grid-row .content-cell:hover {
@@ -53,8 +52,8 @@ fragments:
     padding: 10px;
     text-align: left;
     transition: all 0.3s;
-    min-width: 50px; /* adjust based on your needs */
-    min-height: 20px; /* adjust based on your needs */
+    min-width: 50px;
+    min-height: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -84,14 +83,14 @@ fragments:
   }
 </style>
 
-<% unless columns.empty? %>
-  <div id="table-container" data-columns="<%= CGI.escapeHTML(columns.to_json) %>">
+<% unless fields.empty? %>
+  <div id="table-container">
     <input type="hidden" id="enableMove" value="<%= enable_move %>">
     <div class="grid-table rounded-shadow" id="results">
       <div class="grid-row" id="headers">
         <!-- Add an empty div for the icon column -->
         <div class="header"></div>
-        <% columns.each do |x| %>
+        <% fields.each do |x| %>
           <div class="header"><%= x.fetch(:title, nil) %></div>
         <% end %>
       </div>
@@ -105,15 +104,13 @@ fragments:
 <% end %>
 
 <script>
+  var fieldsData = <%= fields.to_json %>;
+
   function createRowWithData(data) {
     var row = document.createElement('div');
     row.className = 'grid-row sortable-row';
     row.dataset.resource = data.resource;
     row.dataset.id = data.objectID; /* Use Algolia's objectID as the row identifier */
-
-    /* Create a cell for each column in the columns array. The columns JSON is already safe to parse. */
-    var columnsJson = document.getElementById('table-container').dataset.columns;
-    var columns = JSON.parse(columnsJson);
 
     /* Add the icon column for the drag handle */
     var iconColumn = document.createElement('div');
@@ -121,7 +118,7 @@ fragments:
     iconColumn.innerHTML = '<i class="fas fa-bars"></i>';
     row.appendChild(iconColumn);
 
-    columns.forEach(function(column) {
+    fieldsData.forEach(function(column) {
       var cell = document.createElement('div');
       cell.className = 'content-cell';
       /* Directly use the column title as the property name to access Algolia data */

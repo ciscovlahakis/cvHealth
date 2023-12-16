@@ -4,25 +4,6 @@ require 'http'
 require 'json'
 require 'yaml'
  
-def get_data(id, col)
-  return nil if id.nil? || id.empty?
-  _col = $db.col(col)
-  _doc = _col.doc(id).get
-  _data = _doc.data if _doc.exists?
-  return _data
-end
-
-def fetch_page_data(route)
-  matching_pages = $db.col("pages").where("route", "=", route).get
-  first_page = matching_pages.first
-  if first_page.nil?
-    puts "PAGE NOT FOUND FOR: #{route}"
-    return nil
-  else
-    return first_page.data
-  end
-end
-
 # Fetch the template from Google Cloud Storage
 def fetch_template(component_name)
   url = "https://storage.googleapis.com/cisco-vlahakis.appspot.com/#{component_name}.erb"

@@ -48,7 +48,8 @@
       }
 
       function renderFragmentByHash(hash) {
-        var fragment = fragmentsData[hash];
+        var fragmentsData = <%= @fragments_data.to_json %>;
+        var fragment = fragmentsData?.[hash];
         if (fragment && fragment.content) {
           var fragmentElement = document.getElementById('_fragment');
           if (!fragmentElement) {
@@ -64,7 +65,7 @@
       document.addEventListener('DOMContentLoaded', function() {
         handleInitialHash();
         var componentScripts = <%= @component_scripts.to_json %>;
-        componentScripts.forEach(function(scriptName) {
+        componentScripts?.forEach(function(scriptName) {
           var script = document.createElement('script');
           script.src = '/gcs/' + scriptName + '.js';
           script.type = 'text/javascript';
