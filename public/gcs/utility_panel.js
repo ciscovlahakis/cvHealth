@@ -1,6 +1,11 @@
+const States = {
+  ORIGINAL: 'original',
+  EXPANDED: 'expanded'
+};
+
 function initializeUtilityPanel() {
   var utilityPanel = document.querySelector('.utility-panel');
-  var lastState = 'original'; // This will track the last non-minimized state
+  var lastState = States.ORIGINAL; // This will track the last non-minimized state
 
   // Helper function to toggle display styles
   function toggleDisplay(element, displayStyle) {
@@ -15,17 +20,17 @@ function initializeUtilityPanel() {
       toggleDisplay(utilityPanel, 'none');
     }
     else if (event.target.id === 'expand') {
-      var isExpanded = lastState === "expanded";
+      var isExpanded = lastState === States.EXPANDED;
       if (!isExpanded) {
         // Expanding to expanded-utility
         utilityPanel.classList.add('expanded-utility');
         utilityPanel.classList.remove('utility-panel');
-        lastState = 'expanded'; // Remember the expanded state
+        lastState = States.EXPANDED; // Remember the expanded state
       } else {
         // Collapsing to utility panel
         utilityPanel.classList.add('utility-panel');
         utilityPanel.classList.remove('expanded-utility');
-        lastState = 'original'; // Revert back to the original state
+        lastState = States.ORIGINAL; // Revert back to the original state
       }
       toggleDisplay(utilityPanel, 'block');
       toggleDisplay(content, 'block'); // Ensure content is visible
@@ -43,7 +48,7 @@ function initializeUtilityPanel() {
       } else {
         // Restore to the last non-minimized state
         toggleDisplay(content, 'block');
-        if (lastState === 'expanded') {
+        if (lastState === States.EXPANDED) {
           utilityPanel.classList.add('expanded-utility');
           utilityPanel.classList.remove('utility-panel');
           utilityPanel.style.height = ''; // Remove inline height style
