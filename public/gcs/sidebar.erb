@@ -69,21 +69,6 @@
 <div id="sidebar"></div>
 
 <script>
-  // Function to render a fragment based on its hash (file name)
-  function renderFragmentByHash(hash) {
-    var fragment = fragmentsData[hash];
-    if (fragment && fragment.content) {
-      var fragmentElement = document.getElementById('_fragment');
-      if (!fragmentElement) {
-        console.log("No fragment element found.");
-        return;
-      }
-      fragmentElement.innerHTML = fragment.content;
-    } else {
-      console.error("Fragment not found for hash: " + hash);
-    }
-  }
-
   // Object to store the HTML content of fragments provided by the server
   var fragmentsData = <%= fragments_data.to_json %>;
 
@@ -171,8 +156,9 @@
           'dropdown-item tab'
         );
         menu.appendChild(menuItem);
-        menuItem.addEventListener('click', function() {
-          renderFragmentByHash(fragmentHash);
+        menuItem.addEventListener('click', function(event) {
+          event.preventDefault();
+          window.location.hash = fragmentHash;
         });
       });
     }
@@ -206,19 +192,7 @@
         sidebar.appendChild(dropdown);
       }
     });
-
-    // Check for an initial hash when the page loads
-    if (window.location.hash) {
-      renderFragmentByHash(window.location.hash.substring(1));
-    }
   }
-
-  // Event listener for hash changes
-  window.onhashchange = function() {
-    // Decode the hash to handle URL encoding
-    var decodedHash = decodeURIComponent(window.location.hash.substring(1)); // Remove the '#' prefix
-    renderFragmentByHash(decodedHash);
-  };
 
   // Initialize the sidebar after the DOM is fully loaded
   window.firebaseInitialized

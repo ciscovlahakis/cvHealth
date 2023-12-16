@@ -35,34 +35,34 @@
       <script src="/js/<%= file %>"></script>
     <% end %>
     <script>
+      window.onhashchange = function() {
+        var decodedHash = decodeURIComponent(window.location.hash.substring(1)); // Remove the '#' prefix
+        renderFragmentByHash(decodedHash);
+      };
+
+      function handleInitialHash() {
+        if (window.location.hash) {
+          var initialHash = decodeURIComponent(window.location.hash.substring(1));
+          renderFragmentByHash(initialHash);
+        }
+      }
+
+      function renderFragmentByHash(hash) {
+        var fragment = fragmentsData[hash];
+        if (fragment && fragment.content) {
+          var fragmentElement = document.getElementById('_fragment');
+          if (!fragmentElement) {
+            console.log("No fragment element found.");
+            return;
+          }
+          fragmentElement.innerHTML = fragment.content;
+        } else {
+          console.error("Fragment not found for hash: " + hash);
+        }
+      }
+
       document.addEventListener('DOMContentLoaded', function() {
-        var form = document.getElementById('upload-form');
-        
-        form.addEventListener('submit', function(event) {
-          event.preventDefault(); // Prevent the default form submission
-          
-          var formData = new FormData(form);
-          var currentHash = window.location.hash; // Capture the current hash
-          
-          fetch(form.action, {
-            method: 'POST',
-            body: formData
-          }).then(function(response) {
-            // Check the response status
-            if (!response.ok) {
-              throw new Error('Network response was not OK');
-            }
-            // Perform the redirect using the hash
-            window.location.hash = currentHash;
-            window.location.reload(true); // Force reload without cache
-          }).catch(function(error) {
-            console.error('There has been a problem with your fetch operation:', error);
-          });
-        });
-        
-        // Now add the dynamic loading of component scripts
-        // Assume that @component_scripts is an array of component names passed from the server
-        // This array should be defined in your server-side Ruby code where you process the components
+        handleInitialHash();
         var componentScripts = <%= @component_scripts.to_json %>;
         componentScripts.forEach(function(scriptName) {
           var script = document.createElement('script');
