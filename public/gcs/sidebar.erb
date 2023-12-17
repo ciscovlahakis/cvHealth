@@ -192,8 +192,8 @@
 
   // Initialize the sidebar after the DOM is fully loaded
   window.firebaseInitialized
-    .then(initializeSidebar).
-    catch(function(error) {
+    .then(initializeSidebar)
+    .catch(function(error) {
       console.error('Error during Firebase initialization:', error);
     });
 </script>

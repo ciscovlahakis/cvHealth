@@ -162,7 +162,7 @@
 <script src="/pub_sub.js"></script>
 <script src="/search_functions.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
+  function initializeHeader() {
     var searchInput = document.querySelector("input[name='search']");
     var activityIndicator = document.getElementById('activityIndicator');
     var indexName = '<%= page_data.fetch(:collection, nil) %>';
@@ -181,5 +181,12 @@
 
     // Initial fetch of search results on page load
     performSearch("/search/" + indexName, "");
-  });
+  }
+
+  // Initialize the sidebar after the DOM is fully loaded
+  window.firebaseInitialized
+    .then(initializeHeader)
+    .catch(function(error) {
+      console.error('Error during Firebase initialization:', error);
+    });
 </script>

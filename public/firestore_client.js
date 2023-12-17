@@ -11,3 +11,21 @@ window.firebaseInitialized = new Promise((resolve, reject) => {
 .catch((error) => {
   console.error('Error during Firebase initialization:', error);
 });
+
+function setupFirestoreListener(collectionName, searchTerm) {
+  window.firebaseInitialized.then(function() {
+    var collectionRef = window.db.collection(collectionName);
+
+    collectionRef.onSnapshot(function(snapshot) {
+      var firestoreResults = [];
+      snapshot.forEach(function(doc) {
+        firestoreResults.push(doc.data());
+      });
+      PubSub.publish('searchResults', { searchTerm: searchTerm, results: firestoreResults });
+    }, function(error) {
+      console.error("Error listening to Firestore changes:", error);
+    });
+  }).catch(function(error) {
+    console.error("Error initializing Firestore listener:", error);
+  });
+}
