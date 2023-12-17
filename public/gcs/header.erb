@@ -159,94 +159,27 @@
   </div>
 </div>
 
+<script src="/pub_sub.js"></script>
+<script src="/search_functions.js"></script>
 <script>
-  function createNoResultsElement(searchTerm) {
-    var noResultsElement = document.createElement('div');
-    noResultsElement.classList.add('result');
-    var noResultsMessage = createElementWithText('h2', 'Sorry, we couldn\'t find results for "' + searchTerm + '".');
-
-
-    var suggestionsList = document.createElement('ul');
-    var suggestions = [
-      'Check your search for typos.',
-      'Use more generic search terms.',
-      'Try different search terms.',
-      'Try fewer search terms.',
-      'Need help finding something? Contact us.'
-    ];
-    suggestions.forEach(function(suggestion) {
-      var listItem = createElementWithText('li', suggestion);
-      suggestionsList.appendChild(listItem);
-    });
-
-    appendChildren(noResultsElement, [noResultsMessage, suggestionsList]);
-    return noResultsElement;
-  }
-
-  function createElementWithText(type, text) {
-    var element = document.createElement(type);
-    element.innerText = text;
-    return element;
-  }
-
-  function appendChildren(parent, children) {
-    children.forEach(function(child) {
-      parent.appendChild(child);
-    });
-  }
-
-  function renderDataOrNoResults(data, container, searchTerm, renderDataFunction, createNoResultsElement) {
-    if (data.length > 0) {
-      appendChildren(container, data.map(renderDataFunction));
-    } else {
-      container.appendChild(createNoResultsElement(searchTerm));
-    }
-  }
-
-  function fetchSearchResults(url, searchTerm, resultsContainer, activityIndicator) {
-    activityIndicator.style.display = 'flex';
-    fetch(url)
-      .then(function(response) {
-        return response.json();
-      })
-      .then(function(data) {
-        activityIndicator.style.display = 'none';
-
-        /* Clear previous results, but leave the template row */
-        var children = Array.from(resultsContainer.children);
-        children.forEach(function(child) {
-          if (child.id !== 'template-row' && child.id !== 'headers') {
-            resultsContainer.removeChild(child);
-          }
-        });
-
-        renderResults(data, resultsContainer, searchTerm);
-      });
-  }
-
   document.addEventListener("DOMContentLoaded", function() {
-    var resultsContainer = document.getElementById('results');
+    var searchInput = document.querySelector("input[name='search']");
     var activityIndicator = document.getElementById('activityIndicator');
     var indexName = '<%= page_data.fetch(:collection, nil) %>';
-    var url = "/search/" + indexName;
 
-    fetchSearchResults(url, "", resultsContainer, activityIndicator);
-
-    document.querySelector("input[name='search']").addEventListener("keyup", function(event) {
+    // Set up the search input event listener
+    searchInput.addEventListener("keyup", function(event) {
       var searchTerm = event.target.value.trim();
-      
-      /* If the search term is empty, clear the results and return early */
-      if (searchTerm === '') {
-        activityIndicator.style.display = 'none';
-        while (resultsContainer.firstChild) {
-          resultsContainer.removeChild(resultsContainer.firstChild);
-        }
-        return;
-      }
+      var url = "/search/" + indexName + (searchTerm ? "?term=" + encodeURIComponent(searchTerm) : "");
 
-      var url = "/search/" + indexName + "?term=" + searchTerm;
-      
-      fetchSearchResults(url, searchTerm, resultsContainer, activityIndicator);
+      if (indexName && indexName.trim() !== '') {
+        performSearch("/search/" + indexName, "");
+      } else {
+        console.error("indexName is not set correctly in the JavaScript code.");
+      }
     });
+
+    // Initial fetch of search results on page load
+    performSearch("/search/" + indexName, "");
   });
 </script>

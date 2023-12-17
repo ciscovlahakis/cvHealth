@@ -5,7 +5,8 @@ fragments:
   - "edit_items"
   - "delete_items"
   - "order_items"
-  - "list_view"
+  - "enable_pagination"
+  - "switch_to_list"
 ---
 
 <% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch(:display, true) } : [] %>
@@ -103,35 +104,16 @@ fragments:
   </div>
 <% end %>
 
+<script src="/pub_sub.js"></script>
+<script src="/rendering_helpers.js"></script>
 <script>
-  var fieldsData = <%= fields.to_json %>;
+  document.addEventListener("DOMContentLoaded", function() {
+    var resultsContainer = document.getElementById('results');
+    var fieldsData = <%= fields.to_json %>;
 
-  function createRowWithData(data) {
-    var row = document.createElement('div');
-    row.className = 'grid-row sortable-row';
-    row.dataset.resource = data.resource;
-    row.dataset.id = data.objectID; /* Use Algolia's objectID as the row identifier */
-
-    /* Add the icon column for the drag handle */
-    var iconColumn = document.createElement('div');
-    iconColumn.className = 'icon-column drag-handle';
-    iconColumn.innerHTML = '<i class="fas fa-bars"></i>';
-    row.appendChild(iconColumn);
-
-    fieldsData.forEach(function(column) {
-      var cell = document.createElement('div');
-      cell.className = 'content-cell';
-      /* Directly use the column title as the property name to access Algolia data */
-      var cellValue = data[column.title.toLowerCase()];
-      cell.dataset.id = data.objectID;
-      cell.textContent = cellValue || '';
-      row.appendChild(cell);
+    // Subscribe to searchResults event to render the search results
+    PubSub.subscribe('searchResults', function(payload) {
+      renderResults(payload.results, resultsContainer, payload.searchTerm, fieldsData);
     });
-
-    return row;
-  }
-
-  function renderResults(data, container, searchTerm) {
-    renderDataOrNoResults(data, container, searchTerm, createRowWithData, createNoResultsElement);
-  }
+  });
 </script>
