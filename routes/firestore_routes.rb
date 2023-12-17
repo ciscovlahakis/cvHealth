@@ -20,6 +20,19 @@ get "/firestore_config" do
   end
 end
 
+get '/api/collection/:name' do
+  content_type :json
+
+  collection_name = params['name']
+  field_value = {
+    :field => params['field'],
+    :value => params['value']
+  }.compact
+
+  data = fetch_document_data(collection_name, field_value.empty? ? nil : field_value)
+  data.to_json
+end
+
 post "/create/:resource" do
   resource, attributes = resource_and_attributes()
   create_item(resource, attributes)

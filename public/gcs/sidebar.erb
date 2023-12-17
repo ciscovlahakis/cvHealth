@@ -71,19 +71,6 @@
 <script>
   var fragmentsData = <%= fragments_data.to_json %>;
 
-  function fetchDataFromCollection(collectionName, field, operator, value) {
-    return window.db.collection(collectionName).where(field, operator, value).get()
-      .then(function(querySnapshot) {
-        var data = querySnapshot.docs.map(function(doc) {
-          return doc.data();
-        });
-        return data.length > 0 ? data[0] : {};
-      })
-      .catch(function(error) {
-        console.error("Error getting documents: ", error);
-      });
-  }
-
   function shouldCreateDropdown(properties) {
     return (properties.pages && properties.pages.length > 0) ||
       (properties.fragments && properties.fragments.length > 0);
@@ -133,14 +120,24 @@
     if (properties.pages && properties.pages.length > 0) {
       properties.pages.forEach(function(route) {
         if (!route) return;
-        fetchDataFromCollection("pages", "route", "==", route).then(function(page) {
-          var menuItem = createAnchorElement(
-            page.title || "Resource Not Found",
-            `/${route}`,
-            'dropdown-item tab'
-          );
-          menu.appendChild(menuItem);
-        });
+        fetch(`/api/collection/pages?field=route&value=${route}`) // Use template literals correctly
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(data => {
+            var menuItem = createAnchorElement(
+              data.title || "Resource Not Found",
+              `/${route}`,
+              'dropdown-item tab'
+            );
+            menu.appendChild(menuItem);
+          })
+          .catch(error => {
+            console.error('There has been a problem with your fetch operation:', error);
+          });
       });
     }
 
