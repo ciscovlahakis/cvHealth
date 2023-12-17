@@ -183,7 +183,6 @@
     performSearch("/search/" + indexName, "");
   }
 
-  // Initialize the sidebar after the DOM is fully loaded
   window.firebaseInitialized
     .then(initializeHeader)
     .catch(function(error) {

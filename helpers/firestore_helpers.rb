@@ -67,17 +67,24 @@ def fetch_document_data(collection_name, field_value = nil)
 end
 
 def create_item(collection_name, attributes)
-  new_item = attributes.each_with_object({}) do |attribute, hash|
-    id = attribute.fetch(:id)
-    if attribute.fetch(:type) == Integer
-      hash[id] = params.fetch(id, "").to_i
+  new_item = attributes.each_with_object({}) do |(key, value_hash), hash|
+    value = value_hash.fetch("value")
+    type = value_hash.fetch("type")
+    
+    case type
+    when "integer"
+      hash.store(key, value.to_i)
     else
-      hash[id] = params.fetch(id, "")
+      hash.store(key, value)
     end
   end
+
   collection_ref = $db.col(collection_name)
-  collection_ref.add(new_item)
-  redirect "/#{collection_name}"
+  doc_ref = collection_ref.add(new_item)
+
+  status 200
+  content_type :json
+  return { :id => doc_ref.document_id }.to_json
 end
 
 def sort_and_assign_positions(data, resource)

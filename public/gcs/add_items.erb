@@ -5,6 +5,7 @@ components:
 ---
 
 <% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch(:display, true) } : [] %>
+<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
 
 <style>
   .form-container {
@@ -79,20 +80,20 @@ components:
   <div class="form-container">
     <h2>Add Item</h2>
     <% unless fields.empty? %>
-      <form action="/add-item" method="post">
-      <% fields.each do |field| %>
-        <% if field.fetch(:editable, true) %>
-          <div class="form-group">
-            <label for="<%= field.fetch(:name) %>"><%= field.fetch(:title) %></label>
-            <input type="<%= field.fetch(:type, 'text') %>" id="<%= field.fetch(:name) %>" name="<%= field.fetch(:name) %>" required>
-          </div>
+      <form id="add-items-form" action="/create/<%= page_data.fetch(:collection, nil) %>" method="post">
+        <% fields.each do |field| %>
+          <% if field.fetch(:editable, true) %>
+            <div class="form-group">
+              <label for="<%= field.fetch(:name) %>"><%= field.fetch(:title) %></label>
+              <input type="<%= field.fetch(:type, 'text') %>" id="<%= field.fetch(:name) %>" name="<%= field.fetch(:name) %>" required>
+            </div>
+          <% end %>
         <% end %>
-      <% end %>
-      <div class="form-actions">
-        <input type="submit" value="Save">
-        <button type="button" onclick="location.href='/cancel-action'">Cancel</button>
-      </div>
-    </form>
+        <div class="form-actions">
+          <input type="submit" value="Save">
+          <button type="button" onclick="location.href='/cancel-action'">Cancel</button>
+        </div>
+      </form>
     <% end %>
   </div>
 </div>

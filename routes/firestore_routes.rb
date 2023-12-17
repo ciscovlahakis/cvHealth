@@ -33,9 +33,22 @@ get '/api/collection/:name' do
   data.to_json
 end
 
-post "/create/:resource" do
-  resource, attributes = resource_and_attributes()
-  create_item(resource, attributes)
+post("/create/:resource") do
+  begin
+    request.body.rewind
+    request_payload = JSON.parse(request.body.read)
+    resource = params.fetch("resource")
+    attributes = request_payload
+    create_item(resource, attributes)
+  rescue JSON::ParserError
+    status 400
+    content_type :json
+    return { :error => "Invalid JSON" }.to_json
+  rescue StandardError => e
+    status 500
+    content_type :json
+    return { :error => e.message }.to_json
+  end
 end
 
 post "/update/:resource" do

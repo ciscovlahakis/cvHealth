@@ -14,7 +14,6 @@ function initializeUtilityPanel() {
 
   document.body.addEventListener('click', function(event) {
     var content = utilityPanel.querySelector('[data-yield]');
-    console.log(event.target.id )
 
     if (event.target.id === 'close') {
       toggleDisplay(utilityPanel, 'none');
