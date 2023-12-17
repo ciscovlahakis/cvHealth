@@ -13,7 +13,7 @@ function initializeUtilityPanel() {
   }
 
   document.body.addEventListener('click', function(event) {
-    var content = utilityPanel.querySelector('[data-yield]');
+    var content = utilityPanel?.querySelector('[data-yield]');
 
     if (event.target.id === 'close') {
       toggleDisplay(utilityPanel, 'none');

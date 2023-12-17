@@ -36,29 +36,35 @@
     <% end %>
     <script>
       window.onhashchange = function() {
-        var decodedHash = decodeURIComponent(window.location.hash.substring(1)); // Remove the '#' prefix
+        var decodedHash = decodeURIComponent(window.location.hash.substring(1));
         renderFragmentByHash(decodedHash);
       };
-
+      
       function handleInitialHash() {
         if (window.location.hash) {
           var initialHash = decodeURIComponent(window.location.hash.substring(1));
           renderFragmentByHash(initialHash);
+        } else {
+          renderFragmentByHash();
         }
       }
-
+      
       function renderFragmentByHash(hash) {
         var fragmentsData = <%= @fragments_data.to_json %>;
-        var fragment = fragmentsData?.[hash];
-        if (fragment && fragment.content) {
-          var fragmentElement = document.getElementById('_fragment');
-          if (!fragmentElement) {
-            console.log("No fragment element found.");
-            return;
+        var fragmentElement = document.getElementById('_fragment');
+        
+        if (fragmentElement) {
+          var fragment = hash ? fragmentsData?.[hash] : null;
+          if (fragment && fragment.content) {
+            fragmentElement.innerHTML = fragment.content;
+          } else {
+            fragmentElement.innerHTML = '';
+            if (hash) {
+              console.error("Fragment not found for hash: " + hash);
+            }
           }
-          fragmentElement.innerHTML = fragment.content;
         } else {
-          console.error("Fragment not found for hash: " + hash);
+          console.error("The fragment element with ID '_fragment' does not exist.");
         }
       }
 

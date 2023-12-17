@@ -1,5 +1,5 @@
 function initializeForm() {
-  document.addEventListener('submit', function(event) {
+  document.body.addEventListener('submit', function(event) {
     if (event.target && event.target.id === 'add-items-form') {
       event.preventDefault();
   
@@ -32,12 +32,13 @@ function initializeForm() {
         // Handle the response, update the UI as needed
         var currentUrlWithoutHash = window.location.href.split('#')[0];
         window.history.pushState({}, '', currentUrlWithoutHash);
+        renderFragmentByHash();
       })
       .catch(function(error) {
         console.error('Error:', error);
       });
     }
-  }, true);
+  });
 }
 
 window.firebaseInitialized
