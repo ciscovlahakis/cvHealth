@@ -9,7 +9,7 @@ components:
   data-props="<%= 
     {
       :form_mode => :new,
-      :action_url => "/create/#{page_data.fetch('collection', nil)}",
+      :action_url => "/create/#{page_data.fetch(:collection, nil)}",
       :item_data => nil
     }.to_json.gsub('"', '&quot;')
   %>">

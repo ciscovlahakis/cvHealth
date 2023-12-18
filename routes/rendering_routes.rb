@@ -17,66 +17,6 @@ end
 #   erb :layout
 # end
 
-# def render_fragment(fragment_name, fetch_template, component_scripts, page_data)
-#   fragment_content = fetch_template(fragment_name)
-#   return nil unless fragment_content
-
-#   # Ensure collection_config is available in the binding
-#   collection_name = page_data.fetch(:collection, nil)
-#   collection_config = fetch_document_data("collections", { :field => "name", :value => collection_name }) if collection_name
-
-#   rendered_fragment_content = ERB.new(fragment_content).result(binding)
-#   fragment_front_matter, fragment_html_content = parse_yaml_front_matter(rendered_fragment_content)
-
-#   fragment_doc = Nokogiri::HTML::DocumentFragment.parse(fragment_html_content)
-  
-#   nested_components = fragment_front_matter.fetch("components", [])
-#   nested_components.each do |nested_component_name|
-#     # Render nested components within the fragment
-#     nested_fragment_data = render_fragment(nested_component_name, fetch_template, component_scripts, page_data)
-#     next if nested_fragment_data.nil?
-
-#     # Extract just the HTML content from the nested fragment data
-#     nested_content_html = nested_fragment_data[:content]
-
-#     # Prepare the Nokogiri document for the nested component
-#     nested_doc = Nokogiri::HTML::DocumentFragment.parse(nested_content_html)
-#     nested_placeholder = nested_doc.at("div[data-yield]")
-
-#     # Check for nested content within the parent component's placeholder
-#     parent_placeholder = fragment_doc.at("div[data-component='#{nested_component_name}']")
-
-#     # If nested content exists, extract it
-#     child_content = parent_placeholder.inner_html if parent_placeholder && !parent_placeholder.inner_html.strip.empty?
-
-#     # Render the nested component with any child content
-#     rendered_nested_component = if nested_placeholder && child_content
-#                                   # Replace the placeholder in the nested component with the child content
-#                                   nested_placeholder.inner_html = child_content
-#                                   nested_doc.to_html
-#                                 else
-#                                   # No nested content; render the component as it is
-#                                   nested_content_html
-#                                 end
-
-#     # Replace the placeholder for the nested component in the parent's content
-#     parent_placeholder.replace(Nokogiri::HTML::DocumentFragment.parse(rendered_nested_component)) if parent_placeholder
-#   end
-
-#   # After processing all nested components, the modified fragment's HTML is the return value
-#   component_scripts << fragment_name if File.exist?("./public/gcs/#{fragment_name}.js")
-
-#   # Return the fully rendered fragment content along with its title
-#   {
-#     :title => fragment_front_matter["title"],
-#     :content => fragment_doc.to_html
-#   }
-# end
-
-
-
-
-
 def render_fragment(fragment_name, fetch_template, component_scripts, page_data)
   fragment_content = fetch_template.call(fragment_name)
   return nil unless fragment_content
@@ -147,11 +87,6 @@ def render_fragment(fragment_name, fetch_template, component_scripts, page_data)
   # Return the fully rendered fragment content along with any fetched title
   {:title => fragment_front_matter["title"], :content => fragment_doc.to_html}
 end
-
-
-
-
-
 
 get "/*" do |path|
   # Fetch the page data from Firestore
