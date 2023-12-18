@@ -1,3 +1,16 @@
 ---
 title: "Edit Item(s)"
+components:
+  - "form"
 ---
+
+<div
+  data-component="form"
+  data-props="<%= 
+  {
+    form_mode: :edit,
+    action_url: "/update/#{page_data.fetch('collection', nil)}/#{item_data.fetch('id')}",
+    item_data: @item_data
+  }.to_json 
+  %>">
+</div>

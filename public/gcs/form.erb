@@ -4,8 +4,10 @@ components:
   - "utility_panel"
 ---
 
-<% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch(:display, true) } : [] %>
-<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
+<% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch('display', true) } : [] %>
+<% form_id = form_mode == :edit ? "edit-items-form" : "add-items-form" %>
+<% form_action = action_url %>
+<% http_method = form_mode == :edit ? "post" : "post" %>
 
 <style>
   .form-container {
@@ -78,19 +80,26 @@ components:
 
 <div data-component="utility_panel">
   <div class="form-container">
-    <h2>Add Item</h2>
+    <h2><%= form_mode == :edit ? "Edit Item" : "Add Item" %></h2>
     <% unless fields.empty? %>
-      <form id="add-items-form" action="/create/<%= page_data.fetch(:collection, nil) %>" method="post">
+      <% puts fields.inspect %>
+      <form id="<%= form_id %>" action="<%= form_action %>" method="<%= http_method %>">
         <% fields.each do |field| %>
-          <% if field.fetch(:editable, true) %>
+          <% field_name = field.fetch(:name, nil) %>
+          <% field_value = (item_data && item_data[field_name]) ? item_data[field_name] : "" %>
+          <% if field.fetch(:editable, false) %>
             <div class="form-group">
-              <label for="<%= field.fetch(:name) %>"><%= field.fetch(:title) %></label>
-              <input type="<%= field.fetch(:type, 'text') %>" id="<%= field.fetch(:name) %>" name="<%= field.fetch(:name) %>" required>
+              <label for="<%= field_name %>"><%= field.fetch(:title, nil) %></label>
+              <input
+                id="<%= field_name %>"
+                name="<%= field_name %>"
+                value="<%= field_value %>" <%= "required" if form_mode == :new %>
+              >
             </div>
           <% end %>
         <% end %>
         <div class="form-actions">
-          <input type="submit" value="Save">
+          <input type="submit" value="<%= form_mode == :edit ? "Update" : "Save" %>">
           <button type="button" onclick="location.href='/cancel-action'">Cancel</button>
         </div>
       </form>

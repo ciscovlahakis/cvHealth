@@ -1,3 +1,20 @@
+<form id="<%= form_id %>" action="<%= form_action %>" method="<%= http_method %>">
+  <% fields.each do |field| %>
+    <% field_name = field.fetch('name', nil) %>
+    <% field_value = (item_data && item_data[field_name]) ? item_data[field_name] : "" %>
+    <% if field.fetch('editable', true) %>
+      <div class="form-group">
+        <label for="<%= field_name %>"><%= field.fetch('title') %></label>
+        <input type="<%= field.fetch('type', 'text') %>" id="<%= field_name %>" name="<%= field_name %>" value="<%= field_value %>" <%= "required" if form_mode == :new %>>
+      </div>
+    <% end %>
+  <% end %>
+  <div class="form-actions">
+    <input type="submit" value="<%= form_mode == :edit ? "Update" : "Save" %>">
+    <button type="button" onclick="location.href='/cancel-action'">Cancel</button>
+  </div>
+</form>
+
 
 
 <div class="sidebar-heading text-center">
