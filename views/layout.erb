@@ -7,6 +7,14 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script> 
+
+    <% header_js_files = Dir.glob('./public/js/header/*.js').map { |path| path.split('/').last } %>
+    <% header_js_files.each do |file| %>
+      <script src="/js/header/<%= file %>"></script>
+    <% end %>
+
     <% css_files = Dir.glob('./public/styles/*.css').map { |path| path.split('/').last } %>
     <% css_files.each do |file| %>
       <link rel="stylesheet" type="text/css" href="/styles/<%= file %>">
@@ -15,25 +23,21 @@
   </head>
 
   <body>
-    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script> 
-
     <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
       <input type="file" name="file">
       <input type="submit" value="Upload">
     </form>
-
-    <script src="/firestore_client.js"></script>
 
     <%= @html_content %>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 
-    <% js_files = Dir.glob('./public/js/*.js').map { |path| path.split('/').last } %>
-    <% js_files.each do |file| %>
-      <script src="/js/<%= file %>"></script>
+    <% body_js_files = Dir.glob('./public/js/body/*.js').map { |path| path.split('/').last } %>
+    <% body_js_files.each do |file| %>
+      <script src="/js/body/<%= file %>"></script>
     <% end %>
+    
     <script>
       window.onhashchange = function() {
         var decodedHash = decodeURIComponent(window.location.hash.substring(1));

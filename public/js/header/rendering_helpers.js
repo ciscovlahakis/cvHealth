@@ -39,6 +39,10 @@ function createRowWithData(data, fieldsData) {
   row.dataset.resource = data.resource;
   row.dataset.id = data.objectID; // Use Algolia's objectID as the row identifier
 
+  // Create a string for the 'grid-template-columns' style
+  var gridColumnsValue = '100px ' + fieldsData.map(function() { return '1fr'; }).join(' ');
+  row.style.gridTemplateColumns = gridColumnsValue;
+
   // Add the icon column for the drag handle
   var iconColumn = createElementWithText('i', ''); // Adjusted to use createElementWithText
   iconColumn.className = 'fas fa-bars';
@@ -47,6 +51,7 @@ function createRowWithData(data, fieldsData) {
   iconContainer.appendChild(iconColumn);
   row.appendChild(iconContainer);
 
+  // Add content cells based on fieldsData
   fieldsData.forEach(function(column) {
     var cell = createElementWithText('div', '');
     cell.className = 'content-cell';

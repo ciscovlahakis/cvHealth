@@ -4,6 +4,7 @@ components:
   - "utility_panel"
 ---
 
+<% collection_config = {} %>
 <% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch('display', true) } : [] %>
 <% form_id = form_mode == :edit ? "edit-items-form" : "add-items-form" %>
 <% form_action = action_url %>

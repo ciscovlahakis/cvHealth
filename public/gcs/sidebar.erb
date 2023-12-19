@@ -1,7 +1,3 @@
-<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
-<% component_properties = defined?(component_properties) && !component_properties.nil? ? component_properties : {} %>
-<% fragments_data = defined?(fragments_data) && !fragments_data.nil? ? fragments_data : {} %>
-
 <style>
   #sidebar {
     width: 20vw;
@@ -69,7 +65,7 @@
 <div id="sidebar"></div>
 
 <script>
-  var fragmentsData = <%= fragments_data.to_json %>;
+  var sidebar = document.getElementById('sidebar');
 
   function shouldCreateDropdown(properties) {
     return (properties.pages && properties.pages.length > 0) ||
@@ -120,7 +116,7 @@
     if (properties.pages && properties.pages.length > 0) {
       properties.pages.forEach(function(route) {
         if (!route) return;
-        fetch(`/api/collection/pages?field=route&value=${route}`) // Use template literals correctly
+        fetch(`/api/collection/pages?field=route&value=${route}`)
           .then(response => {
             if (!response.ok) {
               throw new Error('Network response was not ok');
@@ -170,30 +166,60 @@
     return dropdown;
   }
 
-  // Function to initialize the sidebar with fetched fragments and routes
-  function initializeSidebar() {
-    var sidebar = document.getElementById('sidebar');
-    var pageData = <%= page_data.to_json %>;
-    var componentProperties = <%= component_properties.to_json %>;
-
-    if (shouldCreateDropdown(pageData)) {
-      var dropdown = createDropdownComponent(pageData);
-      sidebar.appendChild(dropdown);
+  function updateDomElement(action, domElement, item) {
+    switch (action) {
+      case 'create':
+        var dropdown = createDropdownComponent(item);
+        domElement.appendChild(dropdown);
+        break;
+      case 'update':
+        // Find the existing element and update it
+        const existingItemElement = domElement.querySelector(`#item-${item.id}`);
+        if (existingItemElement) {
+          // Assuming updateItemElement is a function that updates the DOM element for the item
+          updateItemElement(existingItemElement, item);
+        }
+        break;
+      case 'delete':
+        // Remove the item element from the DOM
+        const itemToRemove = domElement.querySelector(`#item-${item.id}`);
+        if (itemToRemove) {
+          domElement.removeChild(itemToRemove);
+        }
+        break;
+      default:
+        console.error(`Unsupported action: ${action}`);
     }
-
-    Object.keys(componentProperties).forEach(function(component_name) {
-      var properties = componentProperties[component_name];
-      if (shouldCreateDropdown(properties)) {
-        var dropdown = createDropdownComponent(properties);
-        sidebar.appendChild(dropdown);
-      }
-    });
   }
 
-  // Initialize the sidebar after the DOM is fully loaded
-  window.firebaseInitialized
-    .then(initializeSidebar)
-    .catch(function(error) {
-      console.error('Error during Firebase initialization:', error);
+  var isPageReady = false;
+  var queuedComponentChanges = [];
+
+  function handleComponentChange(action, data) {
+    updateDomElement(action, sidebar, data);
+  }
+
+  // Subscribe to page changes
+  PubSub.subscribe(EVENTS.PAGE_CHANGED, ({ action, data }) => {
+    handleComponentChange(action, data);
+    isPageReady = true;
+
+    // Process any queued component changes
+    queuedComponentChanges.forEach(function(change) {
+      handleComponentChange(change.action, change.data);
     });
+
+    queuedComponentChanges = []; // Clear the queue
+  });
+
+  // Subscribe to component changes
+  PubSub.subscribe(EVENTS.COMPONENT_CHANGED, ({ action, data }) => {
+    if (!isPageReady) {
+      // Queue the component change if the page isn't ready yet
+      queuedComponentChanges.push({ action, data });
+    } else {
+      // Otherwise, handle the component change immediately
+      handleComponentChange(action, data);
+    }
+  });
 </script>

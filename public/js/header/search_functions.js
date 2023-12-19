@@ -14,12 +14,12 @@ function performSearch(url, searchTerm) {
         var indexName = url.split('/')[2];
         setupFirestoreListener(indexName, searchTerm);
       } else {
-        PubSub.publish('searchResults', { searchTerm: searchTerm, results: data });
+        PubSub.publish(EVENTS.SEARCH_RESULTS, { searchTerm: searchTerm, results: data });
       }
     })
     .catch(function(error) {
       console.error("Error fetching search results:", error);
       // Handle non-JSON responses or other fetch errors
-      PubSub.publish('searchResults', { searchTerm: searchTerm, results: [] });
+      PubSub.publish(EVENTS.SEARCH_RESULTS, { searchTerm: searchTerm, results: [] });
     });
 }

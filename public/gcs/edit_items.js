@@ -8,6 +8,8 @@ function initializeEditItems() {
       getItemDataById(id).then(function(itemData) {
         // Assuming you have a div with an ID where the form is to be inserted
         var formContainer = document.querySelector('#edit-item-form-container');
+
+        page_data = {};
     
         // Update the data-props attribute with the fetched item data
         formContainer.setAttribute('data-props', JSON.stringify({

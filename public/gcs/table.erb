@@ -2,15 +2,7 @@
 title: "Table"
 fragments:
   - "add_items"
-  - "edit_items"
-  - "delete_items"
-  - "order_items"
-  - "enable_pagination"
-  - "switch_to_list"
 ---
-
-<% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch(:display, true) } : [] %>
-<% enable_move = true %>
 
 <style>
   .grid-table {
@@ -23,14 +15,12 @@ fragments:
 
   .grid-row {
     display: grid;
-    /* Adjust the first value if you need a wider icon column */
-    grid-template-columns: 100px repeat(<%= fields.count %>, 1fr);
     width: 100%;
   }
 
   .grid-row .content-cell {
     background-color: #fff;
-    padding: 15x;
+    padding: 15px;
     transition: all 0.3s;
     min-width: 100px;
     min-height: 20px;
@@ -84,36 +74,72 @@ fragments:
   }
 </style>
 
-<% unless fields.empty? %>
-  <div id="table-container">
-    <input type="hidden" id="enableMove" value="<%= enable_move %>">
-    <div class="grid-table rounded-shadow" id="results">
-      <div class="grid-row" id="headers">
-        <!-- Add an empty div for the icon column -->
-        <div class="header"></div>
-        <% fields.each do |x| %>
-          <div class="header"><%= x.fetch(:title, nil) %></div>
-        <% end %>
-      </div>
-      <div id="template-row" class="grid-row sortable-row" style="display: none;">
-        <div class="icon-column drag-handle">
-          <i class="fas fa-bars"></i>
-        </div>
+<div id="table-container">
+  <div class="grid-table rounded-shadow" id="results">
+    <div class="grid-row" id="headers">
+      <!-- The headers will be populated by JavaScript -->
+      <div class="header icon-column"></div> <!-- Empty div for the icon column -->
+    </div>
+    <!-- Template row and content rows will be populated by JavaScript -->
+    <div id="template-row" class="grid-row sortable-row" style="display: none;">
+      <div class="icon-column drag-handle">
+        <i class="fas fa-bars"></i>
       </div>
     </div>
   </div>
-<% end %>
+</div>
 
-<script src="/pub_sub.js"></script>
-<script src="/rendering_helpers.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    var resultsContainer = document.getElementById('results');
-    var fieldsData = <%= fields.to_json %>;
+  var fieldsData;
 
-    // Subscribe to searchResults event to render the search results
-    PubSub.subscribe('searchResults', function(payload) {
+  PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {
+    var resultsContainer = document.getElementById('results');
+    if (resultsContainer && fieldsData) {
       renderResults(payload.results, resultsContainer, payload.searchTerm, fieldsData);
-    });
+    } else {
+      console.error('Results container not found in the DOM or fieldsData is not set');
+    }
+  });
+
+  PubSub.subscribe(EVENTS.PAGE_CHANGED, async function(data) {
+    const { collection } = data?.data;
+    try {
+      var response = await fetch(`/api/collection/collections?field=name&value=${collection}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      var collection_data = await response.json();
+      fieldsData = collection_data.fields; // Update the shared fieldsData variable
+
+      if (!Array.isArray(fieldsData)) {
+        console.error('Expected fieldsData to be an array');
+        return;
+      }
+
+      // Create a string for the 'grid-template-columns' style
+      var gridColumnsValue = '100px ' + fieldsData.map(function() { return '1fr'; }).join(' ');
+      var gridRows = document.querySelectorAll('.grid-row');
+      gridRows.forEach(function(row) {
+        row.style.gridTemplateColumns = gridColumnsValue;
+      });
+
+      var headersRow = document.getElementById('headers');
+      headersRow.innerHTML = ''; // Clear existing headers
+
+      // Add the icon header column
+      var iconHeader = document.createElement('div');
+      iconHeader.className = 'header';
+      headersRow.appendChild(iconHeader);
+      
+      fieldsData.forEach(function(field) {
+        var header = document.createElement('div');
+        header.className = 'header';
+        header.textContent = field.title || ''; // Using title or an empty string if title is undefined
+        headersRow.appendChild(header);
+      });
+
+    } catch (error) {
+      console.error('There has been a problem with your fetch operation:', error);
+    }
   });
 </script>

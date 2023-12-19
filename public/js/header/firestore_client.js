@@ -21,7 +21,7 @@ function setupFirestoreListener(collectionName, searchTerm) {
       snapshot.forEach(function(doc) {
         firestoreResults.push(doc.data());
       });
-      PubSub.publish('searchResults', { searchTerm: searchTerm, results: firestoreResults });
+      PubSub.publish(EVENTS.SEARCH_RESULTS, { searchTerm: searchTerm, results: firestoreResults });
     }, function(error) {
       console.error("Error listening to Firestore changes:", error);
     });

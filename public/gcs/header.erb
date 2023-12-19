@@ -1,5 +1,3 @@
-<% page_data = defined?(page_data) && !page_data.nil? ? page_data : {} %>
-
 <style>
   .header {
     padding-left: calc(var(--padding) /2);
@@ -102,56 +100,9 @@
   }
 </style>
 
-<%
-  def build_breadcrumbs(route, page_data)
-    route_components = route == "/" ? [""] : ["/"] + route.split("/")[1..-1]
-
-    breadcrumbs = route_components.each_with_index.map do |component, index|
-      breadcrumb_route = route_components[0..index].join
-      breadcrumb_route = "/" if breadcrumb_route.empty?
-
-      breadcrumb_page_data = component == page_data[:route] ? page_data : fetch_document_data("pages", { :field => "route", :value => breadcrumb_route })
-
-      next if breadcrumb_page_data.nil?
-
-      {
-        :title => breadcrumb_page_data[:title],
-        :icon => breadcrumb_page_data[:icon],
-        :img_src => breadcrumb_page_data[:img_src],
-        :route => breadcrumb_route
-      }
-    end.compact
-
-    breadcrumbs
-  end
-%>
-
 <div class="header">
   <div class="search-bar">
-    <% breadcrumbs = build_breadcrumbs(request.path_info, page_data) %>
-    <% unless breadcrumbs.empty? %>
-      <div class="breadcrumb-container">
-        <% breadcrumbs.each do |breadcrumb| %>
-          <% img_src = breadcrumb.fetch(:img_src, nil) %>
-          <% icon = breadcrumb.fetch(:icon, nil) %>
-          <% title = breadcrumb.fetch(:title, nil) %>
-          <a href="<%= breadcrumb.fetch(:route, '/') %>" class="clickable">
-            <span class="breadcrumb breadcrumb-content">
-              <% if img_src && !img_src.empty? %>
-                <img src="<%= img_src %>" alt="Thumbnail" class="breadcrumb-thumbnail <%= title && !title.empty? ? 'breadcrumb-thumbnail-with-title' : '' %>">
-              <% elsif icon && !icon.empty? %>
-                <i class="<%= icon %> breadcrumb-icon <%= title && !title.empty? ? 'breadcrumb-icon-with-title' : '' %>"></i>
-              <% else %>
-                <img src="https://via.placeholder.com/150" alt="" class="breadcrumb-thumbnail <%= title && !title.empty? ? 'breadcrumb-thumbnail-with-title' : '' %>">
-              <% end %>
-              <% if title && !title.empty? %>
-                <%= title %>
-              <% end %>
-            </span>
-          </a>
-        <% end %>
-      </div>
-    <% end %>
+    <div class="breadcrumb-container" id="breadcrumbs"></div>
     <input type="search" name="search" placeholder="Search...">
   </div>
   <div id="activityIndicator">
@@ -159,33 +110,129 @@
   </div>
 </div>
 
-<script src="/pub_sub.js"></script>
-<script src="/search_functions.js"></script>
 <script>
-  function initializeHeader() {
-    var searchInput = document.querySelector("input[name='search']");
-    var activityIndicator = document.getElementById('activityIndicator');
-    var indexName = '<%= page_data.fetch(:collection, nil) %>';
+  var searchInput = document.querySelector("input[name='search']");
+  var activityIndicator = document.getElementById('activityIndicator');
+  var indexName;
 
-    // Set up the search input event listener
+  // Function to set up the search input event listener
+  function setUpSearch() {
     searchInput.addEventListener("keyup", function(event) {
       var searchTerm = event.target.value.trim();
-      var url = "/search/" + indexName + (searchTerm ? "?term=" + encodeURIComponent(searchTerm) : "");
-
       if (indexName && indexName.trim() !== '') {
-        performSearch("/search/" + indexName, "");
+        var url = "/search/" + indexName + (searchTerm ? "?term=" + encodeURIComponent(searchTerm) : "");
+        performSearch(url, searchTerm);
       } else {
         console.error("indexName is not set correctly in the JavaScript code.");
       }
     });
-
-    // Initial fetch of search results on page load
-    performSearch("/search/" + indexName, "");
   }
 
-  window.firebaseInitialized
-    .then(initializeHeader)
-    .catch(function(error) {
-      console.error('Error during Firebase initialization:', error);
+  // Function to perform the initial fetch of search results
+  function initialSearch() {
+    if (indexName && indexName.trim() !== '') {
+      performSearch("/search/" + indexName, "");
+    } else {
+      console.error("indexName is not set correctly in the JavaScript code.");
+    }
+  }
+
+  async function build_breadcrumbs(route, page_data) {
+    var route_components = route === "/" ? [""] : ["/"].concat(route.split("/").slice(1));
+    var breadcrumbs = [];
+
+    for (var index = 0; index < route_components.length; index++) {
+      var component = route_components[index];
+      var breadcrumb_route = route_components.slice(0, index + 1).join("/") || "/";
+      
+      var breadcrumb_page_data = null;
+      if (component === page_data.route) {
+          breadcrumb_page_data = page_data;
+      } else {
+        try {
+          var response = await fetch(`/api/collection/pages?field=route&value=${breadcrumb_route}`);
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          breadcrumb_page_data = await response.json();
+        } catch (error) {
+          console.error('There has been a problem with your fetch operation:', error);
+        }
+      }
+      if (breadcrumb_page_data) {
+        const { title, icon, img_src, route } = breadcrumb_page_data;
+        breadcrumbs.push({ title, icon, img_src, route });
+      }
+    }
+    
+    return breadcrumbs;
+  }
+
+  async function updateBreadcrumbs(data) {
+    var breadcrumbs = await build_breadcrumbs(window.location.pathname, data);
+    var breadcrumbContainer = document.getElementById('breadcrumbs');
+    breadcrumbContainer.innerHTML = ''; // Clear existing breadcrumbs
+
+    breadcrumbs.forEach(function(breadcrumb) {
+      var breadcrumbElement = document.createElement('a');
+      breadcrumbElement.href = breadcrumb.route || '/';
+      breadcrumbElement.className = 'clickable';
+      
+      var breadcrumbContent = document.createElement('span');
+      breadcrumbContent.className = 'breadcrumb breadcrumb-content';
+
+      const { title, icon, img_src } = breadcrumb;
+      
+      // Check if the breadcrumb has an image source
+      if (img_src) {
+        var img = document.createElement('img');
+        img.src = img_src;
+        img.alt = 'Thumbnail';
+        img.className = 'breadcrumb-thumbnail';
+        if (title) {
+          img.className += ' breadcrumb-thumbnail-with-title';
+        }
+        breadcrumbContent.appendChild(img);
+      }
+      // If not, check if the breadcrumb has an icon class
+      else if (icon) {
+        var iconElement = document.createElement('i');
+        iconElement.className = icon + ' breadcrumb-icon';
+        if (title) {
+            iconElement.className += ' breadcrumb-icon-with-title';
+        }
+        breadcrumbContent.appendChild(iconElement);
+      }
+      // If no image or icon, use a placeholder image
+      else {
+        var placeholderImg = document.createElement('img');
+        placeholderImg.src = 'https://via.placeholder.com/150';
+        placeholderImg.alt = '';
+        placeholderImg.className = 'breadcrumb-thumbnail';
+        if (title) {
+          placeholderImg.className += ' breadcrumb-thumbnail-with-title';
+        }
+        breadcrumbContent.appendChild(placeholderImg);
+      }
+      
+      // Check if the breadcrumb has a title
+      if (title) {
+        var titleElement = document.createElement('span');
+        titleElement.textContent = title;
+        breadcrumbContent.appendChild(titleElement);
+      }
+      
+      // Append the breadcrumb content to the breadcrumb element
+      breadcrumbElement.appendChild(breadcrumbContent);
+      // Append the breadcrumb element to the container
+      breadcrumbContainer.appendChild(breadcrumbElement);
     });
+  }
+
+  PubSub.subscribe(EVENTS.PAGE_CHANGED, async function(data) {
+    indexName = data?.data?.collection;
+    setUpSearch();
+    initialSearch();
+    await updateBreadcrumbs(data);
+  });
 </script>

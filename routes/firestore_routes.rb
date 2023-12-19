@@ -20,7 +20,7 @@ get "/firestore_config" do
   end
 end
 
-get '/api/collection/:name' do
+get "/api/collection/:name" do
   content_type :json
 
   collection_name = params['name']
@@ -33,7 +33,7 @@ get '/api/collection/:name' do
   data.to_json
 end
 
-post("/create/:resource") do
+post "/create/:resource" do
   begin
     request.body.rewind
     request_payload = JSON.parse(request.body.read)
