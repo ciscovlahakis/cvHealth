@@ -6,6 +6,8 @@ components:
 
 <% collection_config = {} %>
 <% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch('display', true) } : [] %>
+<% form_mode = "add-items-form" %>
+<% action_url = "add-items-form" %>
 <% form_id = form_mode == :edit ? "edit-items-form" : "add-items-form" %>
 <% form_action = action_url %>
 <% http_method = form_mode == :edit ? "post" : "post" %>

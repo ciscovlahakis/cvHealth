@@ -73,7 +73,7 @@ def render_fragment(fragment_name)
     next if nested_fragment_data.nil?
 
     # Extract the HTML content from the nested fragment data
-    nested_content_html = nested_fragment_data[:content]
+    nested_content_html = nested_fragment_data
 
     # Prepare the Nokogiri document for the nested component
     nested_doc = Nokogiri::HTML::DocumentFragment.parse(nested_content_html)
@@ -95,7 +95,7 @@ def render_fragment(fragment_name)
   end
 
   # Convert the YAML front matter to JSON
-  publish_event(fragment_front_matter, fragment_doc, 'COMPONENT_CHANGED')
+  publish_event(fragment_front_matter, fragment_doc, 'FRAGMENT_CHANGED')
 
   # Include a script tag to load the corresponding JS file for the fragment, if it exists
   js_file_path = "./public/gcs/#{fragment_name}.js"

@@ -37,54 +37,5 @@
     <% body_js_files.each do |file| %>
       <script src="/js/body/<%= file %>"></script>
     <% end %>
-    
-    <script>
-      window.onhashchange = function() {
-        var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-        renderFragmentByHash(decodedHash);
-      };
-      
-      function handleInitialHash() {
-        if (window.location.hash) {
-          var initialHash = decodeURIComponent(window.location.hash.substring(1));
-          renderFragmentByHash(initialHash);
-        } else {
-          renderFragmentByHash();
-        }
-      }
-      
-      function renderFragmentByHash(hash) {
-        var fragmentsData = <%= @fragments_data.to_json %>;
-        var fragmentElement = document.getElementById('_fragment');
-        
-        if (fragmentElement) {
-          var fragment = hash ? fragmentsData?.[hash] : null;
-          if (fragment && fragment.content) {
-            fragmentElement.innerHTML = fragment.content;
-          } else {
-            fragmentElement.innerHTML = '';
-            if (hash) {
-              console.error("Fragment not found for hash: " + hash);
-            }
-          }
-        } else {
-          console.error("The fragment element with ID '_fragment' does not exist.");
-        }
-      }
-
-      document.addEventListener('DOMContentLoaded', function() {
-        handleInitialHash();
-        var componentScripts = <%= @component_scripts.to_json %>;
-        componentScripts?.forEach(function(scriptName) {
-          var script = document.createElement('script');
-          script.src = '/gcs/' + scriptName + '.js';
-          script.type = 'text/javascript';
-          script.onerror = function() {
-            console.error('Error loading script for component:', scriptName);
-          };
-          document.body.appendChild(script);
-        });
-      });
-    </script>
   </body>
 </html>
