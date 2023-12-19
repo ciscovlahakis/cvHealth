@@ -1,5 +1,5 @@
 
-PubSub.subscribe(EVENTS.FRAGMENT_CHANGED, function(data) {
+PubSub.subscribe(EVENTS.FRAGMENT_SINGULAR_CHANGED, function(data) {
   var fragment = data?.data;
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   renderFragmentByHash(decodedHash, fragment);

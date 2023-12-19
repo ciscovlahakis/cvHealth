@@ -101,7 +101,7 @@ fragments:
     }
   });
 
-  PubSub.subscribe(EVENTS.PAGE_CHANGED, async function(data) {
+  PubSub.subscribe(EVENTS.PAGE_SINGULAR_CHANGED, async function(data) {
     const { collection } = data?.data;
     try {
       var response = await fetch(`/api/collection/collections?field=name&value=${collection}`);

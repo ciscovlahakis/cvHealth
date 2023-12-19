@@ -95,7 +95,7 @@ def render_fragment(fragment_name)
   end
 
   # Convert the YAML front matter to JSON
-  publish_event(fragment_front_matter, fragment_doc, 'FRAGMENT_CHANGED')
+  publish_event(fragment_front_matter, fragment_doc, 'FRAGMENT_SINGULAR_CHANGED')
 
   # Include a script tag to load the corresponding JS file for the fragment, if it exists
   js_file_path = "./public/gcs/#{fragment_name}.js"
@@ -135,7 +135,7 @@ get "/*" do |path|
   doc = Nokogiri::HTML::DocumentFragment.parse(html_content)
 
   # Convert the YAML front matter to JSON
-  publish_event(page_data, doc, 'PAGE_CHANGED')
+  publish_event(page_data, doc, 'PAGE_SINGULAR_CHANGED')
 
   # Prepare the components array
   components = front_matter.fetch("components", [])
@@ -152,7 +152,7 @@ get "/*" do |path|
     component_front_matter, component_html_content = parse_yaml_front_matter(rendered_component_content)
 
     # Convert the YAML front matter to JSON
-    publish_event(component_front_matter, doc, 'COMPONENT_CHANGED')
+    publish_event(component_front_matter, doc, 'COMPONENT_SINGULAR_CHANGED')
     
     # Process any fragments associated with the component
     fragment_file_names = component_front_matter.fetch("fragments", [])

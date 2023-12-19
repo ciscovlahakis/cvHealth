@@ -229,7 +229,7 @@
     });
   }
 
-  PubSub.subscribe(EVENTS.PAGE_CHANGED, async function(data) {
+  PubSub.subscribe(EVENTS.PAGE_SINGULAR_CHANGED, async function(data) {
     indexName = data?.data?.collection;
     setUpSearch();
     initialSearch();

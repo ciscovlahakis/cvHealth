@@ -195,31 +195,27 @@
   var isPageReady = false;
   var queuedComponentChanges = [];
 
-  function handleComponentChange(action, data) {
-    updateDomElement(action, sidebar, data);
-  }
-
   // Subscribe to page changes
-  PubSub.subscribe(EVENTS.PAGE_CHANGED, ({ action, data }) => {
-    handleComponentChange(action, data);
+  PubSub.subscribe(EVENTS.PAGE_SINGULAR_CHANGED, ({ action, data }) => {
+    updateDomElement(action, sidebar, data);
     isPageReady = true;
 
     // Process any queued component changes
     queuedComponentChanges.forEach(function(change) {
-      handleComponentChange(change.action, change.data);
+      updateDomElement(change.action, sidebar, change.data);
     });
 
     queuedComponentChanges = []; // Clear the queue
   });
 
   // Subscribe to component changes
-  PubSub.subscribe(EVENTS.COMPONENT_CHANGED, ({ action, data }) => {
+  PubSub.subscribe(EVENTS.COMPONENT_SINGULAR_CHANGED, ({ action, data }) => {
     if (!isPageReady) {
       // Queue the component change if the page isn't ready yet
       queuedComponentChanges.push({ action, data });
     } else {
       // Otherwise, handle the component change immediately
-      handleComponentChange(action, data);
+      updateDomElement(action, sidebar, data);
     }
   });
 </script>
