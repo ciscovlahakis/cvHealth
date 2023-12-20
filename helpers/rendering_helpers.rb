@@ -3,6 +3,11 @@
 require 'http'
 require 'json'
 require 'yaml'
+require 'securerandom'
+
+def generate_random_id
+  SecureRandom.hex(10) # Generates a random hex string of length 20
+end
  
 # Fetch the template from Google Cloud Storage
 def fetch_template(component_name)

@@ -17,28 +17,40 @@ end
 #   erb :layout
 # end
 
-def publish_event(hash, doc, event)
-  json_data = JSON.generate(hash) if hash && !hash.empty?
-  # Directly embed the JSON data into a script tag within the HTML
-  if json_data
-    script_tag = <<-SCRIPT
-      <script type='text/javascript'>
-        document.addEventListener('DOMContentLoaded', function() {
-          PubSub.publish(window.EVENTS['#{event}'], {
-            action: 'create',
-            data: JSON.parse(#{json_data.inspect})
-          });
-        });
-      </script>
-    SCRIPT
-    # Create a Nokogiri fragment for the script tag
-    script_fragment = Nokogiri::HTML::DocumentFragment.parse(script_tag)
-    # Prepend the script fragment to the fragment_doc
-    doc.children.before(script_fragment)
+def publish_event(hash, event, content = nil)
+  json_data = nil
+  if hash && !hash.empty?
+    if content
+      hash.merge!({:content => content})
+    end
+    json_data = JSON.generate(hash)
   end
+
+  return unless json_data
+
+  # Directly embed the JSON data into a script tag within the HTML
+  script_tag = <<-SCRIPT
+    <script type='text/javascript'>
+      try {
+        PubSub.publish(window.EVENTS['#{event}'], {
+          action: 'create',
+          data: #{json_data}
+        });
+      } catch (error) {
+        console.error('Error publishing event ' + window.EVENTS['#{event}'] + ':', error);
+      }
+    </script>
+  SCRIPT
+
+  # Create a Nokogiri fragment for the script tag
+  script_fragment = Nokogiri::HTML::DocumentFragment.parse(script_tag)
+
+  # Add script tag to document
+  @doc.add_child(script_fragment)
 end
 
-def render_fragment(fragment_name)
+def render_fragment(fragment_name, parent_id = nil)
+  
   fragment_content = fetch_template(fragment_name)
 
   return nil unless fragment_content
@@ -51,6 +63,13 @@ def render_fragment(fragment_name)
   # Prepare the Nokogiri document for the fragment
   fragment_doc = Nokogiri::HTML::DocumentFragment.parse(fragment_html_content)
 
+  fragment_id = generate_random_id()
+  main_div_for_fragment = fragment_doc.at_css('div')
+  if main_div_for_fragment
+    main_div_for_fragment.set_attribute('data-id', fragment_id)
+    main_div_for_fragment.set_attribute('data-parent-id', parent_id) if parent_id
+  end
+
   # Process nested components
   nested_components = fragment_front_matter.fetch("components", [])
   nested_components.each do |nested_component_name|
@@ -61,15 +80,8 @@ def render_fragment(fragment_name)
     # Skip if no placeholder is found
     next unless parent_placeholder
 
-    # # Parse the props from the data-props attribute
-    # props_json = parent_placeholder['data-props']
-    # nested_props = props_json ? JSON.parse(props_json) : {}
-
-    # # Merge the page data with the nested props
-    # nested_page_data = page_data.merge(nested_props)
-
     # Render nested components within the fragment using the merged data
-    nested_fragment_data = render_fragment(nested_component_name)
+    nested_fragment_data = render_fragment(nested_component_name, fragment_id).fetch("fragment_doc_html", fragment_id)
     next if nested_fragment_data.nil?
 
     # Extract the HTML content from the nested fragment data
@@ -91,24 +103,13 @@ def render_fragment(fragment_name)
                                 end
 
     # Replace the placeholder in the parent fragment with the rendered nested component
-    parent_placeholder.replace(Nokogiri::HTML::DocumentFragment.parse(rendered_nested_component))
+    parent_placeholder.inner_html = Nokogiri::HTML::DocumentFragment.parse(rendered_nested_component)
   end
 
-  # Convert the YAML front matter to JSON
-  publish_event(fragment_front_matter, fragment_doc, 'FRAGMENT_SINGULAR_CHANGED')
-
-  # Include a script tag to load the corresponding JS file for the fragment, if it exists
-  js_file_path = "./public/gcs/#{fragment_name}.js"
-  if File.exist?(js_file_path)
-    script_tag = "<script src='#{js_file_path}'></script>"
-    # Create a Nokogiri fragment for the script tag
-    script_fragment = Nokogiri::HTML::DocumentFragment.parse(script_tag)
-    # Prepend the script tag fragment to the fragment_doc
-    fragment_doc.children.before(script_fragment)
-  end
-
-  # Return only the fully rendered fragment content
-  fragment_doc.to_html
+  return {
+    "fragment_front_matter" => fragment_front_matter,
+    "fragment_doc_html" => fragment_doc.to_html
+  }
 end
 
 get "/*" do |path|
@@ -132,46 +133,64 @@ get "/*" do |path|
   front_matter, html_content = parse_yaml_front_matter(rendered_template_content)
 
   # Parse the main HTML content with Nokogiri
-  doc = Nokogiri::HTML::DocumentFragment.parse(html_content)
+  @doc = Nokogiri::HTML::DocumentFragment.parse(html_content)
 
-  # Convert the YAML front matter to JSON
-  publish_event(page_data, doc, 'PAGE_SINGULAR_CHANGED')
+  publish_event(page_data, 'PAGE_SINGULAR_CHANGED')
 
   # Prepare the components array
   components = front_matter.fetch("components", [])
   _yield_component_name = page_data.fetch(:_yield, nil)
   components << _yield_component_name unless _yield_component_name.nil?
 
+  page_id = generate_random_id()
+  main_div_for_page = @doc.at_css('div')
+  if main_div_for_page
+    main_div_for_page.set_attribute('data-id', page_id)
+  end
+
   # Render components and replace placeholders
   components.each do |component_name|
     component_template_content = fetch_template(component_name)
     next unless component_template_content
 
+    component_id = generate_random_id()
+
     # Render ERB and parse YAML front matter
     rendered_component_content = ERB.new(component_template_content).result(binding)
     component_front_matter, component_html_content = parse_yaml_front_matter(rendered_component_content)
 
-    # Convert the YAML front matter to JSON
-    publish_event(component_front_matter, doc, 'COMPONENT_SINGULAR_CHANGED')
+    publish_event(component_front_matter, 'COMPONENT_SINGULAR_CHANGED')
     
     # Process any fragments associated with the component
     fragment_file_names = component_front_matter.fetch("fragments", [])
     fragment_file_names.each do |fragment_file_name|
-      render_fragment(fragment_file_name)
+      rendered_fragment = render_fragment(fragment_file_name, component_id)
+      fragment_front_matter = rendered_fragment.fetch("fragment_front_matter", nil)
+      fragment_doc_html = rendered_fragment.fetch("fragment_doc_html", nil)
+      publish_event(fragment_front_matter, 'FRAGMENT_SINGULAR_CHANGED', fragment_doc_html)
     end
 
-    placeholder = doc.at("div[data-component='#{component_name}']")
-    placeholder = doc.at("div[data-component='_yield']") if component_name == _yield_component_name
+    placeholder = @doc.at("div[data-component='#{component_name}']")
+    placeholder = @doc.at("div[data-component='_yield']") if component_name == _yield_component_name
+
     next unless placeholder
 
     rendered_content = ERB.new(component_html_content).result(binding)
 
+    component_doc = Nokogiri::HTML::DocumentFragment.parse(rendered_content)
+
+    main_div_for_component = component_doc.at_css('div')
+    if main_div_for_component
+      main_div_for_component.set_attribute('data-id', component_id)
+      main_div_for_component.set_attribute('data-parent-id', page_id)
+    end
+
     # Replace the placeholder in the main document with the rendered content
-    placeholder.replace(Nokogiri::HTML::DocumentFragment.parse(rendered_content))
+    placeholder.replace(component_doc)
   end
 
   # After replacing all placeholders, convert the Nokogiri document back to HTML
-  html_content_with_components = doc.to_html
+  html_content_with_components = @doc.to_html
 
   # Final rendering of the page
   @html_content = ERB.new(html_content_with_components).result(binding)

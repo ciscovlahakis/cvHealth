@@ -1,4 +1,5 @@
-function initializeForm() {
+
+function initializeAddItems(dataParentId) {
   document.body.addEventListener('submit', function(event) {
     if (event.target && event.target.id === 'add-items-form') {
       event.preventDefault();
@@ -39,10 +40,25 @@ function initializeForm() {
       });
     }
   });
+  console.log(dataParentId)
+  PubSub.subscribe(dataParentId, function(data) {
+    console.log(data)
+    var collection = data?.collection;
+    var fields = data?.fields;
+    console.log("add_items", collection)
+    // Get table row clicked
+    // PubSub.publish(parentId, {
+    //   action: 'create',
+    //   data: {
+    //     "form_mode": "new",
+    //     "action_url": "/create/#{collection}"
+    //   }
+    // });
+  });
 }
 
-window.firebaseInitialized
-  .then(initializeForm)
-  .catch(function(error) {
-    console.error('Error during Firebase initialization:', error);
-  });
+var addItemsElements = document.querySelectorAll('[id*="add-items"]');
+addItemsElements.forEach(function(element) {
+  var dataParentId = element.dataset.parentId;
+  initializeAddItems(dataParentId, element);
+});

@@ -7,6 +7,26 @@ fragments:
   - "switch_to_list"
 
 
+
+// Subscribe to parent id;
+var parentId = "page_random_id";
+
+// Get collection, then fields
+var collection = data?.collection;
+
+// Publish fields and collection
+var id = "table_random_id";
+PubSub.publish(parentId, {
+  action: 'create',
+  data: {
+    "fields": fieldsData,
+    "collection": collection,
+    // Pass clicked table row
+  }
+});
+
+
+
 <div class="sidebar-heading text-center">
   <a href="<%= route %>" class="clickable-tab sidebar-tab">
     <% if !img_src.empty? %>

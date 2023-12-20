@@ -17,7 +17,7 @@ components:
   }
 </style>
 
-<div>
+<div id="page">
   <div data-component="header"></div>
   <div class="page">
     <div data-component="sidebar"></div>
@@ -27,3 +27,35 @@ components:
     </div>
   </div>
 </div>
+
+<script>
+  var element = document.querySelector('#page');
+  var dataId = element.dataset.id;
+
+  PubSub.subscribe(EVENTS.PAGE_SINGULAR_CHANGED, ({ action, data }) => {
+    PubSub.publish(dataId, {
+      "page": {
+        action: action,
+        data: data
+      }
+    });
+  });
+
+  PubSub.subscribe(EVENTS.COMPONENT_SINGULAR_CHANGED, ({ action, data }) => {
+    PubSub.publish(dataId, {
+      "component": {
+        action: action,
+        data: data
+      }
+    });
+  });
+
+  PubSub.subscribe(EVENTS.FRAGMENT_SINGULAR_CHANGED, ({ action, data }) => {
+    PubSub.publish(dataId, {
+      "fragment": {
+        action: action,
+        data: data
+      }
+    });
+  });
+</script>

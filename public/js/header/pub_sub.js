@@ -13,6 +13,30 @@ var PubSub = {
     }
   },
 
+  requestFullSet: function(eventName, subscriberId, callback) {
+    // Ensure we have an array to hold subscribers for the event
+    this.subscribers[eventName] = this.subscribers[eventName] || [];
+    
+    // Create a subscriber object with the provided ID and callback
+    var subscriberInfo = { id: subscriberId, callback: callback };
+    
+    // Check if the subscriber with the given ID is already registered for the event
+    var index = this.subscribers[eventName].findIndex(sub => sub.id === subscriberId);
+  
+    // If the subscriber isn't already in the list, add them
+    if (index === -1) {
+        this.subscribers[eventName].push(subscriberInfo);
+    } else {
+        // Update the existing subscriber's callback if it already exists
+        this.subscribers[eventName][index] = subscriberInfo;
+    }
+  
+    // Send the current state to the new or updated subscriber if it exists
+    if (this.state[eventName]) {
+        callback({ data: this.state[eventName] });
+    }
+  },
+
   publish: function(eventName, payload) {
     // Check if the payload has an 'action' property
     if (typeof payload === 'object' && payload.hasOwnProperty('action')) {

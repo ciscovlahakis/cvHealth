@@ -36,6 +36,10 @@ fragments:
     color: #fff;
     font-size: 18px;
     cursor: default;
+    padding-left: calc(var(--padding) /2);
+    padding-right: calc(var(--padding) /2);
+    margin-top: calc(var(--padding) /2);
+    margin-bottom: calc(var(--padding) /2);
   }
 
   .grid-row .icon-column {
@@ -74,7 +78,7 @@ fragments:
   }
 </style>
 
-<div id="table-container">
+<div id="table">
   <div class="grid-table rounded-shadow" id="results">
     <div class="grid-row" id="headers">
       <!-- The headers will be populated by JavaScript -->
@@ -90,56 +94,71 @@ fragments:
 </div>
 
 <script>
-  var fieldsData;
+  function initializeTable(dataParentId) {
+    var fieldsData;
 
-  PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {
-    var resultsContainer = document.getElementById('results');
-    if (resultsContainer && fieldsData) {
-      renderResults(payload.results, resultsContainer, payload.searchTerm, fieldsData);
-    } else {
-      console.error('Results container not found in the DOM or fieldsData is not set');
-    }
-  });
-
-  PubSub.subscribe(EVENTS.PAGE_SINGULAR_CHANGED, async function(data) {
-    const { collection } = data?.data;
-    try {
-      var response = await fetch(`/api/collection/collections?field=name&value=${collection}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+    PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {
+      var resultsContainer = document.getElementById('results');
+      if (resultsContainer && fieldsData) {
+        renderResults(payload.results, resultsContainer, payload.searchTerm, fieldsData);
+      } else {
+        console.error('Results container not found in the DOM or fieldsData is not set');
       }
-      var collection_data = await response.json();
-      fieldsData = collection_data.fields; // Update the shared fieldsData variable
+    });
 
-      if (!Array.isArray(fieldsData)) {
-        console.error('Expected fieldsData to be an array');
-        return;
+    PubSub.subscribe(dataParentId, async function(data) {
+      var collection = data?.page?.data?.collection;
+      if (!collection) return;
+      try {
+        var response = await fetch(`/api/collection/collections?field=name&value=${collection}`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        var collection_data = await response.json();
+        fieldsData = collection_data.fields;
+
+        if (!Array.isArray(fieldsData)) {
+          console.error('Expected fieldsData to be an array');
+          return;
+        }
+
+        var element = document.querySelector('#table');
+        var dataId = element.dataset.id;
+        PubSub.publish(dataId, {
+          "collection": collection,
+          "fields": fieldsData
+        });
+
+        // Create a string for the 'grid-template-columns' style
+        var gridColumnsValue = '100px ' + fieldsData.map(function() { return '1fr'; }).join(' ');
+        var gridRows = document.querySelectorAll('.grid-row');
+        gridRows.forEach(function(row) {
+          row.style.gridTemplateColumns = gridColumnsValue;
+        });
+
+        var headersRow = document.getElementById('headers');
+        headersRow.innerHTML = ''; // Clear existing headers
+
+        // Add the icon header column
+        var iconHeader = document.createElement('div');
+        iconHeader.className = 'header';
+        headersRow.appendChild(iconHeader);
+        
+        fieldsData.forEach(function(field) {
+          var header = document.createElement('div');
+          header.className = 'header';
+          header.textContent = field.title || ''; // Using title or an empty string if title is undefined
+          headersRow.appendChild(header);
+        });
+      } catch (error) {
+        console.error('There has been a problem with your fetch operation:', error);
       }
+    });
+  }
 
-      // Create a string for the 'grid-template-columns' style
-      var gridColumnsValue = '100px ' + fieldsData.map(function() { return '1fr'; }).join(' ');
-      var gridRows = document.querySelectorAll('.grid-row');
-      gridRows.forEach(function(row) {
-        row.style.gridTemplateColumns = gridColumnsValue;
-      });
-
-      var headersRow = document.getElementById('headers');
-      headersRow.innerHTML = ''; // Clear existing headers
-
-      // Add the icon header column
-      var iconHeader = document.createElement('div');
-      iconHeader.className = 'header';
-      headersRow.appendChild(iconHeader);
-      
-      fieldsData.forEach(function(field) {
-        var header = document.createElement('div');
-        header.className = 'header';
-        header.textContent = field.title || ''; // Using title or an empty string if title is undefined
-        headersRow.appendChild(header);
-      });
-
-    } catch (error) {
-      console.error('There has been a problem with your fetch operation:', error);
-    }
+  var tableElements = document.querySelectorAll('[id*="table"]');
+  tableElements.forEach(function(element) {
+    var dataParentId = element.dataset.parentId;
+    initializeTable(dataParentId, element);
   });
 </script>
