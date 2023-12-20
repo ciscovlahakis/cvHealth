@@ -106,6 +106,16 @@ def render_fragment(fragment_name, parent_id = nil)
     parent_placeholder.inner_html = Nokogiri::HTML::DocumentFragment.parse(rendered_nested_component)
   end
 
+  # Include a script tag to load the corresponding JS file for the fragment, if it exists
+  js_file_path = "./public/gcs/#{fragment_name}.js"
+  if File.exist?(js_file_path)
+    script_tag = "<script src='#{js_file_path}'></script>"
+    # Create a Nokogiri fragment for the script tag
+    script_fragment = Nokogiri::HTML::DocumentFragment.parse(script_tag)
+    # Prepend the script tag fragment to the fragment_doc
+    @doc.add_child(script_fragment)
+  end
+
   return {
     "fragment_front_matter" => fragment_front_matter,
     "fragment_doc_html" => fragment_doc.to_html
@@ -135,7 +145,7 @@ get "/*" do |path|
   # Parse the main HTML content with Nokogiri
   @doc = Nokogiri::HTML::DocumentFragment.parse(html_content)
 
-  publish_event(page_data, 'PAGE_SINGULAR_CHANGED')
+  publish_event(page_data, 'PAGE')
 
   # Prepare the components array
   components = front_matter.fetch("components", [])
@@ -159,7 +169,7 @@ get "/*" do |path|
     rendered_component_content = ERB.new(component_template_content).result(binding)
     component_front_matter, component_html_content = parse_yaml_front_matter(rendered_component_content)
 
-    publish_event(component_front_matter, 'COMPONENT_SINGULAR_CHANGED')
+    publish_event(component_front_matter, 'COMPONENT')
     
     # Process any fragments associated with the component
     fragment_file_names = component_front_matter.fetch("fragments", [])
@@ -167,7 +177,7 @@ get "/*" do |path|
       rendered_fragment = render_fragment(fragment_file_name, component_id)
       fragment_front_matter = rendered_fragment.fetch("fragment_front_matter", nil)
       fragment_doc_html = rendered_fragment.fetch("fragment_doc_html", nil)
-      publish_event(fragment_front_matter, 'FRAGMENT_SINGULAR_CHANGED', fragment_doc_html)
+      publish_event(fragment_front_matter, 'FRAGMENT', fragment_doc_html)
     end
 
     placeholder = @doc.at("div[data-component='#{component_name}']")

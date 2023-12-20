@@ -1,64 +1,92 @@
 var PubSub = {
   subscribers: {},
-  state: {}, // Stores the current complete state
-  lastPublishedState: {}, // Stores the last published state to compare changes
+  state: {},
+  lastPublishedState: {},
+  pendingRequests: {},
 
   subscribe: function(eventName, fn) {
+    if (typeof fn !== 'function') {
+      console.error('The callback provided to subscribe for event', eventName, 'is not a function:', fn);
+      return;
+    }
+    
     this.subscribers[eventName] = this.subscribers[eventName] || [];
     this.subscribers[eventName].push(fn);
 
-    // Send the current state to the new subscriber
+    // If there is already state available for this event, send it to the subscriber
     if (this.state[eventName]) {
       fn(this.state[eventName]);
     }
   },
 
   requestFullSet: function(eventName, subscriberId, callback) {
-    // Ensure we have an array to hold subscribers for the event
+
     this.subscribers[eventName] = this.subscribers[eventName] || [];
-    
-    // Create a subscriber object with the provided ID and callback
+
     var subscriberInfo = { id: subscriberId, callback: callback };
-    
-    // Check if the subscriber with the given ID is already registered for the event
     var index = this.subscribers[eventName].findIndex(sub => sub.id === subscriberId);
-  
-    // If the subscriber isn't already in the list, add them
+
     if (index === -1) {
-        this.subscribers[eventName].push(subscriberInfo);
+      this.subscribers[eventName].push(subscriberInfo);
     } else {
-        // Update the existing subscriber's callback if it already exists
-        this.subscribers[eventName][index] = subscriberInfo;
+      this.subscribers[eventName][index] = subscriberInfo;
     }
-  
-    // Send the current state to the new or updated subscriber if it exists
+
     if (this.state[eventName]) {
-        callback({ data: this.state[eventName] });
+      callback({ data: this.state[eventName] });
+    } else {
+      this.pendingRequests[eventName] = this.pendingRequests[eventName] || [];
+      this.pendingRequests[eventName].push({ subscriberId: subscriberId, callback: callback });
     }
   },
 
   publish: function(eventName, payload) {
-    // Check if the payload has an 'action' property
-    if (typeof payload === 'object' && payload.hasOwnProperty('action')) {
-      // Calculate the delta if action is present
-      var delta = this.calculateDelta(this.lastPublishedState[eventName], payload.data);
-      // Update the last published state and the current state
-      this.lastPublishedState[eventName] = payload.data;
-      this.state[eventName] = {...this.state[eventName], ...delta};
-      // Wrap the delta with action
-      payload = { action: payload.action, data: delta };
-    } else {
-      // If there is no 'action', the payload is the new state
-      this.lastPublishedState[eventName] = payload;
-      this.state[eventName] = payload;
-      // The payload remains unchanged and can be a non-object (e.g., a string, number, etc.)
+
+    // Update the state for this event
+    this.state[eventName] = this.state[eventName] || {};
+    Object.assign(this.state[eventName], payload);
+
+    // Notify all subscribers about the update
+    if (this.subscribers[eventName]) {
+        this.subscribers[eventName].forEach(function(subscriber, index) {
+        // Check if the subscriber is a function or an object with a callback
+        if (typeof subscriber === 'function') {
+          try {
+            subscriber(this.state[eventName]);
+          } catch (error) {
+            console.error(`[PubSub.publish] Error invoking subscriber at index ${index} for event "${eventName}":`, error);
+          }
+        } else if (typeof subscriber === 'object' && typeof subscriber.callback === 'function') {
+          try {
+            // Invoke the callback function if the subscriber is an object
+            subscriber.callback(this.state[eventName]);
+          } catch (error) {
+            console.error(`[PubSub.publish] Error invoking callback for subscriber at index ${index} for event "${eventName}":`, error);
+          }
+        } else {
+          console.error(`[PubSub.publish] Subscriber at index ${index} for event "${eventName}" is not a function or does not have a valid callback:`, subscriber);
+          }
+      }, this);
     }
 
-    // Publish the payload (which might be a delta with action, or the raw data) to all subscribers
-    if (this.subscribers[eventName]) {
-      this.subscribers[eventName].forEach(function(fn) {
-        fn(payload);
-      });
+    // Execute any pending requests for the event
+    if (this.pendingRequests[eventName]) {
+      this.executePendingRequests(eventName);
+    }
+  },
+
+  aggregateChanges: function(multipleEventName, payload) {
+    this.state[multipleEventName] = this.state[multipleEventName] || {};
+    Object.assign(this.state[multipleEventName], payload.data);
+    this.executePendingRequests(multipleEventName);
+  },
+
+  executePendingRequests: function(eventName) {
+    if (this.pendingRequests[eventName] && this.pendingRequests[eventName].length > 0) {
+      this.pendingRequests[eventName].forEach(function(pending) {
+        pending.callback({ data: this.state[eventName] });
+      }, this);
+      this.pendingRequests[eventName] = [];
     }
   },
 

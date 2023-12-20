@@ -1,14 +1,46 @@
+
+function convertSnakeToCamel(snakeStr, prefix) {
+  // Split the snake_case string into words
+  var words = snakeStr.toLowerCase().split('_');
+  
+  // Capitalize the first letter of each word if a prefix is provided
+  // Otherwise, capitalize the first letter of each word except the first word
+  var camelCaseStr = words.map(function(word, index) {
+    if (prefix || index > 0) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+    return word;
+  }).join('');
+  
+  // Prepend the prefix if provided
+  return prefix ? prefix + camelCaseStr : camelCaseStr;
+}
+
+function initializeComponents(selector, initializerFunction){
+  var elements = document.querySelectorAll(selector);
+  elements.forEach(function(element) {
+    initializerFunction(element.dataset.parentId, element);
+  });
+}
+
+function afterScriptLoad(fileName, initializerFunction) {
+  // Convert the file_name from snake_case to kebab-case for the selector
+  var kebabCaseName = fileName.replace(/_/g, '-');
+  var selector = '[id*="' + kebabCaseName + '"]';
+  initializeComponents(selector, initializerFunction);
+}
+
 var currentFragmentsData = {};
 
 // Request the full set of fragments data on demand
-PubSub.requestFullSet(EVENTS.FRAGMENTS_MULTIPLE_CHANGED, 'layoutId', function(data) {
-  currentFragmentsData = data;
+PubSub.requestFullSet(EVENTS.FRAGMENT, 'layout', ({ action, data }) => {
+  currentFragmentsData[data?.data?.hash] = data?.data?.content;
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   renderFragmentByHash(decodedHash);
 });
 
-// Subscribe to the FRAGMENT_SINGULAR_CHANGED event
-PubSub.subscribe(EVENTS.FRAGMENT_SINGULAR_CHANGED, function(data) {
+// Subscribe to the FRAGMENT event
+PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
   var fragmentHash = data.hash; // The hash from the published event
   if (fragmentHash) {
     // Update or add the fragment content to the currentFragmentsData
@@ -24,11 +56,13 @@ PubSub.subscribe(EVENTS.FRAGMENT_SINGULAR_CHANGED, function(data) {
 function renderFragmentByHash(hash, content) {
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
-    // Retrieve the fragment data from currentFragmentsData using the hash, or use the provided fragment
-    content = currentFragmentsData[hash] || content;
-    
+    content = content || currentFragmentsData[hash];
     if (content) {
       fragmentElement.innerHTML = content;
+      var initializerFunction = convertSnakeToCamel(hash);
+      if (typeof window[initializerFunction] === 'function') {
+        afterScriptLoad(hash, window[initializerFunction]);
+      }
     } else {
       fragmentElement.innerHTML = '';
       if (hash) {

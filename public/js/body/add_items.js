@@ -1,5 +1,5 @@
 
-function initializeAddItems(dataParentId) {
+function addItems(dataParentId, element) {
   document.body.addEventListener('submit', function(event) {
     if (event.target && event.target.id === 'add-items-form') {
       event.preventDefault();
@@ -40,12 +40,11 @@ function initializeAddItems(dataParentId) {
       });
     }
   });
-  console.log(dataParentId)
-  PubSub.subscribe(dataParentId, function(data) {
+
+  PubSub.requestFullSet(dataParentId, 'add_items', function(data) {
     console.log(data)
     var collection = data?.collection;
     var fields = data?.fields;
-    console.log("add_items", collection)
     // Get table row clicked
     // PubSub.publish(parentId, {
     //   action: 'create',
@@ -56,9 +55,3 @@ function initializeAddItems(dataParentId) {
     // });
   });
 }
-
-var addItemsElements = document.querySelectorAll('[id*="add-items"]');
-addItemsElements.forEach(function(element) {
-  var dataParentId = element.dataset.parentId;
-  initializeAddItems(dataParentId, element);
-});

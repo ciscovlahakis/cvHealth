@@ -5,6 +5,7 @@ components:
   - "header"
   - "sidebar"
 ---
+
 <style>
   .page {
     display: flex;
@@ -32,7 +33,7 @@ components:
   var element = document.querySelector('#page');
   var dataId = element.dataset.id;
 
-  PubSub.subscribe(EVENTS.PAGE_SINGULAR_CHANGED, ({ action, data }) => {
+  PubSub.subscribe(EVENTS.PAGE, ({ action, data }) => {
     PubSub.publish(dataId, {
       "page": {
         action: action,
@@ -41,7 +42,7 @@ components:
     });
   });
 
-  PubSub.subscribe(EVENTS.COMPONENT_SINGULAR_CHANGED, ({ action, data }) => {
+  PubSub.subscribe(EVENTS.COMPONENT, ({ action, data }) => {
     PubSub.publish(dataId, {
       "component": {
         action: action,
@@ -50,11 +51,20 @@ components:
     });
   });
 
-  PubSub.subscribe(EVENTS.FRAGMENT_SINGULAR_CHANGED, ({ action, data }) => {
+  PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
     PubSub.publish(dataId, {
       "fragment": {
         action: action,
         data: data
+      }
+    });
+  });
+
+  PubSub.requestFullSet(EVENTS.FRAGMENT, 'page', ({ action, data }) => {
+    PubSub.publish(dataId, {
+      "fragment": {
+        action: action,
+        data: data?.data
       }
     });
   });

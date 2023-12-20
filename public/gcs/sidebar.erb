@@ -240,6 +240,7 @@
           );
           dropdownElement.querySelector('.dropdown-menu').appendChild(menuItem);
         } else {
+          //console.log(JSON.stringify(currentFragmentsData));
           console.log(`[updateFragmentInSidebar] Fragment data not found for hash: ${fragmentHash}`);
         }
       } else {
@@ -289,6 +290,19 @@
       }
     }
 
+    function handleFragments(data) {
+      var fragmentHash = data?.data?.[0].hash;
+      console.log(fragmentHash)
+      if (fragmentHash) {
+        currentFragmentsData[fragmentHash] = data?.data;
+        if (isComponentReady(fragmentHash)) {
+          updateFragmentInSidebar(fragmentHash);
+        } else {
+          queueFragmentUpdate(fragmentHash);
+        }
+      }
+    }
+
     function handleFragment(data) {
       var fragmentHash = data?.data?.hash;
       if (fragmentHash) {
@@ -313,6 +327,8 @@
               handleComponent(newDataData);
               break;
             case "fragment":
+              handleFragment(newDataData);
+            case "fragments":
               handleFragment(newDataData);
               break;
             default:
