@@ -73,31 +73,4 @@ components:
   }
 </style>
 
-<div id="form" data-component="utility_panel">
-  <div class="form-container">
-    <h2><%= form_mode == :edit ? "Edit Item" : "Add Item" %></h2>
-    <% unless fields.empty? %>
-      <% puts fields.inspect %>
-      <form id="<%= form_id %>" action="<%= form_action %>" method="<%= http_method %>">
-        <% fields.each do |field| %>
-          <% field_name = field.fetch(:name, nil) %>
-          <% field_value = (item_data && item_data[field_name]) ? item_data[field_name] : "" %>
-          <% if field.fetch(:editable, false) %>
-            <div class="form-group">
-              <label for="<%= field_name %>"><%= field.fetch(:title, nil) %></label>
-              <input
-                id="<%= field_name %>"
-                name="<%= field_name %>"
-                value="<%= field_value %>" <%= "required" if form_mode == :new %>
-              >
-            </div>
-          <% end %>
-        <% end %>
-        <div class="form-actions">
-          <input type="submit" value="<%= form_mode == :edit ? "Update" : "Save" %>">
-          <button type="button" onclick="location.href='/cancel-action'">Cancel</button>
-        </div>
-      </form>
-    <% end %>
-  </div>
-</div>
+<div id="form" data-component="utility_panel"></div>
