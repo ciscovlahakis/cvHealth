@@ -1,6 +1,13 @@
 
-// Subscribe to parent id;
-// var parentId = "add_items_random_id";
-// Get form_mode, action_url, item (table row clicked)
+function form(dataParentId, element) {
 
-// Submit data
+  // Set fields
+
+
+  PubSub.subscribe(dataParentId, function(data) {
+    var collection = data?.collection;
+    var fields = data?.fields;
+    var action_url = data?.form_mode === "new" ? "/create/" : "/edit/";
+    action_url += collection;
+  });
+}

@@ -33,7 +33,7 @@ function afterScriptLoad(fileName, initializerFunction) {
 var currentFragmentsData = {};
 
 // Request the full set of fragments data on demand
-PubSub.requestFullSet(EVENTS.FRAGMENT, 'layout', ({ action, data }) => {
+PubSub.requestFullSet(EVENTS.FRAGMENT, 'LAYOUT', ({ action, data }) => {
   currentFragmentsData[data?.data?.hash] = data?.data?.content;
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   renderFragmentByHash(decodedHash);

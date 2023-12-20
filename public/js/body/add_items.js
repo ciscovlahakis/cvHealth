@@ -41,17 +41,17 @@ function addItems(dataParentId, element) {
     }
   });
 
-  PubSub.requestFullSet(dataParentId, 'add_items', function(data) {
-    console.log(data)
+  PubSub.subscribe(dataParentId, function(data) {
+    var dataId = element.dataset.id;
     var collection = data?.collection;
-    var fields = data?.fields;
-    // Get table row clicked
-    // PubSub.publish(parentId, {
-    //   action: 'create',
-    //   data: {
-    //     "form_mode": "new",
-    //     "action_url": "/create/#{collection}"
-    //   }
-    // });
+    PubSub.publish(dataId, {
+      "collection": collection,
+      "fields": data?.fields
+      // Send table row clicked
+    });
+  });
+
+  PubSub.publish(dataId, {
+    "form_mode": "new"
   });
 }

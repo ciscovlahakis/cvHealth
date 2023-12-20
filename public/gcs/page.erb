@@ -60,7 +60,7 @@ components:
     });
   });
 
-  PubSub.requestFullSet(EVENTS.FRAGMENT, 'page', ({ action, data }) => {
+  PubSub.requestFullSet(EVENTS.FRAGMENT, dataId, ({ action, data }) => {
     PubSub.publish(dataId, {
       "fragment": {
         action: action,

@@ -4,14 +4,6 @@ components:
   - "utility_panel"
 ---
 
-<% collection_config = {} %>
-<% fields = collection_config ? collection_config.fetch(:fields, []).select { |field| field.fetch('display', true) } : [] %>
-<% form_mode = "add-items-form" %>
-<% action_url = "add-items-form" %>
-<% form_id = form_mode == :edit ? "edit-items-form" : "add-items-form" %>
-<% form_action = action_url %>
-<% http_method = form_mode == :edit ? "post" : "post" %>
-
 <style>
   .form-container {
     background: #fff;
@@ -81,7 +73,7 @@ components:
   }
 </style>
 
-<div data-component="utility_panel">
+<div id="form" data-component="utility_panel">
   <div class="form-container">
     <h2><%= form_mode == :edit ? "Edit Item" : "Add Item" %></h2>
     <% unless fields.empty? %>
