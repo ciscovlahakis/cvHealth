@@ -3,12 +3,12 @@
   <head>
     <title>Cisco Vlahakis</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
+    
     <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
 
     <% header_js_files = Dir.glob('./public/js/header/*.js').map { |path| path.split('/').last } %>
     <% header_js_files.each do |file| %>
@@ -21,17 +21,20 @@
     <% end %>
 
   </head>
-
   <body>
+    <!-- Upload form (ensure action points to your upload route) -->
     <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
       <input type="file" name="file">
       <input type="submit" value="Upload">
     </form>
 
-    <%= @html_content %>
+    <div id="main-container" data-front-matter='<%= front_matter %>'>
+      <%= page %>
+    </div>
 
+    <!-- Include jQuery and jQuery UI from a CDN -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
 
     <% body_js_files = Dir.glob('./public/js/body/*.js').map { |path| path.split('/').last } %>
     <% body_js_files.each do |file| %>

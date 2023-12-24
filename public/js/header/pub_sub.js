@@ -5,6 +5,11 @@ var PubSub = {
   pendingRequests: {},
 
   subscribe: function(eventName, fn) {
+    if (typeof eventName === 'undefined') {
+      console.error('The event name provided to subscribe is undefined.');
+      return;
+    }
+  
     if (typeof fn !== 'function') {
       console.error('The callback provided to subscribe for event', eventName, 'is not a function:', fn);
       return;
@@ -12,7 +17,7 @@ var PubSub = {
     
     this.subscribers[eventName] = this.subscribers[eventName] || [];
     this.subscribers[eventName].push(fn);
-
+  
     // If there is already state available for this event, send it to the subscriber
     if (this.state[eventName]) {
       fn(this.state[eventName]);
@@ -41,6 +46,10 @@ var PubSub = {
   },
 
   publish: function(eventName, payload) {
+    if (typeof eventName === 'undefined') {
+      console.error('The event name provided to publish is undefined.');
+      return;
+    }
 
     // Update the state for this event
     this.state[eventName] = this.state[eventName] || {};

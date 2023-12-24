@@ -8,6 +8,23 @@ require 'securerandom'
 def generate_random_id
   SecureRandom.hex(10) # Generates a random hex string of length 20
 end
+
+def get_rendered_content(template_name)
+  template_content = fetch_template(template_name)
+  if template_content.nil?
+    halt(404, "Template content not found").tap {
+      logger.error "No template content found for template: #{template_name}"
+    }
+  end
+
+  front_matter, html_content = parse_yaml_front_matter(template_content)
+  rendered_html_content = ERB.new(html_content).result(binding)
+
+  return {
+    :html_content => rendered_html_content,
+    :front_matter => front_matter
+  }
+end
  
 # Fetch the template from Google Cloud Storage
 def fetch_template(component_name)

@@ -2,7 +2,6 @@
 
 require "sinatra/reloader"
 require 'erb'
-require 'nokogiri'
 
 get "/favicon.ico" do
 end
@@ -13,198 +12,50 @@ end
 get "/__sinatra__500.png" do
 end
 
-# get "/*" do |path|
-#   erb :layout
-# end
+# Serve individual components
+get "/components/:component_name" do
+  component_name = params.fetch("component_name")
+  content = get_rendered_content(component_name)
 
-def publish_event(hash, event, content = nil)
-  json_data = nil
-  if hash && !hash.empty?
-    if content
-      hash.merge!({:content => content})
-    end
-    json_data = JSON.generate(hash)
-  end
+  json_response = {
+    "html_content" => content[:html_content],
+    "front_matter" => content[:front_matter]
+  }.to_json
 
-  return unless json_data
-
-  # Directly embed the JSON data into a script tag within the HTML
-  script_tag = <<-SCRIPT
-    <script type='text/javascript'>
-      try {
-        PubSub.publish(window.EVENTS['#{event}'], {
-          action: 'create',
-          data: #{json_data}
-        });
-      } catch (error) {
-        console.error('Error publishing event ' + window.EVENTS['#{event}'] + ':', error);
-      }
-    </script>
-  SCRIPT
-
-  # Create a Nokogiri fragment for the script tag
-  script_fragment = Nokogiri::HTML::DocumentFragment.parse(script_tag)
-
-  # Add script tag to document
-  @doc.add_child(script_fragment)
+  content_type :json
+  json_response
 end
 
-def render_fragment(fragment_name, parent_id = nil)
-  
-  fragment_content = fetch_template(fragment_name)
-
-  return nil unless fragment_content
-
-  rendered_fragment_content = ERB.new(fragment_content).result(binding)
-
-  # Parse the YAML front matter and the HTML content
-  fragment_front_matter, fragment_html_content = parse_yaml_front_matter(rendered_fragment_content)
-
-  # Prepare the Nokogiri document for the fragment
-  fragment_doc = Nokogiri::HTML::DocumentFragment.parse(fragment_html_content)
-
-  fragment_id = generate_random_id()
-  main_div_for_fragment = fragment_doc.at_css('div')
-  if main_div_for_fragment
-    main_div_for_fragment.set_attribute('data-id', fragment_id)
-    main_div_for_fragment.set_attribute('data-parent-id', parent_id) if parent_id
-  end
-
-  # Process nested components
-  nested_components = fragment_front_matter.fetch("components", [])
-  nested_components.each do |nested_component_name|
-
-    # Find the placeholder for the nested component in the parent fragment
-    parent_placeholder = fragment_doc.at("div[data-component='#{nested_component_name}']")
-
-    # Skip if no placeholder is found
-    next unless parent_placeholder
-
-    # Render nested components within the fragment using the merged data
-    nested_fragment_data = render_fragment(nested_component_name, fragment_id).fetch("fragment_doc_html", fragment_id)
-    next if nested_fragment_data.nil?
-
-    # Extract the HTML content from the nested fragment data
-    nested_content_html = nested_fragment_data
-
-    # Prepare the Nokogiri document for the nested component
-    nested_doc = Nokogiri::HTML::DocumentFragment.parse(nested_content_html)
-    nested_placeholder = nested_doc.at("div[data-yield]")
-
-    # If nested content exists within the parent placeholder, extract it
-    child_content = parent_placeholder.inner_html unless parent_placeholder.inner_html.strip.empty?
-
-    # Render the nested component, replacing the placeholder if necessary
-    rendered_nested_component = if nested_placeholder && child_content
-                                  nested_placeholder.inner_html = child_content
-                                  nested_doc.to_html
-                                else
-                                  nested_content_html
-                                end
-
-    # Replace the placeholder in the parent fragment with the rendered nested component
-    parent_placeholder.inner_html = Nokogiri::HTML::DocumentFragment.parse(rendered_nested_component)
-  end
-
-  # Include a script tag to load the corresponding JS file for the fragment, if it exists
-  js_file_path = "./public/gcs/#{fragment_name}.js"
-  if File.exist?(js_file_path)
-    script_tag = "<script src='#{js_file_path}'></script>"
-    # Create a Nokogiri fragment for the script tag
-    script_fragment = Nokogiri::HTML::DocumentFragment.parse(script_tag)
-    # Prepend the script tag fragment to the fragment_doc
-    @doc.add_child(script_fragment)
-  end
-
-  return {
-    "fragment_front_matter" => fragment_front_matter,
-    "fragment_doc_html" => fragment_doc.to_html
-  }
-end
-
+# Serve main page
 get "/*" do |path|
-  # Fetch the page data from Firestore
-  page_data = fetch_document_data("pages", {
-    :field => "route",
-    :value => "/#{path}"
-  })
-  return halt(404, "Page not found") if page_data.nil?
+  # Handle the request for a static file
+  if path.start_with?("public/gcs/")
+    file_path = path.sub(/^public\/gcs\//, '') # Remove the leading 'public/gcs/' from the path
+    file_full_path = File.join(settings.public_folder, 'gcs', file_path)
 
-  # Extract the template name from the page data
+    if File.exist?(file_full_path) && File.file?(file_full_path)
+      send_file(file_full_path)
+    else
+      halt(404, "File not found")
+    end
+  end
+
+  page_data = fetch_document_data("pages", {:field => "route", :value => "/#{path}"})
+  return halt(404, "Page not found").tap {
+    logger.error "No page data found for route: /#{path}"
+  } if page_data.nil?
+
   template_name = page_data.fetch(:template, nil)
-  return halt(404, "Template not specified") if template_name.nil?
+  return halt(404, "Template not specified").tap {
+    logger.error "No template found: #{template_name}"
+  } if template_name.nil?
 
-  # Fetch the template content from GCS
-  template_content = fetch_template(template_name)
-  return halt(404, "Template content not found") if template_content.nil?
+  content = get_rendered_content(template_name);
+  front_matter = content[:front_matter]
+  front_matter = page_data.merge(front_matter).to_json;
 
-  # Render ERB and extract YAML front matter and the HTML content
-  rendered_template_content = ERB.new(template_content).result(binding)
-  front_matter, html_content = parse_yaml_front_matter(rendered_template_content)
-
-  # Parse the main HTML content with Nokogiri
-  @doc = Nokogiri::HTML::DocumentFragment.parse(html_content)
-
-  publish_event(page_data, 'PAGE')
-
-  # Prepare the components array
-  components = front_matter.fetch("components", [])
-  _yield_component_name = page_data.fetch(:_yield, nil)
-  components << _yield_component_name unless _yield_component_name.nil?
-
-  page_id = generate_random_id()
-  main_div_for_page = @doc.at_css('div')
-  if main_div_for_page
-    main_div_for_page.set_attribute('data-id', page_id)
-  end
-
-  # Render components and replace placeholders
-  components.each do |component_name|
-    component_template_content = fetch_template(component_name)
-    next unless component_template_content
-
-    component_id = generate_random_id()
-
-    # Render ERB and parse YAML front matter
-    rendered_component_content = ERB.new(component_template_content).result(binding)
-    component_front_matter, component_html_content = parse_yaml_front_matter(rendered_component_content)
-
-    publish_event(component_front_matter, 'COMPONENT')
-    
-    # Process any fragments associated with the component
-    fragment_file_names = component_front_matter.fetch("fragments", [])
-    fragment_file_names.each do |fragment_file_name|
-      rendered_fragment = render_fragment(fragment_file_name, component_id)
-      fragment_front_matter = rendered_fragment.fetch("fragment_front_matter", nil)
-      fragment_doc_html = rendered_fragment.fetch("fragment_doc_html", nil)
-      publish_event(fragment_front_matter, 'FRAGMENT', fragment_doc_html)
-    end
-
-    placeholder = @doc.at("div[data-component='#{component_name}']")
-    placeholder = @doc.at("div[data-component='_yield']") if component_name == _yield_component_name
-
-    next unless placeholder
-
-    rendered_content = ERB.new(component_html_content).result(binding)
-
-    component_doc = Nokogiri::HTML::DocumentFragment.parse(rendered_content)
-
-    main_div_for_component = component_doc.at_css('div')
-    if main_div_for_component
-      main_div_for_component.set_attribute('data-id', component_id)
-      main_div_for_component.set_attribute('data-parent-id', page_id)
-    end
-
-    # Replace the placeholder in the main document with the rendered content
-    placeholder.replace(component_doc)
-  end
-
-  # After replacing all placeholders, convert the Nokogiri document back to HTML
-  html_content_with_components = @doc.to_html
-
-  # Final rendering of the page
-  @html_content = ERB.new(html_content_with_components).result(binding)
-
-  # Render the final HTML content with the layout
-  erb :layout
+  erb :layout, :locals => {
+    :page => content[:html_content],
+    :front_matter => front_matter
+  }
 end
