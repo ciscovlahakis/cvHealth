@@ -1,0 +1,21 @@
+---
+name: "Table"
+type: "component"
+fragments:
+  - "add_items"
+---
+
+<div id="table" class="table-container">
+  <div class="grid-table rounded-shadow" id="results">
+    <div class="grid-row" id="headers">
+      <!-- The headers will be populated by JavaScript -->
+      <div class="header icon-column"></div> <!-- Empty div for the icon column -->
+    </div>
+    <!-- Template row and content rows will be populated by JavaScript -->
+    <div id="template-row" class="grid-row sortable-row" style="display: none;">
+      <div class="icon-column drag-handle">
+        <i class="fas fa-bars"></i>
+      </div>
+    </div>
+  </div>
+</div>

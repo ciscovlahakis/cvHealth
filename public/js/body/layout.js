@@ -1,19 +1,23 @@
 
-var currentFragmentsData = {};
+var pageData = {};
+var fragmentsData = {};
+
+PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
+  pageData = data;
+});
 
 // Request the full set of fragments data on demand
 PubSub.requestFullSet(EVENTS.FRAGMENT, 'LAYOUT', ({ action, data }) => {
-  currentFragmentsData[data?.data?.hash] = data?.data?.content;
+  fragmentsData[data?.data?.hash] = data?.data?.content;
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   renderFragmentByHash(decodedHash);
 });
 
-// Subscribe to the FRAGMENT event
 PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
   var fragmentHash = data.hash; // The hash from the published event
   if (fragmentHash) {
-    // Update or add the fragment content to the currentFragmentsData
-    currentFragmentsData[fragmentHash] = data.content;
+    // Update or add the fragment content to the fragmentsData
+    fragmentsData[fragmentHash] = data.content;
   }
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   if (fragmentHash === decodedHash) {
@@ -25,7 +29,7 @@ PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
 function renderFragmentByHash(hash, content) {
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
-    content = content || currentFragmentsData[hash];
+    content = content || fragmentsData[hash];
     if (content) {
       // Set the inner HTML of the fragment element
       fragmentElement.innerHTML = content;
@@ -96,6 +100,9 @@ function processTemplate() {
     console.error("Template name does not exist.");
     return;
   }
+
+  loadFilesAndPublishEvent(templateName, frontMatterData);
+
   const templateElement = document.querySelector('#' + templateName.toLowerCase());
   if (!templateElement) {
     console.error("Template name el does not exist.");
@@ -112,8 +119,6 @@ function processTemplate() {
   document.querySelectorAll('[data-component]').forEach(element => {
     setIdAndFetchComponent(element);
   });
-
-  setScriptAndPublishEvent(templateName, frontMatterData);
 }
 
 // Start observing the document body for DOM mutations
@@ -125,7 +130,7 @@ function onElementAdded(mutationsList, observer) {
   for (const mutation of mutationsList) {
     if (mutation.type === 'childList') {
       mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('data-component')) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
           setIdAndFetchComponent(node);
         }
       });
@@ -134,7 +139,15 @@ function onElementAdded(mutationsList, observer) {
 }
 
 function setIdAndFetchComponent(element) {
-  const componentName = element.getAttribute('data-component');
+  var componentName = element.getAttribute('data-component');
+  if (!componentName) return;
+  if (componentName === '_yield') {
+    componentName = pageData?._yield;
+    if (!componentName) {
+      console.error("Template could not find a _yield.");
+      return;
+    }
+  }
   const parentNode = element.parentNode.closest('[data-id]');
   const parentId = parentNode.getAttribute('data-id');
   const uniqueId = generateUniqueId();
@@ -155,7 +168,7 @@ function fetchComponent(componentName, placeholder) {
     })
     .then(data => {
       replacePlaceholderHtml(placeholder, data.html_content);
-      setScriptAndPublishEvent(componentName, data.front_matter);
+      loadFilesAndPublishEvent(componentName, data.front_matter);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
 }
@@ -164,11 +177,6 @@ function replacePlaceholderHtml(placeholder, html_content) {
   // Create a temporary div to parse the HTML content
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html_content;
-  // Extract and handle <style> tags
-  const styleTags = tempDiv.querySelectorAll('style');
-  styleTags.forEach(style => {
-    document.head.appendChild(style); // Append the style tags to the head
-  });
   // Grab the outermost div from the parsed HTML
   const outerDiv = tempDiv.querySelector('div');
   if (outerDiv) {
@@ -187,27 +195,52 @@ function replacePlaceholderHtml(placeholder, html_content) {
   }
 }
 
-function setScriptAndPublishEvent(elementName, frontMatterData) {
-  const scriptName = convertSnakeToCamel(elementName);
-  loadAndExecuteScript(scriptName);
-  publishEvent(frontMatterData);
+function loadFilesAndPublishEvent(fileName, frontMatterData) {
+  fileName = convertSnakeToCamel(fileName);
+  loadStyles(fileName); // styles
+  loadAndExecuteScript(fileName); // script
+  publishEvent(frontMatterData); // template, component, fragment
 }
 
-function loadAndExecuteScript(scriptName) {
-  const jsFilePath = `/public/gcs/${scriptName}.js`;
+function loadStyles(fileName) {
+  const stylesFilePath = `/public/gcs/styles/${fileName}.css`;
+
+  fetch(stylesFilePath)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then(css => {
+      const style = document.createElement('style');
+      style.innerHTML = css;
+      document.head.appendChild(style);
+    })
+    .catch(error => {
+      console.error(`Error loading or couldn't find styles: ${stylesFilePath}`, error);
+    });
+}
+
+function loadAndExecuteScript(fileName) {
+  const jsFilePath = `/public/gcs/js/${fileName}.js`;
   const script = document.createElement('script');
   script.src = jsFilePath;
   script.onload = () => {
-    initializeComponents(scriptName);
+    initializeScriptElements(fileName);
   };
   script.onerror = () => { 
-    console.error(`Error loading script: ${jsFilePath}`); 
+    console.error(`Error loading or couldn't find script: ${jsFilePath}`); 
   };
   document.head.appendChild(script);
 }
 
 function publishEvent(data) {
   var { type } = data;
+  if (!type) {
+    type = "component";
+    console.error("Event type could not be parsed. Assuming component.");
+  }
   type = type.toUpperCase();
   try {
     PubSub.publish(window.EVENTS[type], {
@@ -219,7 +252,7 @@ function publishEvent(data) {
   }
 }
 
-function initializeComponents(scriptName){
+function initializeScriptElements(scriptName){
   const initializerFunction = window[scriptName];
   if (typeof initializerFunction !== "function") {
     console.error("Initializer function not a function for: ", scriptName);

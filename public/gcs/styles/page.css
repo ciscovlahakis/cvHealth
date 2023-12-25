@@ -1,0 +1,9 @@
+.page {
+  display: flex;
+  flex-direction: row;
+}
+.content {
+  position: relative;
+  margin: calc(var(--padding)/2);
+  width: 100%;
+}

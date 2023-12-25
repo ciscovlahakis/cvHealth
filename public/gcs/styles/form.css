@@ -1,0 +1,66 @@
+.form-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.form-actions {
+  text-align: right;
+}
+
+.form-actions input[type="submit"],
+.form-actions button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.form-actions input[type="submit"] {
+  background: #000; /* Changed from green to black */
+  color: white;
+  margin-right: 5px;
+}
+
+.form-actions button {
+  background: #f0f0f0;
+}
+
+/* Add some space at the bottom of the form */
+.form-container {
+  margin-bottom: 20px;
+}
+
+/* Just to make the form a bit nicer */
+input[type="text"]:focus {
+  border-color: #000; /* Match focus border color with Save button */
+}
+button:hover,
+input[type="submit"]:hover {
+  opacity: 0.9;
+}

@@ -1,0 +1,61 @@
+#sidebar {
+  width: 20vw;
+  height: 100vh;
+  background-color: black;
+  color: #fff;
+  display: flex;
+  padding-top: 5px;
+  margin-top: calc(var(--padding)/2);
+  flex-direction: column;
+}
+
+#sidebar .tab {
+  display: flex;
+  text-decoration: none;
+  color: white;
+  transition: background-color 0.3s;
+  border: none;
+  font-size: 14px;
+  height: 32px;
+  align-items: center;
+  cursor: pointer;
+  justify-content: flex-start;
+}
+
+#sidebar .tab:hover,
+#sidebar .tab.active {
+  background-color: #343a40;
+}
+
+#sidebar .tab i {
+  font-size: 1em;
+  margin-right: 6px;
+}
+
+.dropdown .dropdown-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown .dropdown-toggle .caret {
+  margin-right: 6px;
+  transition: transform 0.3s ease;
+}
+
+.dropdown .dropdown-menu {
+  display: none;
+  flex-direction: column;
+}
+
+.dropdown .dropdown-menu.show {
+  display: flex;
+}
+
+#sidebar .tab.dropdown-item {
+  padding-left: 27px;
+}
+
+#sidebar .tab.dropdown-toggle {
+  padding-left: 10px;
+}
