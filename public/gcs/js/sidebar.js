@@ -220,12 +220,13 @@ function sidebar(dataParentId, element) {
   }
 
   function handleComponent(data) {
+    console.log(data)
     var action = data?.action;
     var componentData = data?.data;
+    console.log(componentData);
     if (!componentData.pages || !componentData.fragments) {
       return;
     }
-    console.log(componentData);
     if (!isPageReady) {
       queuedComponentChanges.push({ action, componentData });
     } else {

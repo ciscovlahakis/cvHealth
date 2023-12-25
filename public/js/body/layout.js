@@ -7,17 +7,19 @@ PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
 });
 
 // Request the full set of fragments data on demand
-PubSub.requestFullSet(EVENTS.FRAGMENT, 'LAYOUT', ({ action, data }) => {
-  fragmentsData[data?.data?.hash] = data?.data?.content;
-  var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-  renderFragmentByHash(decodedHash);
-});
+// PubSub.requestFullSet(EVENTS.FRAGMENT, 'LAYOUT', ({ action, data }) => {
+//   fragmentsData[data?.data?.hash] = data?.data?.html_content;
+//   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
+//   renderFragmentByHash(decodedHash);
+// });
 
 PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
-  var fragmentHash = data.hash; // The hash from the published event
+  var frontMatterData = data?.front_matter;
+  var fragmentHash = frontMatterData.hash; // The hash from the published event
   if (fragmentHash) {
     // Update or add the fragment content to the fragmentsData
-    fragmentsData[fragmentHash] = data.content;
+    var html_content = data?.html_content;
+    fragmentsData[fragmentHash] = html_content;
   }
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   if (fragmentHash === decodedHash) {
@@ -33,17 +35,12 @@ function renderFragmentByHash(hash, content) {
     if (content) {
       // Set the inner HTML of the fragment element
       fragmentElement.innerHTML = content;
-
       // Ensure the new content has the 'data-component' attribute for the MutationObserver
       // This assumes that your fragment content is wrapped in a div with the component's name
       var newContentDiv = fragmentElement.querySelector('div');
       if (newContentDiv) {
         newContentDiv.setAttribute('data-component', hash);
       }
-
-      // The MutationObserver set up in dom_observer.js will now automatically detect
-      // this new content and load the corresponding JS file without the need for afterScriptLoad.
-
     } else {
       fragmentElement.innerHTML = '';
       if (hash) {
@@ -71,10 +68,6 @@ function handleInitialHash() {
 
 handleInitialHash();
 
-
-
-
-
 document.addEventListener("DOMContentLoaded", () => {
   processTemplate();
 });
@@ -101,7 +94,7 @@ function processTemplate() {
     return;
   }
 
-  loadFilesAndPublishEvent(templateName, frontMatterData);
+  loadFilesSetFragmentsAndPublishEvent(templateName, frontMatterData);
 
   const templateElement = document.querySelector('#' + templateName.toLowerCase());
   if (!templateElement) {
@@ -168,7 +161,7 @@ function fetchComponent(componentName, placeholder) {
     })
     .then(data => {
       replacePlaceholderHtml(placeholder, data.html_content);
-      loadFilesAndPublishEvent(componentName, data.front_matter);
+      loadFilesSetFragmentsAndPublishEvent(componentName, data.front_matter);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
 }
@@ -195,10 +188,11 @@ function replacePlaceholderHtml(placeholder, html_content) {
   }
 }
 
-function loadFilesAndPublishEvent(fileName, frontMatterData) {
+function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData) {
   fileName = convertSnakeToCamel(fileName);
   loadStyles(fileName); // styles
   loadAndExecuteScript(fileName); // script
+  setFragments(frontMatterData);
   publishEvent(frontMatterData); // template, component, fragment
 }
 
@@ -233,6 +227,33 @@ function loadAndExecuteScript(fileName) {
     console.error(`Error loading or couldn't find script: ${jsFilePath}`); 
   };
   document.head.appendChild(script);
+}
+
+function setFragments(data) {
+  const { fragments } = data;
+  if (!fragments) return;
+  fragments.forEach(fragment => {
+    fetchFragment(fragment);
+  });
+}
+
+function fetchFragment(fragmentName) {
+  const fragmentPath = `/components/${fragmentName}`;;
+  fetch(fragmentPath)
+    .then(response => {
+      if (!response.ok) {
+        response.text().then(text => console.error("Failed response body for fragment:", fragmentName, text));
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      PubSub.publish(EVENTS.FRAGMENT, {
+        action: "create",
+        data: data
+      });
+    })
+    .catch(error => console.error(`Error fetching fragment: ${fragmentName}`, error));
 }
 
 function publishEvent(data) {
