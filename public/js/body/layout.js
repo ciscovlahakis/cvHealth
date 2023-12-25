@@ -8,7 +8,7 @@ PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
 
 PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
   var frontMatterData = data?.front_matter;
-  var fragmentHash = frontMatterData.hash; // The hash from the published event
+  var fragmentHash = convertToKebabCase(frontMatterData.hash); // The hash from the published event
   if (fragmentHash) {
     // Update or add the fragment content to the fragmentsData
     var html_content = data?.html_content;
@@ -29,7 +29,6 @@ function renderFragmentByHash(hash, content) {
       // Set the inner HTML of the fragment element
       fragmentElement.innerHTML = content;
       // Ensure the new content has the 'data-component' attribute for the MutationObserver
-      // This assumes that your fragment content is wrapped in a div with the component's name
       var newContentDiv = fragmentElement.querySelector('div');
       if (newContentDiv) {
         newContentDiv.setAttribute('data-component', hash);
@@ -182,7 +181,7 @@ function replacePlaceholderHtml(placeholder, html_content) {
 }
 
 function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData) {
-  fileName = convertSnakeToCamel(fileName);
+  fileName = convertToSnakeCase(fileName);
   loadStyles(fileName); // styles
   loadAndExecuteScript(fileName); // script
   setFragments(frontMatterData);
@@ -191,7 +190,6 @@ function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData) {
 
 function loadStyles(fileName) {
   const stylesFilePath = `/public/gcs/styles/${fileName}.css`;
-
   fetch(stylesFilePath)
     .then(response => {
       if (!response.ok) {
@@ -231,11 +229,12 @@ function setFragments(data) {
 }
 
 function fetchFragment(fragmentName) {
-  const fragmentPath = `/components/${fragmentName}`;;
+  var fileName = convertToSnakeCase(fragmentName);
+  const fragmentPath = `/components/${fileName}`;;
   fetch(fragmentPath)
     .then(response => {
       if (!response.ok) {
-        response.text().then(text => console.error("Failed response body for fragment:", fragmentName, text));
+        response.text().then(text => console.error("Failed response body for fragment (name, file):", fragmentName, fileName, text));
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return response.json();
@@ -246,7 +245,7 @@ function fetchFragment(fragmentName) {
         data: data
       });
     })
-    .catch(error => console.error(`Error fetching fragment: ${fragmentName}`, error));
+    .catch(error => console.error(`Error fetching fragment (name, file): ${fragmentName} ${fileName}`, error));
 }
 
 function publishEvent(data) {
@@ -272,33 +271,10 @@ function initializeScriptElements(scriptName){
     console.error("Initializer function not a function for: ", scriptName);
     return;
   }
-  var kebabCaseName = scriptName.replace(/_/g, '-');
+  var kebabCaseName = convertToKebabCase(scriptName);
   var selector = '[id*="' + kebabCaseName + '"]';
   var elements = document.querySelectorAll(selector);
   elements.forEach(function(element) {
     initializerFunction(element.dataset.parentId, element);
   });
-}
-
-function convertSnakeToCamel(snakeStr, prefix) {
-  // Split the snake_case string into words
-  var words = snakeStr.toLowerCase().split('_');
-  
-  // Capitalize the first letter of each word if a prefix is provided
-  // Otherwise, capitalize the first letter of each word except the first word
-  var camelCaseStr = words.map(function(word, index) {
-    if (prefix || index > 0) {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    }
-    return word;
-  }).join('');
-  
-  // Prepend the prefix if provided
-  return prefix ? prefix + camelCaseStr : camelCaseStr;
-}
-
-function generateUniqueId() {
-  const randomPart = Math.random().toString(36).substring(2, 15); // Generate a random string
-  const timestampPart = Date.now().toString(36); // Get a string version of the current timestamp
-  return `component-${timestampPart}-${randomPart}`;
 }

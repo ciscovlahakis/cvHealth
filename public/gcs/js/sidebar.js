@@ -13,7 +13,7 @@ function sidebar(dataParentId, element) {
     var anchor = document.createElement('a');
     anchor.className = className;
     anchor.textContent = textContent;
-    anchor.href = href;
+    anchor.href = convertToKebabCase(href);
     return anchor;
   }
 
