@@ -87,7 +87,7 @@ function processTemplate() {
     return;
   }
   const frontMatterData = JSON.parse(frontMatter);
-  if (!frontMatterData || frontMatterData.empty()) {
+  if (!frontMatterData || !Object.keys(frontMatterData).length) {
     console.error("Template front matter data does not exist.");
     return;
   }
@@ -112,7 +112,7 @@ function processTemplate() {
   document.querySelectorAll('[data-component]').forEach(element => {
     setIdAndFetchComponent(element);
   });
-  
+
   setScriptAndPublishEvent(templateName, frontMatterData);
 }
 

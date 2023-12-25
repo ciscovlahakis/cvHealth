@@ -56,8 +56,8 @@ function sidebar(dataParentId, element) {
         fetch(`/api/collection/pages?field=route&value=${route}`)
           .then(response => {
             if (!response.ok) {
-              console.log('Response not OK for route', route);
-              throw new Error('Network response was not ok');
+              console.error('Response not OK for route', route);
+              return;
             }
             return response.json();
           })
@@ -145,7 +145,7 @@ function sidebar(dataParentId, element) {
       return false;
     }
     var dropdownId = 'dropdown-' + (properties.title || '').replace(/\s+/g, '-');
-    var isReady = sidebar.querySelector('#' + dropdownId) !== null;
+    var isReady = element.querySelector('#' + dropdownId) !== null;
     return isReady;
   }
 
@@ -158,7 +158,7 @@ function sidebar(dataParentId, element) {
     }
 
     var dropdownId = 'dropdown-' + (properties.title || '').replace(/\s+/g, '-');
-    var dropdownElement = sidebar.querySelector('#' + dropdownId);
+    var dropdownElement = element.querySelector('#' + dropdownId);
 
     if (!dropdownElement) {
       console.error(`[updateFragmentInSidebar] Dropdown element not found for ID: ${dropdownId}`);
@@ -178,8 +178,7 @@ function sidebar(dataParentId, element) {
         );
         dropdownElement.querySelector('.dropdown-menu').appendChild(menuItem);
       } else {
-        //console.log(JSON.stringify(currentFragmentsData));
-        console.log(`[updateFragmentInSidebar] Fragment data not found for hash: ${fragmentHash}`);
+        console.error(`[updateFragmentInSidebar] Fragment data not found for hash: ${fragmentHash}`);
       }
     } else {
       // Update the existing menu item if needed
@@ -208,11 +207,13 @@ function sidebar(dataParentId, element) {
   function handlePage(data) {
     var action = data?.action;
     var pageData = data?.data;
-    updateDomElement(action, sidebar, pageData);
-    isPageReady = true;
+    if (pageData.pages || pageData.fragments) {
+      updateDomElement(action, element, pageData);
+    }
 
+    isPageReady = true;
     queuedComponentChanges.forEach(function(change) {
-      updateDomElement(change.action, sidebar, change.data);
+      updateDomElement(change.action, element, change.data);
     });
 
     queuedComponentChanges = [];
@@ -221,16 +222,19 @@ function sidebar(dataParentId, element) {
   function handleComponent(data) {
     var action = data?.action;
     var componentData = data?.data;
+    if (!componentData.pages || !componentData.fragments) {
+      return;
+    }
+    console.log(componentData);
     if (!isPageReady) {
       queuedComponentChanges.push({ action, componentData });
     } else {
-      updateDomElement(action, sidebar, componentData);
+      updateDomElement(action, element, componentData);
     }
   }
 
   function handleFragments(data) {
     var fragmentHash = data?.data?.[0].hash;
-    console.log(fragmentHash)
     if (fragmentHash) {
       currentFragmentsData[fragmentHash] = data?.data;
       if (isComponentReady(fragmentHash)) {
@@ -270,7 +274,7 @@ function sidebar(dataParentId, element) {
             handleFragment(newDataData);
             break;
           default:
-            console.log("Key not used in component: ", element)
+            console.error("Key: ", key, " not used in component: ", element);
         }
         // Update the current state
         state[key] = newDataData;
