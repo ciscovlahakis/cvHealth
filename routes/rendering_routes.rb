@@ -53,7 +53,8 @@ get "/*" do |path|
   content = get_rendered_content(template_name)
   template = content[:html_content]
   front_matter = content[:front_matter]
-  front_matter = page_data.merge(front_matter).to_json
+  front_matter.store(:page, page_data)
+  front_matter = front_matter.to_json
 
   erb :layout, :locals => {
     :template => template,

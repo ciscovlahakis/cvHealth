@@ -3,10 +3,11 @@ function page(_, element) {
   var dataId = element.dataset.id;
   
   PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
+    const { page } = data;
     PubSub.publish(dataId, {
       "page": {
         action: action,
-        data: data
+        data: page
       }
     });
   });

@@ -1,6 +1,6 @@
 
 function sidebar(dataParentId, element) {
-  var currentFragmentsData = {};
+  var fragmentsData = {};
   var dropdownPropertiesMapping = {};
   var queuedFragmentUpdates = [];
 
@@ -20,11 +20,11 @@ function sidebar(dataParentId, element) {
   function createToggle(properties) {
     var toggle = document.createElement('div');
     toggle.className = 'tab dropdown-toggle';
-    toggle.id = 'dropdownMenu' + (properties.title || '').replace(/\s+/g, '');
+    toggle.id = 'dropdownMenu' + (properties.name || '').replace(/\s+/g, '');
     toggle.setAttribute('data-toggle', 'dropdown');
     toggle.setAttribute('aria-haspopup', 'true');
     toggle.setAttribute('aria-expanded', 'false');
-    toggle.innerHTML = '<span class="caret">&#9660;</span> ' + properties.title;
+    toggle.innerHTML = '<span class="caret">&#9660;</span> ' + properties.name;
     return toggle;
   }
 
@@ -38,7 +38,7 @@ function sidebar(dataParentId, element) {
   function createDropdownComponent(properties) {
     var dropdown = document.createElement('div');
     dropdown.className = 'dropdown';
-    dropdown.id = 'dropdown-' + (properties.title || '').replace(/\s+/g, '-');
+    dropdown.id = 'dropdown-' + (properties.name || '').replace(/\s+/g, '-');
 
     var toggle = createToggle(properties);
     var menu = createMenu(toggle.id);
@@ -63,7 +63,7 @@ function sidebar(dataParentId, element) {
           })
           .then(data => {
             var menuItem = createAnchorElement(
-              data.title || "Resource Not Found",
+              data.name || "Resource Not Found",
               `/${route}`,
               'dropdown-item tab'
             );
@@ -77,10 +77,10 @@ function sidebar(dataParentId, element) {
 
     if (properties.fragments && properties.fragments.length > 0) {
       properties.fragments.forEach(function(fragmentHash) {
-        var fragmentData = currentFragmentsData[fragmentHash];
+        var fragmentData = fragmentsData[fragmentHash];
         if (fragmentData) {
           var fragmentAnchor = createAnchorElement(
-            fragmentData.title || "Resource Not Found",
+            fragmentData.name || "Resource Not Found",
             `#${fragmentHash}`,
             'dropdown-item tab'
           );
@@ -139,12 +139,12 @@ function sidebar(dataParentId, element) {
   var isPageReady = false;
   var queuedComponentChanges = [];
 
-  function isComponentReady(fragmentHash) {
+  function isDropdownReady(fragmentHash) {
     var properties = dropdownPropertiesMapping[fragmentHash];
     if (!properties) {
       return false;
     }
-    var dropdownId = 'dropdown-' + (properties.title || '').replace(/\s+/g, '-');
+    var dropdownId = 'dropdown-' + (properties.name || '').replace(/\s+/g, '-');
     var isReady = element.querySelector('#' + dropdownId) !== null;
     return isReady;
   }
@@ -157,7 +157,7 @@ function sidebar(dataParentId, element) {
       return;
     }
 
-    var dropdownId = 'dropdown-' + (properties.title || '').replace(/\s+/g, '-');
+    var dropdownId = 'dropdown-' + (properties.name || '').replace(/\s+/g, '-');
     var dropdownElement = element.querySelector('#' + dropdownId);
 
     if (!dropdownElement) {
@@ -169,10 +169,10 @@ function sidebar(dataParentId, element) {
 
     if (!menuItem) {
       // Fragment data should be available at this point
-      var fragmentData = currentFragmentsData[fragmentHash];
+      var fragmentData = fragmentsData[fragmentHash];
       if (fragmentData) {
         menuItem = createAnchorElement(
-          fragmentData.title || "Resource Not Found",
+          fragmentData.name || "Resource Not Found",
           `#${fragmentHash}`,
           'dropdown-item tab'
         );
@@ -182,9 +182,9 @@ function sidebar(dataParentId, element) {
       }
     } else {
       // Update the existing menu item if needed
-      var fragmentData = currentFragmentsData[fragmentHash];
-      if (fragmentData && menuItem.textContent !== fragmentData.title) {
-        menuItem.textContent = fragmentData.title;
+      var fragmentData = fragmentsData[fragmentHash];
+      if (fragmentData && menuItem.textContent !== fragmentData.name) {
+        menuItem.textContent = fragmentData.name;
       }
     }
   }
@@ -197,7 +197,8 @@ function sidebar(dataParentId, element) {
 
   function processQueuedFragmentUpdates() {
     queuedFragmentUpdates.slice().forEach(function(fragmentHash) {
-      if (isComponentReady(fragmentHash)) {
+      // Process only if the fragment data is present
+      if (isDropdownReady(fragmentHash) && fragmentsData[fragmentHash]) {
         updateFragmentInSidebar(fragmentHash);
         queuedFragmentUpdates = queuedFragmentUpdates.filter(h => h !== fragmentHash);
       }
@@ -220,11 +221,9 @@ function sidebar(dataParentId, element) {
   }
 
   function handleComponent(data) {
-    console.log(data)
     var action = data?.action;
     var componentData = data?.data;
-    console.log(componentData);
-    if (!componentData.pages || !componentData.fragments) {
+    if (!shouldCreateDropdown(componentData)) {
       return;
     }
     if (!isPageReady) {
@@ -234,23 +233,12 @@ function sidebar(dataParentId, element) {
     }
   }
 
-  function handleFragments(data) {
-    var fragmentHash = data?.data?.[0].hash;
-    if (fragmentHash) {
-      currentFragmentsData[fragmentHash] = data?.data;
-      if (isComponentReady(fragmentHash)) {
-        updateFragmentInSidebar(fragmentHash);
-      } else {
-        queueFragmentUpdate(fragmentHash);
-      }
-    }
-  }
-
   function handleFragment(data) {
-    var fragmentHash = data?.data?.hash;
+    var fragmentHash = data?.data?.front_matter?.hash;
     if (fragmentHash) {
-      currentFragmentsData[fragmentHash] = data?.data;
-      if (isComponentReady(fragmentHash)) {
+      fragmentsData[fragmentHash] = data?.data?.front_matter;
+      // Check if the component is ready before calling updateFragmentInSidebar
+      if (isDropdownReady(fragmentHash)) {
         updateFragmentInSidebar(fragmentHash);
       } else {
         queueFragmentUpdate(fragmentHash);
@@ -271,11 +259,9 @@ function sidebar(dataParentId, element) {
             break;
           case "fragment":
             handleFragment(newDataData);
-          case "fragments":
-            handleFragment(newDataData);
             break;
           default:
-            console.error("Key: ", key, " not used in component: ", element);
+            console.error(`Unsupported key: ${key}`);
         }
         // Update the current state
         state[key] = newDataData;
@@ -284,7 +270,7 @@ function sidebar(dataParentId, element) {
   }
 
   if (dataParentId) {
-    PubSub.subscribe(dataParentId, function(data) {
+    PubSub.subscribe(dataParentId, (data) => {
       updateSidebar(data);
     });
   }

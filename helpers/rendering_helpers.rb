@@ -5,10 +5,6 @@ require 'json'
 require 'yaml'
 require 'securerandom'
 
-def generate_random_id
-  SecureRandom.hex(10) # Generates a random hex string of length 20
-end
-
 def get_rendered_content(template_name)
   template_content = fetch_template(template_name)
   if template_content.nil?

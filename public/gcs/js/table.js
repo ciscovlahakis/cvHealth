@@ -1,6 +1,5 @@
-function table(dataParentId, element) {
-  var fieldsData;
 
+function table(dataParentId, element) {
   PubSub.subscribe(dataParentId, async function(data) {
     var collection = data?.page?.data?.collection;
     if (!collection) return;
@@ -10,12 +9,21 @@ function table(dataParentId, element) {
         throw new Error('Network response was not ok');
       }
       var collection_data = await response.json();
-      fieldsData = collection_data.fields;
+      var fieldsData = collection_data.fields;
 
       if (!Array.isArray(fieldsData)) {
         console.error('Expected fieldsData to be an array');
         return;
       }
+
+      PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {
+        var resultsContainer = document.getElementById('results');
+        if (resultsContainer && fieldsData) {
+          renderResults(payload.results, resultsContainer, payload.searchTerm, fieldsData);
+        } else {
+          console.error('Results container not found in the DOM or fieldsData is not set');
+        }
+      });
 
       var element = document.querySelector('#table');
       var dataId = element.dataset.id;
@@ -47,15 +55,6 @@ function table(dataParentId, element) {
       });
     } catch (error) {
       console.error('There has been a problem with your fetch operation:', error);
-    }
-  });
-
-  PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {
-    var resultsContainer = document.getElementById('results');
-    if (resultsContainer && fieldsData) {
-      renderResults(payload.results, resultsContainer, payload.searchTerm, fieldsData);
-    } else {
-      console.error('Results container not found in the DOM or fieldsData is not set');
     }
   });
 }

@@ -44,7 +44,7 @@
   border-radius: 50%;
 }
 
-.breadcrumb-thumbnail-with-title {
+.breadcrumb-thumbnail-with-name {
   margin-right: 5px;
 }
 
@@ -55,7 +55,7 @@
   vertical-align: middle; /* Align the icon with the text */
 }
 
-.breadcrumb-icon-with-title {
+.breadcrumb-icon-with-name {
   margin-right: 7px;
 }
 

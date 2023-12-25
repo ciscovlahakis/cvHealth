@@ -49,8 +49,8 @@ function header(dataParentId, element) {
         }
       }
       if (breadcrumb_page_data) {
-        const { title, icon, img_src, route } = breadcrumb_page_data;
-        breadcrumbs.push({ title, icon, img_src, route });
+        const { name, icon, img_src, route } = breadcrumb_page_data;
+        breadcrumbs.push({ name, icon, img_src, route });
       }
     }
     
@@ -70,7 +70,7 @@ function header(dataParentId, element) {
       var breadcrumbContent = document.createElement('span');
       breadcrumbContent.className = 'breadcrumb breadcrumb-content';
 
-      const { title, icon, img_src } = breadcrumb;
+      const { name, icon, img_src } = breadcrumb;
       
       // Check if the breadcrumb has an image source
       if (img_src) {
@@ -78,8 +78,8 @@ function header(dataParentId, element) {
         img.src = img_src;
         img.alt = 'Thumbnail';
         img.className = 'breadcrumb-thumbnail';
-        if (title) {
-          img.className += ' breadcrumb-thumbnail-with-title';
+        if (name) {
+          img.className += ' breadcrumb-thumbnail-with-name';
         }
         breadcrumbContent.appendChild(img);
       }
@@ -87,8 +87,8 @@ function header(dataParentId, element) {
       else if (icon) {
         var iconElement = document.createElement('i');
         iconElement.className = icon + ' breadcrumb-icon';
-        if (title) {
-            iconElement.className += ' breadcrumb-icon-with-title';
+        if (name) {
+            iconElement.className += ' breadcrumb-icon-with-name';
         }
         breadcrumbContent.appendChild(iconElement);
       }
@@ -98,17 +98,17 @@ function header(dataParentId, element) {
         placeholderImg.src = 'https://via.placeholder.com/150';
         placeholderImg.alt = '';
         placeholderImg.className = 'breadcrumb-thumbnail';
-        if (title) {
-          placeholderImg.className += ' breadcrumb-thumbnail-with-title';
+        if (name) {
+          placeholderImg.className += ' breadcrumb-thumbnail-with-name';
         }
         breadcrumbContent.appendChild(placeholderImg);
       }
       
-      // Check if the breadcrumb has a title
-      if (title) {
-        var titleElement = document.createElement('span');
-        titleElement.textContent = title;
-        breadcrumbContent.appendChild(titleElement);
+      // Check if the breadcrumb has a name
+      if (name) {
+        var nameElement = document.createElement('span');
+        nameElement.textContent = name;
+        breadcrumbContent.appendChild(nameElement);
       }
       
       // Append the breadcrumb content to the breadcrumb element
@@ -119,6 +119,7 @@ function header(dataParentId, element) {
   }
 
   if (dataParentId) {
+    var dataId = element.dataset.id;
     PubSub.subscribe(dataParentId, async function(data) {
       var collection = data?.page?.data?.collection;
       if (!collection) return;
@@ -126,6 +127,6 @@ function header(dataParentId, element) {
       setUpSearch();
       initialSearch();
       await updateBreadcrumbs(data);
-    });
+    }, dataId);
   }
 }

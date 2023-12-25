@@ -1,17 +1,10 @@
 
-var pageData = {};
+var templateData = {};
 var fragmentsData = {};
 
 PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
-  pageData = data;
+  templateData = data;
 });
-
-// Request the full set of fragments data on demand
-// PubSub.requestFullSet(EVENTS.FRAGMENT, 'LAYOUT', ({ action, data }) => {
-//   fragmentsData[data?.data?.hash] = data?.data?.html_content;
-//   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-//   renderFragmentByHash(decodedHash);
-// });
 
 PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
   var frontMatterData = data?.front_matter;
@@ -26,7 +19,7 @@ PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
     // Render the fragment with the content from the event if the hash matches the URL hash
     renderFragmentByHash(decodedHash, data.content);
   }
-})
+});
 
 function renderFragmentByHash(hash, content) {
   var fragmentElement = document.getElementById('_fragment');
@@ -135,7 +128,7 @@ function setIdAndFetchComponent(element) {
   var componentName = element.getAttribute('data-component');
   if (!componentName) return;
   if (componentName === '_yield') {
-    componentName = pageData?._yield;
+    componentName = templateData?.page?._yield;
     if (!componentName) {
       console.error("Template could not find a _yield.");
       return;
