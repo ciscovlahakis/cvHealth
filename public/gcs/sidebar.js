@@ -108,6 +108,10 @@ function sidebar(dataParentId, element) {
   }
 
   function updateDomElement(action, domElement, item) {
+    if (!domElement) {
+      console.error("No DOM Element for action: ", action, " and item: ", item);
+      return;
+    }
     switch (action) {
       case 'create':
         var dropdown = createDropdownComponent(item);
@@ -276,7 +280,7 @@ function sidebar(dataParentId, element) {
 
   if (dataParentId) {
     PubSub.subscribe(dataParentId, function(data) {
-      updateSidebar(data)
+      updateSidebar(data);
     });
   }
 }

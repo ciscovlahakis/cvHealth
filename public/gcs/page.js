@@ -1,9 +1,8 @@
 
-function page() {
-  var element = document.querySelector('#page');
+function page(_, element) {
   var dataId = element.dataset.id;
   
-  PubSub.subscribe(EVENTS.PAGE, ({ action, data }) => {
+  PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
     PubSub.publish(dataId, {
       "page": {
         action: action,

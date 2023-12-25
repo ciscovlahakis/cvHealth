@@ -67,27 +67,53 @@ function handleInitialHash() {
 
 handleInitialHash();
 
+
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
-  processMainPage();
+  processTemplate();
 });
 
-function processMainPage() {
-  document.querySelectorAll('[data-component]').forEach(element => {
-    const componentName = element.getAttribute('data-component');
-    fetchComponent(componentName, element);
-  });
-
-  const mainContainer = document.getElementById('main-container');
-  if (mainContainer) {
-    const frontMatter = mainContainer.getAttribute('data-front-matter');
-    if (frontMatter) {
-      const frontMatterData = JSON.parse(frontMatter);
-      const templateName = frontMatterData?.name;
-      const scriptName = convertSnakeToCamel(templateName);
-      loadAndExecuteScript(scriptName);
-      publishEvent(frontMatterData);
-    }
+function processTemplate() {
+  const templateContainer = document.getElementById('template-container');
+  if (!templateContainer) {
+    console.error("Template container el does not exist.");
+    return;
   }
+  const frontMatter = templateContainer.getAttribute('data-front-matter');
+  if (!frontMatter) {
+    console.error("Template front matter does not exist.");
+    return;
+  }
+  const frontMatterData = JSON.parse(frontMatter);
+  if (!frontMatterData || frontMatterData.empty()) {
+    console.error("Template front matter data does not exist.");
+    return;
+  }
+  const templateName = frontMatterData?.name;
+  if (!templateName) {
+    console.error("Template name does not exist.");
+    return;
+  }
+  const templateElement = document.querySelector('#' + templateName.toLowerCase());
+  if (!templateElement) {
+    console.error("Template name el does not exist.");
+    return;
+  }
+
+  const uniqueId = generateUniqueId();
+  templateElement.setAttribute('data-id', uniqueId); // Set unique data-id for the template
+
+  // Replace main-container with template
+  templateContainer.removeAttribute("id"); // Set id to template's
+  replacePlaceholderHtml(templateContainer, templateElement.outerHTML);
+
+  document.querySelectorAll('[data-component]').forEach(element => {
+    setIdAndFetchComponent(element);
+  });
+  
+  setScriptAndPublishEvent(templateName, frontMatterData);
 }
 
 // Start observing the document body for DOM mutations
@@ -100,17 +126,25 @@ function onElementAdded(mutationsList, observer) {
     if (mutation.type === 'childList') {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('data-component')) {
-          const componentName = node.getAttribute('data-component');
-          fetchComponent(componentName, node);
+          setIdAndFetchComponent(node);
         }
       });
     }
   }
 }
 
+function setIdAndFetchComponent(element) {
+  const componentName = element.getAttribute('data-component');
+  const parentNode = element.parentNode.closest('[data-id]');
+  const parentId = parentNode.getAttribute('data-id');
+  const uniqueId = generateUniqueId();
+  element.setAttribute('data-id', uniqueId); // Set unique data-id for the element
+  element.setAttribute('data-parent-id', parentId); // Set data-parent-id to link with the parent
+  fetchComponent(componentName, element);
+}
+
 function fetchComponent(componentName, placeholder) {
   const componentPath = `/components/${componentName}`;;
-
   fetch(componentPath)
     .then(response => {
       if (!response.ok) {
@@ -120,59 +154,79 @@ function fetchComponent(componentName, placeholder) {
       return response.json();
     })
     .then(data => {
-      placeholder.innerHTML = data.html_content;
-      placeholder.removeAttribute('data-component');
-
-      const scriptName = convertSnakeToCamel(componentName);
-      loadAndExecuteScript(scriptName);
-
-      publishEvent(data.front_matter);
+      replacePlaceholderHtml(placeholder, data.html_content);
+      setScriptAndPublishEvent(componentName, data.front_matter);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
 }
 
-function publishEvent(data) {
-  var { type } = data;
-  if (type === "template") type = "page";
-  type = type.toUpperCase();
-
-  try {
-    PubSub.publish(window.EVENTS[type], {
-      action: 'create',
-      data: data
+function replacePlaceholderHtml(placeholder, html_content) {
+  // Create a temporary div to parse the HTML content
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html_content;
+  // Extract and handle <style> tags
+  const styleTags = tempDiv.querySelectorAll('style');
+  styleTags.forEach(style => {
+    document.head.appendChild(style); // Append the style tags to the head
+  });
+  // Grab the outermost div from the parsed HTML
+  const outerDiv = tempDiv.querySelector('div');
+  if (outerDiv) {
+    // Copy all attributes from the placeholder to the outer div
+    Array.from(placeholder.attributes).forEach(attr => {
+      outerDiv.setAttribute(attr.name, attr.value);
     });
-  } catch (error) {
-    console.error('Error publishing event ' + window.EVENTS['#{type}'] + ':', error);
+    // Temporarily disconnect the observer to prevent infinite loop
+    observer.disconnect();
+    // Replace the placeholder with the new content
+    placeholder.outerHTML = outerDiv.outerHTML;
+    // Reconnect the observer after the changes
+    observer.observe(document.body, { childList: true, subtree: true });
+  } else {
+    console.error('The HTML content does not have an outer div.');
   }
+}
+
+function setScriptAndPublishEvent(elementName, frontMatterData) {
+  const scriptName = convertSnakeToCamel(elementName);
+  loadAndExecuteScript(scriptName);
+  publishEvent(frontMatterData);
 }
 
 function loadAndExecuteScript(scriptName) {
   const jsFilePath = `/public/gcs/${scriptName}.js`;
   const script = document.createElement('script');
   script.src = jsFilePath;
-  
   script.onload = () => {
-    const initializerFunction = window[scriptName];
-    if (typeof initializerFunction === "function") { 
-      initializerFunction(); 
-    }
+    initializeComponents(scriptName);
   };
-  
   script.onerror = () => { 
     console.error(`Error loading script: ${jsFilePath}`); 
   };
-  
   document.head.appendChild(script);
 }
 
-function afterScriptLoad(fileName, initializerFunction) {
-  // Convert the file_name from snake_case to kebab-case for the selector
-  var kebabCaseName = fileName.replace(/_/g, '-');
-  var selector = '[id*="' + kebabCaseName + '"]';
-  initializeComponents(selector, initializerFunction);
+function publishEvent(data) {
+  var { type } = data;
+  type = type.toUpperCase();
+  try {
+    PubSub.publish(window.EVENTS[type], {
+      action: 'create',
+      data: data
+    });
+  } catch (error) {
+    console.error('Error publishing event ' + window.EVENTS[type] + ':', error);
+  }
 }
 
-function initializeComponents(selector, initializerFunction){
+function initializeComponents(scriptName){
+  const initializerFunction = window[scriptName];
+  if (typeof initializerFunction !== "function") {
+    console.error("Initializer function not a function for: ", scriptName);
+    return;
+  }
+  var kebabCaseName = scriptName.replace(/_/g, '-');
+  var selector = '[id*="' + kebabCaseName + '"]';
   var elements = document.querySelectorAll(selector);
   elements.forEach(function(element) {
     initializerFunction(element.dataset.parentId, element);
@@ -194,4 +248,10 @@ function convertSnakeToCamel(snakeStr, prefix) {
   
   // Prepend the prefix if provided
   return prefix ? prefix + camelCaseStr : camelCaseStr;
+}
+
+function generateUniqueId() {
+  const randomPart = Math.random().toString(36).substring(2, 15); // Generate a random string
+  const timestampPart = Date.now().toString(36); // Get a string version of the current timestamp
+  return `component-${timestampPart}-${randomPart}`;
 }

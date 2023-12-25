@@ -50,12 +50,13 @@ get "/*" do |path|
     logger.error "No template found: #{template_name}"
   } if template_name.nil?
 
-  content = get_rendered_content(template_name);
+  content = get_rendered_content(template_name)
+  template = content[:html_content]
   front_matter = content[:front_matter]
-  front_matter = page_data.merge(front_matter).to_json;
+  front_matter = page_data.merge(front_matter).to_json
 
   erb :layout, :locals => {
-    :page => content[:html_content],
+    :template => template,
     :front_matter => front_matter
   }
 end

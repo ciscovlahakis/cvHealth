@@ -1,3 +1,4 @@
+
 var PubSub = {
   subscribers: {},
   state: {},
@@ -6,7 +7,7 @@ var PubSub = {
 
   subscribe: function(eventName, fn) {
     if (typeof eventName === 'undefined') {
-      console.error('The event name provided to subscribe is undefined.');
+      console.error('The event name provided to subscribe is undefined for fn: ', fn);
       return;
     }
   
@@ -25,7 +26,6 @@ var PubSub = {
   },
 
   requestFullSet: function(eventName, subscriberId, callback) {
-
     this.subscribers[eventName] = this.subscribers[eventName] || [];
 
     var subscriberInfo = { id: subscriberId, callback: callback };
@@ -47,7 +47,7 @@ var PubSub = {
 
   publish: function(eventName, payload) {
     if (typeof eventName === 'undefined') {
-      console.error('The event name provided to publish is undefined.');
+      console.error('The event name provided to publish is undefined for payload: ', payload);
       return;
     }
 

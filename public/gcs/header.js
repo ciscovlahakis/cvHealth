@@ -118,14 +118,14 @@ function header(dataParentId, element) {
     });
   }
 
-  PubSub.subscribe(dataParentId, async function(data) {
-    console.log(dataParentId)
-    console.log(data)
-    var collection = data?.page?.data?.collection;
-    if (!collection) return;
-    indexName = collection;
-    setUpSearch();
-    initialSearch();
-    await updateBreadcrumbs(data);
-  });
+  if (dataParentId) {
+    PubSub.subscribe(dataParentId, async function(data) {
+      var collection = data?.page?.data?.collection;
+      if (!collection) return;
+      indexName = collection;
+      setUpSearch();
+      initialSearch();
+      await updateBreadcrumbs(data);
+    });
+  }
 }

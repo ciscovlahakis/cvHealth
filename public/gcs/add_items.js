@@ -1,7 +1,7 @@
 
 function addItems(dataParentId, element) {
+  var dataId = element.dataset.id;
   PubSub.subscribe(dataParentId, function(data) {
-    var dataId = element.dataset.id;
     var collection = data?.collection;
     PubSub.publish(dataId, {
       "collection": collection,
