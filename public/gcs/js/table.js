@@ -1,44 +1,33 @@
 
 function table(dataParentId, element) {
-  PubSub.subscribe(dataParentId, async function(data) {
-    var collection = data?.page?.data?.collection;
-    if (!collection) return;
-    try {
-      var response = await fetch(`/api/collection/collections?field=name&value=${collection}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      var collection_data = await response.json();
-      var fieldsData = collection_data.fields;
 
-      if (!Array.isArray(fieldsData)) {
-        console.error('Expected fieldsData to be an array');
-        return;
-      }
+  const state = {};
 
+  PubSub.subscribe(dataParentId, function(data) {
+    Object.assign(state, data);
+    const {
+      fields,
+    } = state;
+
+    if (fields && Array.isArray(fields)) {
       PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {
         var resultsContainer = document.getElementById('results');
-        if (resultsContainer && fieldsData) {
-          renderResults(payload.results, resultsContainer, payload.searchTerm, fieldsData);
+        if (resultsContainer) {
+          renderResults(payload.results, resultsContainer, payload.searchTerm, fields);
         } else {
-          console.error('Results container not found in the DOM or fieldsData is not set');
+          console.error('Results container not found in the DOM.');
         }
       });
 
-      var element = document.querySelector('#table');
-      var dataId = element.dataset.id;
-      PubSub.publish(dataId, {
-        "collection": collection,
-        "fields": fieldsData
-      });
-
       // Create a string for the 'grid-template-columns' style
-      var gridColumnsValue = '100px ' + fieldsData.map(function() { return '1fr'; }).join(' ');
+      var gridColumnsValue = '100px ' + fields.map(function() { return '1fr'; }).join(' ');
       var gridRows = document.querySelectorAll('.grid-row');
       gridRows.forEach(function(row) {
         row.style.gridTemplateColumns = gridColumnsValue;
       });
 
+      // The rest of the code should be setting up the DOM elements based on fields
+      // This code assumes the headers and rows are already in the DOM and need to be populated
       var headersRow = document.getElementById('headers');
       headersRow.innerHTML = ''; // Clear existing headers
 
@@ -46,15 +35,13 @@ function table(dataParentId, element) {
       var iconHeader = document.createElement('div');
       iconHeader.className = 'header';
       headersRow.appendChild(iconHeader);
-      
-      fieldsData.forEach(function(field) {
+
+      fields.forEach(function(field) {
         var header = document.createElement('div');
         header.className = 'header';
-        header.textContent = field.title || ''; // Using title or an empty string if title is undefined
+        header.textContent = capitalize(field.name) || '';
         headersRow.appendChild(header);
       });
-    } catch (error) {
-      console.error('There has been a problem with your fetch operation:', error);
     }
   });
 }

@@ -27,6 +27,13 @@ function splitIntoWords(str) {
       .split(' ');
 }
 
+function capitalize(str) {
+  if (str.length === 0) {
+    return '';
+  }
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 function generateUniqueId() {
   const randomPart = Math.random().toString(36).substring(2, 15); // Generate a random string
   const timestampPart = Date.now().toString(36); // Get a string version of the current timestamp

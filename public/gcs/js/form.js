@@ -1,17 +1,6 @@
 
 function form(dataParentId, element) {
 
-  function hideFormAndRouteToUrlWithoutHash() {
-    // Remove the hash from the URL without reloading the page using history API
-    history.pushState(null, document.title, window.location.pathname + window.location.search);
-        
-    // Hide the nearest ancestor modal overlay that contains the form
-    const fragmentElement = element.closest('div[data-id]:not([data-id="' + element.getAttribute('data-id') + '"])');
-    if (fragmentElement) {
-      fragmentElement.style.display = 'none';
-    }
-  }
-
   const state = {};
   
   PubSub.subscribe(dataParentId, function(data) {
@@ -46,7 +35,7 @@ function form(dataParentId, element) {
 
         const label = document.createElement('label');
         label.htmlFor = field.name;
-        label.textContent = field.title || '';
+        label.textContent = capitalize(field.name) || '';
         formGroup.appendChild(label);
 
         const input = document.createElement('input');
@@ -122,4 +111,15 @@ function form(dataParentId, element) {
 
     element.appendChild(formActions);
   });
+
+  function hideFormAndRouteToUrlWithoutHash() {
+    // Remove the hash from the URL without reloading the page using history API
+    history.pushState(null, document.title, window.location.pathname + window.location.search);
+        
+    // Hide the nearest ancestor modal overlay that contains the form
+    const fragmentElement = element.closest('div[data-id]:not([data-id="' + element.getAttribute('data-id') + '"])');
+    if (fragmentElement) {
+      fragmentElement.style.display = 'none';
+    }
+  }
 }

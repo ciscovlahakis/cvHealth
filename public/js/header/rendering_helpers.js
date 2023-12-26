@@ -55,7 +55,7 @@ function createRowWithData(data, fieldsData) {
   fieldsData.forEach(function(column) {
     var cell = createElementWithText('div', '');
     cell.className = 'content-cell';
-    var cellValue = data[column.title.toLowerCase()];
+    var cellValue = data[column.name];
     cell.dataset.id = data.objectID;
     cell.textContent = cellValue || '';
     row.appendChild(cell);
