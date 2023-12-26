@@ -1,5 +1,5 @@
 
-function sidebar(dataParentId, element) {
+function sidebar(element, dataId, dataParentId) {
   var fragmentsData = {};
   var dropdownPropertiesMapping = {};
   var queuedFragmentUpdates = [];

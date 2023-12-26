@@ -1,5 +1,5 @@
 
-function form(dataParentId, element) {
+function form(element, dataId, dataParentId) {
 
   const state = {};
   
@@ -56,7 +56,7 @@ function form(dataParentId, element) {
 
     const submitButton = document.createElement('input');
     submitButton.type = 'submit';
-    submitButton.value = form_mode === "edit" ? "Update" : "Save";
+    submitButton.value = "Save";
     submitButton.onclick = function(event) {
       event.preventDefault();
       

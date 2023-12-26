@@ -1,7 +1,5 @@
 
-function page(_, element) {
-  var dataId = element.dataset.id;
-  
+function page(_, dataId) {
   PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
     const { page } = data;
     PubSub.publish(dataId, {

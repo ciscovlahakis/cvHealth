@@ -1,4 +1,4 @@
 
-function deleteItems(dataParentId, element) {
+function deleteItems(element, dataId, dataParentId) {
 
 }

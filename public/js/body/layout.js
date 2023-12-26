@@ -305,6 +305,6 @@ function initializeScriptElements(fileName){
   var selector = '[id*="' + kebabCaseName + '"]';
   var elements = document.querySelectorAll(selector);
   elements.forEach(function(element) {
-    initializerFunction(element.dataset.parentId, element);
+    initializerFunction(element, element.dataset.id, element.dataset.parentId);
   });
 }

@@ -1,6 +1,5 @@
 
-function tableController(dataParentId, element) {
-
+function tableController(element, dataId, dataParentId) {
   PubSub.subscribe(dataParentId, async function(data) {
     var collection = data?.page?.data?.collection;
     if (!collection) return;
@@ -13,8 +12,20 @@ function tableController(dataParentId, element) {
     PubSub.publish(dataId, {
       "collection": collection,
       "fields": fields,
+      "onRowClicked": onRowClicked,
     });
   });
+
+  // Define a callback function for when a row is clicked
+  function onRowClicked(rowData) {
+    //console.log(rowData)
+    // Handle the row click as needed, maybe open an edit form, etc.
+    // PubSub.publish(dataId, {
+    //   collection: rowData.collection,
+    //   fields: rowData.fields,
+    //   item: rowData.item // The data from the row to be edited
+    // });
+  }
 
   async function fetchCollectionData(collectionName) {
     try {

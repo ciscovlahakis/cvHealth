@@ -1,5 +1,5 @@
 
-function table(dataParentId, element) {
+function table(element, dataId, dataParentId) {
 
   const state = {};
 
@@ -14,6 +14,17 @@ function table(dataParentId, element) {
         var resultsContainer = document.getElementById('results');
         if (resultsContainer) {
           renderResults(payload.results, resultsContainer, payload.searchTerm, fields);
+          resultsContainer.addEventListener('click', function(event) {
+            // Starting from the target, move up the DOM until you find a row element
+            var targetElement = event.target;
+            while (targetElement != null && !targetElement.classList.contains('grid-row')) {
+              targetElement = targetElement.parentElement;
+            }
+            if (targetElement && targetElement.id !== 'template-row') {
+              console.log('Row clicked:', targetElement.dataset);
+              data?.onRowClicked(targetElement.dataset);
+            }
+          });
         } else {
           console.error('Results container not found in the DOM.');
         }
@@ -44,4 +55,5 @@ function table(dataParentId, element) {
       });
     }
   });
+
 }

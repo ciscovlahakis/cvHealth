@@ -1,5 +1,5 @@
 
-function header(dataParentId, element) {
+function header(element, dataId, dataParentId) {
   var searchInput = document.querySelector("input[name='search']");
   var activityIndicator = document.getElementById('activityIndicator');
   var indexName;
@@ -119,7 +119,6 @@ function header(dataParentId, element) {
   }
 
   if (dataParentId) {
-    var dataId = element.dataset.id;
     PubSub.subscribe(dataParentId, async function(data) {
       var collection = data?.page?.data?.collection;
       if (!collection) return;
@@ -127,6 +126,6 @@ function header(dataParentId, element) {
       setUpSearch();
       initialSearch();
       await updateBreadcrumbs(data);
-    }, dataId);
+    });
   }
 }
