@@ -9,26 +9,30 @@ PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
 PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
   var frontMatterData = data?.front_matter;
   var fragmentHash = convertToKebabCase(frontMatterData?.hash);
-  if (fragmentHash) {
-    var html_content = data?.html_content;
-    console.log(html_content)
-    fragmentsData[fragmentHash] = html_content;
+  if (!fragmentHash) return;
+  var html_content = data?.html_content;
+  var fragmentDataParentId = data?.fragmentDataParentId;
+  fragmentsData[fragmentHash] = { 
+    html_content: html_content,
+    fragmentDataParentId: fragmentDataParentId
   }
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   if (fragmentHash === decodedHash) {
-    renderFragmentByHash(decodedHash, data.content);
+    renderFragmentByHash(decodedHash, html_content);
   }
 });
 
-function renderFragmentByHash(hash, content) {
+function renderFragmentByHash(hash, html_content) {
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
-    content = content || fragmentsData[hash];
-    if (content) {
-      fragmentElement.innerHTML = content;
+    html_content = html_content || fragmentsData[hash]?.html_content;
+    if (html_content) {
+      fragmentElement.innerHTML = html_content;
       var newContentDiv = fragmentElement.querySelector('div');
       if (newContentDiv) {
-        newContentDiv.setAttribute('data-component', hash);
+        const uniqueId = generateUniqueId();
+        newContentDiv.setAttribute('data-id', uniqueId);
+        newContentDiv.setAttribute('data-parent-id', fragmentsData[hash]?.fragmentDataParentId);
       }
     } else {
       fragmentElement.innerHTML = '';
@@ -100,7 +104,12 @@ function onElementAdded(mutationsList, observer) {
     if (mutation.type === 'childList') {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
-          setIdAndFetchComponent(node);
+          if (node.hasAttribute('data-component')) {
+            setIdAndFetchComponent(node);
+          }
+          node.querySelectorAll('[data-component]').forEach(element => {
+            setIdAndFetchComponent(element);
+          });
         }
       });
     }
@@ -123,10 +132,10 @@ function setIdAndFetchComponent(element) {
   const uniqueId = generateUniqueId();
   element.setAttribute('data-id', uniqueId); // Set unique data-id for the element
   element.setAttribute('data-parent-id', parentId); // Set data-parent-id to link with the parent
-  fetchComponent(componentName, element);
+  fetchComponent(componentName, element, uniqueId);
 }
 
-function fetchComponent(componentName, placeholder) {
+function fetchComponent(componentName, placeholder, fragmentDataParentId) {
   var fileName = convertToSnakeCase(componentName);
   const componentPath = `/components/${fileName}`;;
   fetch(componentPath)
@@ -139,7 +148,7 @@ function fetchComponent(componentName, placeholder) {
     })
     .then(data => {
       replacePlaceholderHtml(placeholder, data.html_content);
-      loadFilesSetFragmentsAndPublishEvent(componentName, data.front_matter);
+      loadFilesSetFragmentsAndPublishEvent(componentName, data.front_matter, fragmentDataParentId);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
 }
@@ -155,23 +164,13 @@ function replacePlaceholderHtml(placeholder, html_content) {
     Array.from(placeholder.attributes).forEach(attr => {
       outerDiv.setAttribute(attr.name, attr.value);
     });
-    if (!outerDiv.getAttribute('data-component')) {
-      // Temporarily disconnect the observer to prevent infinite loop
-      observer.disconnect();
-    }
-    // Replace the placeholder with the new content
     placeholder.outerHTML = outerDiv.outerHTML;
-
-    if (!outerDiv.getAttribute('data-component')) {
-      // Reconnect the observer after the changes
-      observer.observe(document.body, { childList: true, subtree: true });
-    }
   } else {
     console.error('The HTML content does not have an outer div.');
   }
 }
 
-function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData) {
+function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData, fragmentDataParentId) {
   fileName = convertToSnakeCase(fileName);
   if (frontMatterData?.hasStyles !== false) {
     loadStyles(fileName);
@@ -179,7 +178,7 @@ function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData) {
   if (frontMatterData?.hasScript !== false) {
     loadAndExecuteScript(fileName);
   }
-  setFragments(frontMatterData);
+  setFragments(frontMatterData, fragmentDataParentId);
   publishEvent(frontMatterData); // template, component, fragment
 }
 
@@ -215,15 +214,15 @@ function loadAndExecuteScript(fileName) {
   document.head.appendChild(script);
 }
 
-function setFragments(data) {
+function setFragments(data, fragmentDataParentId) {
   const { fragments } = data;
   if (!fragments) return;
   fragments.forEach(fragment => {
-    fetchFragment(fragment);
+    fetchFragment(fragment, fragmentDataParentId);
   });
 }
 
-function fetchFragment(fragmentName) {
+function fetchFragment(fragmentName, fragmentDataParentId) {
   var fileName = convertToSnakeCase(fragmentName);
   const fragmentPath = `/components/${fileName}`;;
   fetch(fragmentPath)
@@ -235,6 +234,7 @@ function fetchFragment(fragmentName) {
       return response.json();
     })
     .then(data => {
+      data.fragmentDataParentId = fragmentDataParentId;
       PubSub.publish(EVENTS.FRAGMENT, {
         action: "create",
         data: data
