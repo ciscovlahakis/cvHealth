@@ -22,10 +22,11 @@ function page(_, element) {
   });
   
   PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
+    const fragmentData = data?.front_matter;
     PubSub.publish(dataId, {
       "fragment": {
         action: action,
-        data: data
+        data: fragmentData
       }
     });
   });
