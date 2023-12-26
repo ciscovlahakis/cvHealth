@@ -147,22 +147,7 @@ function fetchComponent(componentName, placeholder, fragmentDataParentId) {
       return response.json();
     })
     .then(data => {
-      // Save existing children before replacing the HTML content
-      var existingChildren = placeholder.hasChildNodes() ? Array.from(placeholder.childNodes) : [];
-      console.log(placeholder.outerHTML)
-      var newElement = replacePlaceholderHtml(placeholder, data.html_content);
-      if (newElement && existingChildren.length > 0) {
-        // Find the data-yield div in the new element
-        var newDataYieldElement = newElement.querySelector('[data-yield]');
-        if (newDataYieldElement) {
-          // Append the previously saved children to the data-yield div
-          existingChildren.forEach(child => {
-            newDataYieldElement.appendChild(child);
-          });
-        } else {
-          console.error('The fetched component does not have a data-yield placeholder.');
-        }
-      }
+      replacePlaceholderHtml(placeholder, data.html_content);
       loadFilesSetFragmentsAndPublishEvent(componentName, data.front_matter, fragmentDataParentId);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
@@ -179,12 +164,28 @@ function replacePlaceholderHtml(placeholder, html_content) {
     Array.from(placeholder.attributes).forEach(attr => {
       outerDiv.setAttribute(attr.name, attr.value);
     });
+    var existingChildren = placeholder.hasChildNodes() ? Array.from(placeholder.childNodes) : [];
+    if (existingChildren.length > 0) {
+      // Find the data-yield div in the new element
+      var newDataYieldElement = outerDiv.querySelector('[data-yield]');
+      if (newDataYieldElement) {
+        // Append the previously saved children to the data-yield div
+        existingChildren.forEach(child => {
+          // Check if the child is an element node before setting attributes
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            child.setAttribute('data-id', outerDiv.getAttribute('data-id'));
+            child.setAttribute('data-parent-id', outerDiv.getAttribute('data-parent-id'));
+          }
+          newDataYieldElement.appendChild(child);
+        });
+        outerDiv.removeAttribute('data-id');
+        outerDiv.removeAttribute('data-parent-id');
+      }
+    }
     // Replace placeholder with the new content and return the new element
     placeholder.replaceWith(outerDiv);
-    return outerDiv; // Return the new element
   } else {
     console.error('The HTML content does not have an outer div.');
-    return null; // Return null if no outer div was found
   }
 }
 
