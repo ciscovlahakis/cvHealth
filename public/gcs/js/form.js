@@ -1,5 +1,17 @@
 
 function form(dataParentId, element) {
+
+  function hideFormAndRouteToUrlWithoutHash() {
+    // Remove the hash from the URL without reloading the page using history API
+    history.pushState(null, document.title, window.location.pathname + window.location.search);
+        
+    // Hide the nearest ancestor modal overlay that contains the form
+    const fragmentElement = element.closest('div[data-id]:not([data-id="' + element.getAttribute('data-id') + '"])');
+    if (fragmentElement) {
+      fragmentElement.style.display = 'none';
+    }
+  }
+
   const state = {};
   
   PubSub.subscribe(dataParentId, function(data) {
@@ -93,26 +105,19 @@ function form(dataParentId, element) {
       .then(function(data) {
         // Handle the response, update the UI as needed
         console.log('Form submitted successfully. Response:', data);
-
-        // Remove the hash from the URL without reloading the page using history API
-        history.pushState(null, document.title, window.location.pathname + window.location.search);
-        
-        // Hide the nearest ancestor modal overlay that contains the form
-        const fragmentElement = element.closest('div[data-id]:not([data-id="' + element.getAttribute('data-id') + '"])');
-        if (fragmentElement) {
-          fragmentElement.style.display = 'none';
-        }
+        hideFormAndRouteToUrlWithoutHash()
       })
       .catch(function(error) {
         console.error('Error:', error);
       });
     };
+
     formActions.appendChild(submitButton);
 
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
     cancelButton.textContent = 'Cancel';
-    cancelButton.onclick = function() { location.href = '/cancel-action'; };
+    cancelButton.onclick = hideFormAndRouteToUrlWithoutHash;
     formActions.appendChild(cancelButton);
 
     element.appendChild(formActions);
