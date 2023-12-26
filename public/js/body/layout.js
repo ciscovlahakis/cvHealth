@@ -2,6 +2,11 @@
 var templateData = {};
 var fragmentsData = {};
 
+window.onhashchange = function() {
+  var decodedHash = decodeURIComponent(window.location.hash.substring(1));
+  renderFragmentByHash(decodedHash);
+};
+
 PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
   templateData = data;
 });
@@ -43,11 +48,6 @@ function renderFragmentByHash(hash, html_content) {
   }
 }
 
-window.onhashchange = function() {
-  var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-  renderFragmentByHash(decodedHash);
-};
-
 document.addEventListener("DOMContentLoaded", () => {
   processTemplate();
 });
@@ -83,7 +83,7 @@ function processTemplate() {
   }
 
   const uniqueId = generateUniqueId();
-  templateElement.setAttribute('data-id', uniqueId); // Set unique data-id for the template
+  templateElement.setAttribute('data-id', uniqueId);
 
   // Replace main-container with template
   templateContainer.removeAttribute("id"); // Set id to template's
@@ -137,7 +137,7 @@ function setIdAndFetchComponent(element) {
 
 function fetchComponent(componentName, placeholder, fragmentDataParentId) {
   var fileName = convertToSnakeCase(componentName);
-  const componentPath = `/components/${fileName}`;;
+  const componentPath = `/components/${fileName}`;
   fetch(componentPath)
     .then(response => {
       if (!response.ok) {
@@ -147,7 +147,22 @@ function fetchComponent(componentName, placeholder, fragmentDataParentId) {
       return response.json();
     })
     .then(data => {
-      replacePlaceholderHtml(placeholder, data.html_content);
+      // Save existing children before replacing the HTML content
+      var existingChildren = placeholder.hasChildNodes() ? Array.from(placeholder.childNodes) : [];
+      console.log(placeholder.outerHTML)
+      var newElement = replacePlaceholderHtml(placeholder, data.html_content);
+      if (newElement && existingChildren.length > 0) {
+        // Find the data-yield div in the new element
+        var newDataYieldElement = newElement.querySelector('[data-yield]');
+        if (newDataYieldElement) {
+          // Append the previously saved children to the data-yield div
+          existingChildren.forEach(child => {
+            newDataYieldElement.appendChild(child);
+          });
+        } else {
+          console.error('The fetched component does not have a data-yield placeholder.');
+        }
+      }
       loadFilesSetFragmentsAndPublishEvent(componentName, data.front_matter, fragmentDataParentId);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
@@ -164,9 +179,12 @@ function replacePlaceholderHtml(placeholder, html_content) {
     Array.from(placeholder.attributes).forEach(attr => {
       outerDiv.setAttribute(attr.name, attr.value);
     });
-    placeholder.outerHTML = outerDiv.outerHTML;
+    // Replace placeholder with the new content and return the new element
+    placeholder.replaceWith(outerDiv);
+    return outerDiv; // Return the new element
   } else {
     console.error('The HTML content does not have an outer div.');
+    return null; // Return null if no outer div was found
   }
 }
 
