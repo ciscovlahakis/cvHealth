@@ -1,9 +1,10 @@
-const States = {
-  ORIGINAL: 'original',
-  EXPANDED: 'expanded'
-};
 
-function initializeUtilityPanel() {
+function utilityPanel() {
+  const States = {
+    ORIGINAL: 'original',
+    EXPANDED: 'expanded'
+  };
+
   var utilityPanel = document.querySelector('.utility-panel');
   var lastState = States.ORIGINAL; // This will track the last non-minimized state
 
@@ -61,9 +62,3 @@ function initializeUtilityPanel() {
     }
   });
 }
-
-window.firebaseInitialized
-.then(initializeUtilityPanel)
-.catch(function(error) {
-  console.error('Error during Firebase initialization:', error);
-});

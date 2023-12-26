@@ -8,15 +8,14 @@ PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
 
 PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
   var frontMatterData = data?.front_matter;
-  var fragmentHash = convertToKebabCase(frontMatterData.hash); // The hash from the published event
+  var fragmentHash = convertToKebabCase(frontMatterData?.hash);
   if (fragmentHash) {
-    // Update or add the fragment content to the fragmentsData
     var html_content = data?.html_content;
+    console.log(html_content)
     fragmentsData[fragmentHash] = html_content;
   }
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   if (fragmentHash === decodedHash) {
-    // Render the fragment with the content from the event if the hash matches the URL hash
     renderFragmentByHash(decodedHash, data.content);
   }
 });
@@ -26,18 +25,14 @@ function renderFragmentByHash(hash, content) {
   if (fragmentElement) {
     content = content || fragmentsData[hash];
     if (content) {
-      // Set the inner HTML of the fragment element
       fragmentElement.innerHTML = content;
-      // Ensure the new content has the 'data-component' attribute for the MutationObserver
       var newContentDiv = fragmentElement.querySelector('div');
       if (newContentDiv) {
         newContentDiv.setAttribute('data-component', hash);
       }
     } else {
       fragmentElement.innerHTML = '';
-      if (hash) {
-        console.error("Fragment not found for hash: " + hash);
-      }
+      console.error("Fragment not found for hash: " + hash, "\nFragments data: ", fragmentsData);
     }
   } else {
     console.error("The fragment element with ID '_fragment' does not exist.");
@@ -48,17 +43,6 @@ window.onhashchange = function() {
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   renderFragmentByHash(decodedHash);
 };
-
-function handleInitialHash() {
-  if (window.location.hash) {
-    var initialHash = decodeURIComponent(window.location.hash.substring(1));
-    renderFragmentByHash(initialHash);
-  } else {
-    renderFragmentByHash();
-  }
-}
-
-handleInitialHash();
 
 document.addEventListener("DOMContentLoaded", () => {
   processTemplate();
@@ -133,6 +117,7 @@ function setIdAndFetchComponent(element) {
       return;
     }
   }
+  element.removeAttribute('data-component');
   const parentNode = element.parentNode.closest('[data-id]');
   const parentId = parentNode.getAttribute('data-id');
   const uniqueId = generateUniqueId();
@@ -142,7 +127,8 @@ function setIdAndFetchComponent(element) {
 }
 
 function fetchComponent(componentName, placeholder) {
-  const componentPath = `/components/${componentName}`;;
+  var fileName = convertToSnakeCase(componentName);
+  const componentPath = `/components/${fileName}`;;
   fetch(componentPath)
     .then(response => {
       if (!response.ok) {
@@ -169,12 +155,17 @@ function replacePlaceholderHtml(placeholder, html_content) {
     Array.from(placeholder.attributes).forEach(attr => {
       outerDiv.setAttribute(attr.name, attr.value);
     });
-    // Temporarily disconnect the observer to prevent infinite loop
-    observer.disconnect();
+    if (!outerDiv.getAttribute('data-component')) {
+      // Temporarily disconnect the observer to prevent infinite loop
+      observer.disconnect();
+    }
     // Replace the placeholder with the new content
     placeholder.outerHTML = outerDiv.outerHTML;
-    // Reconnect the observer after the changes
-    observer.observe(document.body, { childList: true, subtree: true });
+
+    if (!outerDiv.getAttribute('data-component')) {
+      // Reconnect the observer after the changes
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
   } else {
     console.error('The HTML content does not have an outer div.');
   }
@@ -182,8 +173,12 @@ function replacePlaceholderHtml(placeholder, html_content) {
 
 function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData) {
   fileName = convertToSnakeCase(fileName);
-  loadStyles(fileName); // styles
-  loadAndExecuteScript(fileName); // script
+  if (frontMatterData?.hasStyles !== false) {
+    loadStyles(fileName);
+  }
+  if (frontMatterData?.hasScript !== false) {
+    loadAndExecuteScript(fileName);
+  }
   setFragments(frontMatterData);
   publishEvent(frontMatterData); // template, component, fragment
 }
@@ -265,7 +260,8 @@ function publishEvent(data) {
   }
 }
 
-function initializeScriptElements(scriptName){
+function initializeScriptElements(fileName){
+  var scriptName = convertToCamelCase(fileName);
   const initializerFunction = window[scriptName];
   if (typeof initializerFunction !== "function") {
     console.error("Initializer function not a function for: ", scriptName);

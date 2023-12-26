@@ -18,6 +18,7 @@ function convertToSnakeCase(str) {
 
 // Helper function to split string into words
 function splitIntoWords(str) {
+  if (!str) str = "";
   return str
       .replace(/([a-z])([A-Z])/g, '$1 $2') // Split camelCase
       .replace(/[\s_-]+/g, ' ') // Replace underscores, hyphens, and spaces with a single space
