@@ -15,29 +15,39 @@ PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
   var frontMatterData = data?.front_matter;
   var fragmentHash = convertToKebabCase(frontMatterData?.hash);
   if (!fragmentHash) return;
-  var html_content = data?.html_content;
+  var htmlContent = data?.html_content;
   var fragmentDataParentId = data?.fragmentDataParentId;
   fragmentsData[fragmentHash] = { 
-    html_content: html_content,
+    frontMatterData: frontMatterData,
+    htmlContent: htmlContent,
     fragmentDataParentId: fragmentDataParentId
   }
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   if (fragmentHash === decodedHash) {
-    renderFragmentByHash(decodedHash, html_content);
+    renderFragmentByHash(decodedHash);
   }
 });
 
-function renderFragmentByHash(hash, html_content) {
+function renderFragmentByHash(hash) {
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
-    html_content = html_content || fragmentsData[hash]?.html_content;
-    if (html_content) {
-      fragmentElement.innerHTML = html_content;
+    const htmlContent = fragmentsData[hash]?.htmlContent;
+    if (htmlContent) {
+      fragmentElement.innerHTML = htmlContent;
       var newContentDiv = fragmentElement.querySelector('div');
       if (newContentDiv) {
         const uniqueId = generateUniqueId();
         newContentDiv.setAttribute('data-id', uniqueId);
         newContentDiv.setAttribute('data-parent-id', fragmentsData[hash]?.fragmentDataParentId);
+        const frontMatterData = fragmentsData[hash]?.frontMatterData;
+        const fileName = convertToSnakeCase(hash);
+        if (frontMatterData?.hasStyles !== false) {
+          loadStyles(fileName);
+        }
+        if (frontMatterData?.hasScript !== false) {
+          loadAndExecuteScript(fileName);
+        }
+        setFragments(frontMatterData, uniqueId);
       }
     } else {
       fragmentElement.innerHTML = '';
@@ -172,9 +182,14 @@ function replacePlaceholderHtml(placeholder, html_content) {
         // Append the previously saved children to the data-yield div
         existingChildren.forEach(child => {
           // Check if the child is an element node before setting attributes
+          var fileName;
           if (child.nodeType === Node.ELEMENT_NODE) {
             child.setAttribute('data-id', outerDiv.getAttribute('data-id'));
             child.setAttribute('data-parent-id', outerDiv.getAttribute('data-parent-id'));
+            fileName = child.getAttribute('id');
+          }
+          if (fileName) {
+            loadAndExecuteScript(fileName);
           }
           newDataYieldElement.appendChild(child);
         });

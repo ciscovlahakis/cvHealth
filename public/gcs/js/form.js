@@ -1,12 +1,16 @@
 
 function form(dataParentId, element) {
-  // Subscribe to the dataParentId topic
+  const state = {};
+  
   PubSub.subscribe(dataParentId, function(data) {
-    console.log("hello")
-    // Destructure the data object
-    const { collection, fields, form_mode, item_data } = data;
+    Object.assign(state, data);
+    const {
+      collection,
+      fields,
+      form_mode,
+      item_data
+    } = state;
 
-    // Determine the action URL based on the form mode
     const action_url = form_mode === "new" ? "/create/" : "/edit/" + collection;
     element.action = action_url; // Set form action URL
 
@@ -15,8 +19,6 @@ function form(dataParentId, element) {
       element.removeChild(element.firstChild);
     }
 
-    // Assuming 'element' has the class 'form-container' as per the CSS
-    // If not, add the class to the element
     element.classList.add('form-container');
 
     // Create and insert form contents
@@ -25,7 +27,7 @@ function form(dataParentId, element) {
     element.appendChild(header);
 
     // Generate form fields
-    fields.forEach((field) => {
+    (fields || []).forEach((field) => {
       if (field.editable) {
         const formGroup = document.createElement('div');
         formGroup.className = 'form-group';
