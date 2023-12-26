@@ -1,4 +1,5 @@
-function initializeEditItems() {
+
+function editItems() {
   document.body.addEventListener('click', function(event) {
     row.addEventListener('click', function() {
       editItem(this.dataset.id); // Pass the ID of the clicked row to the editItem function
@@ -63,9 +64,3 @@ function initializeEditItems() {
     }
   });
 }
-
-window.firebaseInitialized
-  .then(initializeEditItems)
-  .catch(function(error) {
-    console.error('Error during Firebase initialization:', error);
-  });

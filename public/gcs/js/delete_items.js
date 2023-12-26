@@ -1,0 +1,4 @@
+
+function deleteItems(dataParentId, element) {
+
+}

@@ -141,6 +141,7 @@ function sidebar(dataParentId, element) {
 
   function isDropdownReady(fragmentHash) {
     var properties = dropdownPropertiesMapping[fragmentHash];
+    
     if (!properties) {
       return false;
     }
@@ -234,7 +235,7 @@ function sidebar(dataParentId, element) {
   }
 
   function handleFragment(data) {
-    var fragmentHash = convertToKebabCase(data?.data?.hash);
+    var fragmentHash = data?.data?.hash;
     if (fragmentHash) {
       fragmentsData[fragmentHash] = data?.data;
       // Check if the component is ready before calling updateFragmentInSidebar
