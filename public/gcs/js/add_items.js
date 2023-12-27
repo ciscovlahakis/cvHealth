@@ -1,15 +1,23 @@
 
 function addItems(element, dataId, dataParentId) {
+
+  const state = {};
+
   PubSub.subscribe(dataParentId, function(data) {
-    var collection = data?.collection;
-    var fields = data?.fields;
+    Object.assign(state, data);
+    const { 
+      collection,
+      fields,
+      item 
+    } = state;
+
     PubSub.publish(dataId, {
-      "collection": collection,
-      "fields": fields
+      collection,
+      fields
     });
   });
 
   PubSub.publish(dataId, {
-    "form_mode": "new"
+    "form_mode": "create"
   });
 }

@@ -4,16 +4,14 @@ function form(element, dataId, dataParentId) {
   const state = {};
   
   PubSub.subscribe(dataParentId, function(data) {
+    data.item = data?.item && JSON.parse(data?.item);
     Object.assign(state, data);
     const {
       collection,
       fields,
       form_mode,
-      item_data
+      item
     } = state;
-
-    const action_url = (form_mode === "new" ? "/create/" : "/edit/") + collection;
-    element.action = action_url; // Set form action URL
 
     // Clear previous fields (if any)
     while (element.firstChild) {
@@ -24,7 +22,7 @@ function form(element, dataId, dataParentId) {
 
     // Create and insert form contents
     const header = document.createElement('h2');
-    header.textContent = form_mode === "edit" ? "Edit Item" : "Add Item";
+    header.textContent = form_mode === "update" ? "Edit Item" : "Add Item";
     element.appendChild(header);
 
     // Generate form fields
@@ -42,8 +40,8 @@ function form(element, dataId, dataParentId) {
         input.type = 'text'; // Assuming the input type is text
         input.id = field.name;
         input.name = field.name;
-        input.value = item_data && item_data[field.name] ? item_data[field.name] : '';
-        input.required = form_mode === 'new';
+        input.value = item ? item[field.name] : '';
+        input.required = form_mode === 'create';
         formGroup.appendChild(input);
 
         element.appendChild(formGroup);
@@ -56,17 +54,14 @@ function form(element, dataId, dataParentId) {
 
     const submitButton = document.createElement('input');
     submitButton.type = 'submit';
-    submitButton.value = "Save";
+    submitButton.value = form_mode === "update" ? "Update" : "Save";
     submitButton.onclick = function(event) {
       event.preventDefault();
-      
-      // Create a FormData object from the form
+    
       const formData = new FormData(element);
       const nestedHashData = {};
     
-      // Iterate over the FormData entries
       for (const [key, value] of formData.entries()) {
-        // Determine the type of the value
         const isNumericValue = !isNaN(value) && value.trim() !== '';
         nestedHashData[key] = {
           "value": isNumericValue ? parseInt(value, 10) : value,
@@ -74,29 +69,49 @@ function form(element, dataId, dataParentId) {
         };
       }
     
-      // Get the action URL from the form's 'action' attribute
-      const actionUrl = element.action;
+      let method = 'POST';
+      if (item) {
+        const isCompletelyChanged = Object.keys(item).every(key => 
+          nestedHashData[key] && item[key] != nestedHashData[key].value
+        );
+        const isPartiallyChanged = Object.keys(item).some(key => 
+          nestedHashData[key] && item[key] != nestedHashData[key].value
+        );
+        if (isCompletelyChanged) {
+          method = 'PUT';
+        } else if (isPartiallyChanged) {
+          method = 'PATCH';
+        }
+      }
+
+      var actionUrl = '/';
+      actionUrl += method === 'POST' ? 'create' : 'update';
+      actionUrl += '/' + collection;
+      actionUrl += method !== 'POST' ? '/' + item.id : '';
     
-      // Convert the nestedHashData to a JSON string
       const jsonBody = JSON.stringify(nestedHashData);
-    
-      // Perform the fetch request with the JSON body
+
       fetch(actionUrl, {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonBody
       })
-      .then(function(response) {
-        return response.json();
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        if (response.headers.get("content-type")?.includes("application/json")) {
+          return response.json();
+        }
+        throw new Error('Response not in JSON format');
       })
-      .then(function(data) {
-        // Handle the response, update the UI as needed
+      .then(data => {
         console.log('Form submitted successfully. Response:', data);
         hideFormAndRouteToUrlWithoutHash()
       })
-      .catch(function(error) {
+      .catch(error => {
         console.error('Error:', error);
       });
     };

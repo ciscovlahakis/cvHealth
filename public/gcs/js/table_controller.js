@@ -16,15 +16,10 @@ function tableController(element, dataId, dataParentId) {
     });
   });
 
-  // Define a callback function for when a row is clicked
-  function onRowClicked(rowData) {
-    //console.log(rowData)
-    // Handle the row click as needed, maybe open an edit form, etc.
-    // PubSub.publish(dataId, {
-    //   collection: rowData.collection,
-    //   fields: rowData.fields,
-    //   item: rowData.item // The data from the row to be edited
-    // });
+  function onRowClicked(item) {
+    PubSub.publish(dataId, {
+      item
+    });
   }
 
   async function fetchCollectionData(collectionName) {

@@ -1,21 +1,24 @@
 
 function editItems(element, dataId, dataParentId) {
-  // Subscribe to the selection of a row for editing
-  PubSub.subscribe(dataParentId, function(data) {
-    var collection = data?.collection;
-    var fields = data?.fields;
-    var item = data?.item; // This should be the data of the item that needs to be edited
 
-    // Publish the data needed to populate the form to the form component
+  const state = {};
+
+  PubSub.subscribe(dataParentId, function(data) {
+    Object.assign(state, data);
+    const { 
+      collection,
+      fields,
+      item 
+    } = state;
+
     PubSub.publish(dataId, {
-      "collection": collection,
-      "fields": fields,
-      "item": item // Pass the data of the item that needs to be edited
+      collection,
+      fields,
+      item
     });
   });
 
   PubSub.publish(dataId, {
-    "form_mode": "edit"
+    "form_mode": "update"
   });
-
 }

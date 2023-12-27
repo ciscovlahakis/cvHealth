@@ -1,5 +1,25 @@
 // Helper functions for rendering search results
 
+function normalizeData(item) {
+  var normalizedItem = {
+    id: item.objectID || item.id // Fallback to 'id' if 'objectID' is not present
+  };
+
+  // Add additional properties needed for creating the row
+  for (var key in item) {
+    if (item.hasOwnProperty(key)) {
+      normalizedItem[key] = item[key];
+    }
+  }
+
+  // Check if the required properties are still undefined
+  if (typeof normalizedItem.id === 'undefined') {
+    console.error('Normalized data object is missing "id" property:', normalizedItem);
+  }
+
+  return normalizedItem;
+}
+
 function createNoResultsElement(searchTerm) {
   var noResultsElement = document.createElement('div');
   noResultsElement.classList.add('no-results');
@@ -33,14 +53,19 @@ function appendChildren(parent, children) {
   });
 }
 
-function createRowWithData(data, fieldsData) {
+function createRowWithData(data, fields) {
   var row = document.createElement('div');
   row.className = 'grid-row sortable-row';
-  row.dataset.resource = data.resource;
-  row.dataset.id = data.objectID; // Use Algolia's objectID as the row identifier
+
+  if (typeof data.id !== 'undefined') {
+    row.dataset.id = data.id;
+    row.dataset.data = JSON.stringify(data);
+  } else {
+    console.error('Data object is missing "id" property:', data);
+  }
 
   // Create a string for the 'grid-template-columns' style
-  var gridColumnsValue = '100px ' + fieldsData.map(function() { return '1fr'; }).join(' ');
+  var gridColumnsValue = '100px ' + fields.map(function() { return '1fr'; }).join(' ');
   row.style.gridTemplateColumns = gridColumnsValue;
 
   // Add the icon column for the drag handle
@@ -51,12 +76,11 @@ function createRowWithData(data, fieldsData) {
   iconContainer.appendChild(iconColumn);
   row.appendChild(iconContainer);
 
-  // Add content cells based on fieldsData
-  fieldsData.forEach(function(column) {
+  // Add content cells based on fields
+  fields.forEach(function(column) {
     var cell = createElementWithText('div', '');
     cell.className = 'content-cell';
     var cellValue = data[column.name];
-    cell.dataset.id = data.objectID;
     cell.textContent = cellValue || '';
     row.appendChild(cell);
   });
@@ -64,7 +88,7 @@ function createRowWithData(data, fieldsData) {
   return row;
 }
 
-function renderResults(data, container, searchTerm, fieldsData) {
+function renderResults(data, container, searchTerm, fields) {
   // Clear previous results, but leave the template row and headers
   var children = Array.from(container.children);
   children.forEach(function(child) {
@@ -76,7 +100,8 @@ function renderResults(data, container, searchTerm, fieldsData) {
   // Render new results or a 'no results' message
   if (data.length > 0) {
     data.forEach(function(item) {
-      container.appendChild(createRowWithData(item, fieldsData));
+      var normalizedItem = normalizeData(item);
+      container.appendChild(createRowWithData(normalizedItem, fields));
     });
   } else {
     container.appendChild(createNoResultsElement(searchTerm));

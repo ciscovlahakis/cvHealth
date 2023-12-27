@@ -3,7 +3,6 @@
 require 'http'
 require 'json'
 require 'yaml'
-require 'securerandom'
 
 def get_rendered_content(template_name)
   template_content = fetch_template(template_name)

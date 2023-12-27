@@ -1,3 +1,4 @@
+
 window.firebaseInitialized = new Promise((resolve, reject) => {
   fetch('/firestore_config')
     .then(response => response.json())
@@ -19,7 +20,12 @@ function setupFirestoreListener(collectionName, searchTerm) {
     collectionRef.onSnapshot(function(snapshot) {
       var firestoreResults = [];
       snapshot.forEach(function(doc) {
-        firestoreResults.push(doc.data());
+        firestoreResults.push(
+          {
+            ...doc.data(),
+            id: doc.id,
+          }
+        );
       });
       PubSub.publish(EVENTS.SEARCH_RESULTS, { searchTerm: searchTerm, results: firestoreResults });
     }, function(error) {

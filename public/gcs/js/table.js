@@ -7,6 +7,7 @@ function table(element, dataId, dataParentId) {
     Object.assign(state, data);
     const {
       fields,
+      onRowClicked
     } = state;
 
     if (fields && Array.isArray(fields)) {
@@ -21,8 +22,7 @@ function table(element, dataId, dataParentId) {
               targetElement = targetElement.parentElement;
             }
             if (targetElement && targetElement.id !== 'template-row') {
-              console.log('Row clicked:', targetElement.dataset);
-              data?.onRowClicked(targetElement.dataset);
+              onRowClicked(targetElement.dataset?.data);
             }
           });
         } else {

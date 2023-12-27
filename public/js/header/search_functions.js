@@ -1,3 +1,4 @@
+
 function performSearch(url, searchTerm) {
   fetch(url)
     .then(function(response) {
