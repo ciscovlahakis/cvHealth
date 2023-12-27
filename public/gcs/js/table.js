@@ -56,4 +56,58 @@ function table(element, dataId, dataParentId) {
     }
   });
 
+  function createRowWithData(data, fields) {
+    var row = document.createElement('div');
+    row.className = 'grid-row sortable-row';
+  
+    if (typeof data.id !== 'undefined') {
+      row.dataset.id = data.id;
+      row.dataset.data = JSON.stringify(data);
+    } else {
+      console.error('Data object is missing "id" property:', data);
+    }
+  
+    // Create a string for the 'grid-template-columns' style
+    var gridColumnsValue = '100px ' + fields.map(function() { return '1fr'; }).join(' ');
+    row.style.gridTemplateColumns = gridColumnsValue;
+  
+    // Add the icon column for the drag handle
+    var iconColumn = createElementWithText('i', ''); // Adjusted to use createElementWithText
+    iconColumn.className = 'fas fa-bars';
+    var iconContainer = document.createElement('div');
+    iconContainer.className = 'icon-column drag-handle';
+    iconContainer.appendChild(iconColumn);
+    row.appendChild(iconContainer);
+  
+    // Add content cells based on fields
+    fields.forEach(function(column) {
+      var cell = createElementWithText('div', '');
+      cell.className = 'content-cell';
+      var cellValue = data[column.name];
+      cell.textContent = cellValue || '';
+      row.appendChild(cell);
+    });
+  
+    return row;
+  }
+  
+  function renderResults(data, container, searchTerm, fields) {
+    // Clear previous results, but leave the template row and headers
+    var children = Array.from(container.children);
+    children.forEach(function(child) {
+      if (child.id !== 'template-row' && child.id !== 'headers') {
+        container.removeChild(child);
+      }
+    });
+  
+    // Render new results or a 'no results' message
+    if (data.length > 0) {
+      data.forEach(function(item) {
+        var normalizedItem = normalizeData(item);
+        container.appendChild(createRowWithData(normalizedItem, fields));
+      });
+    } else {
+      container.appendChild(createNoResultsElement(searchTerm));
+    }
+  }
 }
