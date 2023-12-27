@@ -4,9 +4,12 @@ function table(element, dataId, dataParentId) {
   const state = {};
 
   PubSub.subscribe(dataParentId, function(data) {
-    Object.assign(state, data);
+    
+    assignDefined(state, data);
+    
     const {
       fields,
+      columnIcon,
       onRowClicked
     } = state;
 
@@ -14,7 +17,7 @@ function table(element, dataId, dataParentId) {
       PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {
         var resultsContainer = document.getElementById('results');
         if (resultsContainer) {
-          renderResults(payload.results, resultsContainer, payload.searchTerm, fields);
+          renderResults(payload.results, resultsContainer, payload.searchTerm, fields, columnIcon);
           resultsContainer.addEventListener('click', function(event) {
             // Starting from the target, move up the DOM until you find a row element
             var targetElement = event.target;
@@ -42,10 +45,11 @@ function table(element, dataId, dataParentId) {
       var headersRow = document.getElementById('headers');
       headersRow.innerHTML = ''; // Clear existing headers
 
-      // Add the icon header column
-      var iconHeader = document.createElement('div');
-      iconHeader.className = 'header';
-      headersRow.appendChild(iconHeader);
+      if (columnIcon) {
+        var iconHeader = document.createElement('div');
+        iconHeader.className = 'header';
+        headersRow.appendChild(iconHeader);
+      }
 
       fields.forEach(function(field) {
         var header = document.createElement('div');
@@ -56,7 +60,7 @@ function table(element, dataId, dataParentId) {
     }
   });
 
-  function createRowWithData(data, fields) {
+  function createRowWithData(data, fields, columnIcon) {
     var row = document.createElement('div');
     row.className = 'grid-row sortable-row';
   
@@ -70,14 +74,15 @@ function table(element, dataId, dataParentId) {
     // Create a string for the 'grid-template-columns' style
     var gridColumnsValue = '100px ' + fields.map(function() { return '1fr'; }).join(' ');
     row.style.gridTemplateColumns = gridColumnsValue;
-  
-    // Add the icon column for the drag handle
-    var iconColumn = createElementWithText('i', ''); // Adjusted to use createElementWithText
-    iconColumn.className = 'fas fa-bars';
-    var iconContainer = document.createElement('div');
-    iconContainer.className = 'icon-column drag-handle';
-    iconContainer.appendChild(iconColumn);
-    row.appendChild(iconContainer);
+
+    if (columnIcon) {
+      var iconColumn = createElementWithText('i', ''); // Adjusted to use createElementWithText
+      iconColumn.className = columnIcon;
+      var iconContainer = document.createElement('div');
+      iconContainer.className = 'icon-column drag-handle';
+      iconContainer.appendChild(iconColumn);
+      row.appendChild(iconContainer);
+    }
   
     // Add content cells based on fields
     fields.forEach(function(column) {
@@ -91,7 +96,7 @@ function table(element, dataId, dataParentId) {
     return row;
   }
   
-  function renderResults(data, container, searchTerm, fields) {
+  function renderResults(data, container, searchTerm, fields, columnIcon) {
     // Clear previous results, but leave the template row and headers
     var children = Array.from(container.children);
     children.forEach(function(child) {
@@ -104,7 +109,7 @@ function table(element, dataId, dataParentId) {
     if (data.length > 0) {
       data.forEach(function(item) {
         var normalizedItem = normalizeData(item);
-        container.appendChild(createRowWithData(normalizedItem, fields));
+        container.appendChild(createRowWithData(normalizedItem, fields, columnIcon));
       });
     } else {
       container.appendChild(createNoResultsElement(searchTerm));

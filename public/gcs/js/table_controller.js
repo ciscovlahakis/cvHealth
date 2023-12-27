@@ -1,28 +1,44 @@
 
 function tableController(element, dataId, dataParentId) {
+
+  const state = {};
+
   PubSub.subscribe(dataParentId, async function(data) {
+    // Fetch the collection's fields
     var collection = data?.page?.data?.collection;
-    if (!collection) return;
-
-    // Fetch collection data
     var fields = await fetchCollectionData(collection);
-    if (!fields) return;
 
-    var dataId = element.dataset.id;
+    assignDefined(state, {
+      collection,
+      fields
+    });
+
+    var { 
+      collection,
+      fields
+    } = state;
+
     PubSub.publish(dataId, {
-      "collection": collection,
-      "fields": fields,
-      "onRowClicked": onRowClicked,
+      collection,
+      fields
     });
   });
 
-  function onRowClicked(item) {
-    PubSub.publish(dataId, {
-      item
-    });
-  }
+  PubSub.publish(dataId, {
+    "onRowClicked": function(item) {
+      PubSub.publish(dataId, {
+        item
+      });
+    },
+    "onColumnIconChanged": function(columnIcon) {
+      PubSub.publish(dataId, {
+        columnIcon
+      });
+    }
+  });
 
   async function fetchCollectionData(collectionName) {
+    if (!collectionName) return;
     try {
       var response = await fetch(`/api/collection/collections?field=name&value=${collectionName}`);
       if (!response.ok) {

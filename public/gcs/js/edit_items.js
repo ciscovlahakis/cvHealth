@@ -4,11 +4,19 @@ function editItems(element, dataId, dataParentId) {
   const state = {};
 
   PubSub.subscribe(dataParentId, function(data) {
-    Object.assign(state, data);
+
+    if (!state.onColumnIconChanged) {
+      if (data?.onColumnIconChanged) {
+        data.onColumnIconChanged("fas fa-edit");
+      }
+    }
+
+    assignDefined(state, data);
+
     const { 
       collection,
       fields,
-      item 
+      item
     } = state;
 
     PubSub.publish(dataId, {

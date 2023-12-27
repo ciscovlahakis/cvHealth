@@ -34,6 +34,18 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function assignDefined(target, ...sources) {
+  sources.forEach(source => {
+      Object.keys(source).forEach(key => {
+          const val = source[key];
+          if (val !== undefined) {
+              target[key] = val;
+          }
+      });
+  });
+  return target;
+}
+
 function generateUniqueId() {
   const randomPart = Math.random().toString(36).substring(2, 15); // Generate a random string
   const timestampPart = Date.now().toString(36); // Get a string version of the current timestamp

@@ -5,7 +5,9 @@ function form(element, dataId, dataParentId) {
   
   PubSub.subscribe(dataParentId, function(data) {
     data.item = data?.item && JSON.parse(data?.item);
-    Object.assign(state, data);
+
+    assignDefined(state, data);
+
     const {
       collection,
       fields,
