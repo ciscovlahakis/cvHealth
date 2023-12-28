@@ -8,7 +8,7 @@ function tableController(element, dataId, dataParentId) {
     var collection = data?.page?.data?.collection;
     var fields = await fetchCollectionData(collection);
 
-    assignDefined(state, {
+    Object.assign(state, {
       collection,
       fields
     });
@@ -25,17 +25,22 @@ function tableController(element, dataId, dataParentId) {
   });
 
   PubSub.publish(dataId, {
-    "onRowClicked": function(item) {
-      PubSub.publish(dataId, {
-        item
-      });
-    },
-    "onColumnIconChanged": function(columnIcon) {
-      PubSub.publish(dataId, {
-        columnIcon
-      });
-    }
+    onChildChanged
   });
+
+  function onChildChanged(childData) {
+    childData ||= {};
+
+    const {
+      columnIcon,
+      rowClicked
+    } = childData;
+
+    PubSub.publish(dataId, {
+      columnIcon,
+      itemData: rowClicked
+    });
+  }
 
   async function fetchCollectionData(collectionName) {
     if (!collectionName) return;

@@ -5,24 +5,26 @@ function editItems(element, dataId, dataParentId) {
 
   PubSub.subscribe(dataParentId, function(data) {
 
-    if (!state.onColumnIconChanged) {
-      if (data?.onColumnIconChanged) {
-        data.onColumnIconChanged("fas fa-edit");
+    if (!state.onChildChanged) {
+      if (data?.onChildChanged) {
+        data.onChildChanged({
+          columnIcon: "fas fa-edit"
+        });
       }
     }
 
-    assignDefined(state, data);
+    Object.assign(state, data);
 
     const { 
       collection,
       fields,
-      item
+      itemData
     } = state;
 
     PubSub.publish(dataId, {
       collection,
       fields,
-      item
+      itemData
     });
   });
 

@@ -1,16 +1,16 @@
 
-function table(element, dataId, dataParentId) {
+function table(_, _, dataParentId) {
 
   const state = {};
 
   PubSub.subscribe(dataParentId, function(data) {
-    
-    assignDefined(state, data);
+
+    Object.assign(state, data);
     
     const {
       fields,
       columnIcon,
-      onRowClicked
+      onChildChanged
     } = state;
 
     if (fields && Array.isArray(fields)) {
@@ -25,7 +25,11 @@ function table(element, dataId, dataParentId) {
               targetElement = targetElement.parentElement;
             }
             if (targetElement && targetElement.id !== 'template-row') {
-              onRowClicked(targetElement.dataset?.data);
+              if (onChildChanged) {
+                onChildChanged({
+                  rowClicked: targetElement.dataset?.data
+                });
+              }
             }
           });
         } else {
@@ -34,7 +38,7 @@ function table(element, dataId, dataParentId) {
       });
 
       // Create a string for the 'grid-template-columns' style
-      var gridColumnsValue = '100px ' + fields.map(function() { return '1fr'; }).join(' ');
+      var gridColumnsValue = (columnIcon ? '100px ' : '') + fields.map(function() { return '1fr'; }).join(' ');
       var gridRows = document.querySelectorAll('.grid-row');
       gridRows.forEach(function(row) {
         row.style.gridTemplateColumns = gridColumnsValue;
