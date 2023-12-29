@@ -1,17 +1,13 @@
 
 function table(_, _, dataParentId) {
 
-  const state = {};
-
   PubSub.subscribe(dataParentId, function(data) {
 
-    Object.assign(state, data);
-    
     const {
       fields,
       columnIcon,
       onChildChanged
-    } = state;
+    } = data;
 
     if (fields && Array.isArray(fields)) {
       PubSub.subscribe(EVENTS.SEARCH_RESULTS, function(payload) {

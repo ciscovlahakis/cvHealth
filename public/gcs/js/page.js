@@ -1,31 +1,9 @@
 
 function page(_, dataId) {
-  PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
-    const { page } = data;
-    PubSub.publish(dataId, {
-      "page": {
-        action: action,
-        data: page
-      }
-    });
-  });
-  
-  PubSub.subscribe(EVENTS.COMPONENT, ({ action, data }) => {
-    PubSub.publish(dataId, {
-      "component": {
-        action: action,
-        data: data
-      }
-    });
-  });
-  
-  PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
-    const fragmentData = data?.front_matter;
-    PubSub.publish(dataId, {
-      "fragment": {
-        action: action,
-        data: fragmentData
-      }
-    });
-  });
+
+  const { template, components, fragmentsByHash } = state;
+
+  state[dataId].page = template?.page;
+  state[dataId].components = components;
+  state[dataId].fragmentsByHash = fragmentsByHash;
 }

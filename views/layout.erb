@@ -10,7 +10,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
 
-    <script src="/js/utils.js"></script>
+    <% utils_js_files = Dir.glob('./public/js/utils/*.js').map { |path| path.split('/').last } %>
+    <% utils_js_files.each do |file| %>
+      <script src="/js/utils/<%= file %>"></script>
+    <% end %>
+
     <% header_js_files = Dir.glob('./public/js/header/*.js').map { |path| path.split('/').last } %>
     <% header_js_files.each do |file| %>
       <script src="/js/header/<%= file %>"></script>

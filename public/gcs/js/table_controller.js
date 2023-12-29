@@ -3,45 +3,39 @@ function tableController(element, dataId, dataParentId) {
 
   const state = {};
 
+  function publish(id, data) {
+    state[id] ||= {};
+    Object.assign(state[id], data);
+    PubSub.publish(id, state[id]);
+  }
+
   PubSub.subscribe(dataParentId, async function(data) {
-    // Fetch the collection's fields
     var collection = data?.page?.data?.collection;
     var fields = await fetchCollectionData(collection);
 
-    Object.assign(state, {
-      collection,
-      fields
-    });
-
-    var { 
-      collection,
-      fields
-    } = state;
-
-    PubSub.publish(dataId, {
+    publish(dataId, {
       collection,
       fields
     });
   });
 
-  PubSub.publish(dataId, {
-    onChildChanged
+  publish(dataId, {
+    onChildChanged: (childData) => {
+      childData ||= {};
+
+      const {
+        columnIcon,
+        rowClicked
+      } = childData;
+
+      publish(dataId, {
+        columnIcon,
+        itemData: rowClicked
+      });
+    }
   });
 
-  function onChildChanged(childData) {
-    childData ||= {};
-
-    const {
-      columnIcon,
-      rowClicked
-    } = childData;
-
-    PubSub.publish(dataId, {
-      columnIcon,
-      itemData: rowClicked
-    });
-  }
-
+  // Fetch the collection's fields
   async function fetchCollectionData(collectionName) {
     if (!collectionName) return;
     try {

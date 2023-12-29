@@ -1,34 +1,13 @@
 
-function editItems(element, dataId, dataParentId) {
+function editItems(_, dataId, dataParentId) {
 
-  const state = {};
+  state[dataId].form_mode = "update";
 
-  PubSub.subscribe(dataParentId, function(data) {
+  const { collection, fields, item } = state[dataParentId];
 
-    if (!state.onChildChanged) {
-      if (data?.onChildChanged) {
-        data.onChildChanged({
-          columnIcon: "fas fa-edit"
-        });
-      }
-    }
+  state[dataId].collection = collection;
+  state[dataId].fields = fields;
+  state[dataId].item = item;
 
-    Object.assign(state, data);
-
-    const { 
-      collection,
-      fields,
-      itemData
-    } = state;
-
-    PubSub.publish(dataId, {
-      collection,
-      fields,
-      itemData
-    });
-  });
-
-  PubSub.publish(dataId, {
-    "form_mode": "update"
-  });
+  state[dataParentId].columnIcon = "fas fa-edit";
 }

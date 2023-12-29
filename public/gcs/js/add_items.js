@@ -3,28 +3,34 @@ function addItems(element, dataId, dataParentId) {
 
   const state = {};
 
+  function publish(id, data) {
+    state[id] ||= {};
+    Object.assign(state[id], data);
+    PubSub.publish(id, state[id]);
+  }
+
   PubSub.subscribe(dataParentId, function(data) {
-
-    if (!state.onChildChanged) {
-      if (data?.onChildChanged) {
-        data.onChildChanged();
-      }
-    }
-
-    Object.assign(state, data);
 
     const { 
       collection,
-      fields
-    } = state;
-
-    PubSub.publish(dataId, {
+      fields,
+      onChildChanged
+    } = data;
+    
+    if (!state.onChildChanged) {
+      if (onChildChanged) {
+        state.onChildChanged = onChildChanged;
+        onChildChanged();
+      }
+    }
+    
+    publish(dataId, {
       collection,
       fields
     });
   });
 
-  PubSub.publish(dataId, {
+  publish(dataId, {
     "form_mode": "create"
   });
 }

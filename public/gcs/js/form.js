@@ -4,7 +4,7 @@ function form(element, dataId, dataParentId) {
   const state = {};
   
   PubSub.subscribe(dataParentId, function(data) {
-    data.item = data?.item && JSON.parse(data?.item);
+    data.itemData = data?.itemData && JSON.parse(data?.itemData);
 
     Object.assign(state, data);
 
@@ -12,7 +12,7 @@ function form(element, dataId, dataParentId) {
       collection,
       fields,
       form_mode,
-      item
+      itemData
     } = state;
 
     // Clear previous fields (if any)
@@ -42,7 +42,7 @@ function form(element, dataId, dataParentId) {
         input.type = 'text'; // Assuming the input type is text
         input.id = field.name;
         input.name = field.name;
-        input.value = item ? item[field.name] : '';
+        input.value = itemData ? itemData[field.name] : '';
         input.required = form_mode === 'create';
         formGroup.appendChild(input);
 
@@ -72,12 +72,12 @@ function form(element, dataId, dataParentId) {
       }
     
       let method = 'POST';
-      if (item) {
-        const isCompletelyChanged = Object.keys(item).every(key => 
-          nestedHashData[key] && item[key] != nestedHashData[key].value
+      if (itemData) {
+        const isCompletelyChanged = Object.keys(itemData).every(key => 
+          nestedHashData[key] && itemData[key] != nestedHashData[key].value
         );
-        const isPartiallyChanged = Object.keys(item).some(key => 
-          nestedHashData[key] && item[key] != nestedHashData[key].value
+        const isPartiallyChanged = Object.keys(itemData).some(key => 
+          nestedHashData[key] && itemData[key] != nestedHashData[key].value
         );
         if (isCompletelyChanged) {
           method = 'PUT';
@@ -89,7 +89,7 @@ function form(element, dataId, dataParentId) {
       var actionUrl = '/';
       actionUrl += method === 'POST' ? 'create' : 'update';
       actionUrl += '/' + collection;
-      actionUrl += method !== 'POST' ? '/' + item.id : '';
+      actionUrl += method !== 'POST' ? '/' + itemData.id : '';
     
       const jsonBody = JSON.stringify(nestedHashData);
 

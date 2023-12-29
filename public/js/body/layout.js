@@ -1,45 +1,24 @@
 
-var templateData = {};
-var fragmentsData = {};
+window.state = {};
 
 window.onhashchange = function() {
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
   renderFragmentByHash(decodedHash);
 };
 
-PubSub.subscribe(EVENTS.TEMPLATE, ({ action, data }) => {
-  templateData = data;
-});
-
-PubSub.subscribe(EVENTS.FRAGMENT, ({ action, data }) => {
-  var frontMatterData = data?.front_matter;
-  var fragmentHash = convertToKebabCase(frontMatterData?.hash);
-  if (!fragmentHash) return;
-  var htmlContent = data?.html_content;
-  var fragmentDataParentId = data?.fragmentDataParentId;
-  fragmentsData[fragmentHash] = { 
-    frontMatterData: frontMatterData,
-    htmlContent: htmlContent,
-    fragmentDataParentId: fragmentDataParentId
-  }
-  var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-  if (fragmentHash === decodedHash) {
-    renderFragmentByHash(decodedHash);
-  }
-});
-
 function renderFragmentByHash(hash) {
+  const { fragmentsByHash } = state;
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
-    const htmlContent = fragmentsData[hash]?.htmlContent;
+    const htmlContent = fragmentsByHash[hash]?.htmlContent;
     if (htmlContent) {
       fragmentElement.innerHTML = htmlContent;
       var newContentDiv = fragmentElement.querySelector('div');
       if (newContentDiv) {
         const uniqueId = generateUniqueId();
         newContentDiv.setAttribute('data-id', uniqueId);
-        newContentDiv.setAttribute('data-parent-id', fragmentsData[hash]?.fragmentDataParentId);
-        const frontMatterData = fragmentsData[hash]?.frontMatterData;
+        newContentDiv.setAttribute('data-parent-id', fragmentsByHash[hash]?.fragmentDataParentId);
+        const frontMatterData = fragmentsByHash[hash]?.front_matter;
         const fileName = convertToSnakeCase(hash);
         if (frontMatterData?.hasStyles !== false) {
           loadStyles(fileName);
@@ -84,7 +63,7 @@ function processTemplate() {
     return;
   }
 
-  loadFilesSetFragmentsAndPublishEvent(templateName, frontMatterData);
+  loadFilesSetFragmentsAndSetDataByType(templateName, frontMatterData);
 
   const templateElement = document.querySelector('#' + templateName.toLowerCase());
   if (!templateElement) {
@@ -130,7 +109,8 @@ function setIdAndFetchComponent(element) {
   var componentName = element.getAttribute('data-component');
   if (!componentName) return;
   if (componentName === '_yield') {
-    componentName = templateData?.page?._yield;
+    console.log(state)
+    componentName = state.template?.page?._yield;
     if (!componentName) {
       console.error("Template could not find a _yield.");
       return;
@@ -158,7 +138,7 @@ function fetchComponent(componentName, placeholder, fragmentDataParentId) {
     })
     .then(data => {
       replacePlaceholderHtml(placeholder, data.html_content);
-      loadFilesSetFragmentsAndPublishEvent(componentName, data.front_matter, fragmentDataParentId);
+      loadFilesSetFragmentsAndSetDataByType(componentName, data.front_matter, fragmentDataParentId);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
 }
@@ -204,7 +184,7 @@ function replacePlaceholderHtml(placeholder, html_content) {
   }
 }
 
-function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData, fragmentDataParentId) {
+function loadFilesSetFragmentsAndSetDataByType(fileName, frontMatterData, fragmentDataParentId) {
   fileName = convertToSnakeCase(fileName);
   if (frontMatterData?.hasStyles !== false) {
     loadStyles(fileName);
@@ -213,7 +193,7 @@ function loadFilesSetFragmentsAndPublishEvent(fileName, frontMatterData, fragmen
     loadAndExecuteScript(fileName);
   }
   setFragments(frontMatterData, fragmentDataParentId);
-  publishEvent(frontMatterData); // template, component, fragment
+  setDataByType(frontMatterData); // template, component, fragment
 }
 
 function loadStyles(fileName) {
@@ -269,28 +249,36 @@ function fetchFragment(fragmentName, fragmentDataParentId) {
     })
     .then(data => {
       data.fragmentDataParentId = fragmentDataParentId;
-      PubSub.publish(EVENTS.FRAGMENT, {
-        action: "create",
-        data: data
-      });
+      setDataByType(data);
     })
     .catch(error => console.error(`Error fetching fragment (name, file): ${fragmentName} ${fileName}`, error));
 }
 
-function publishEvent(data) {
+function setDataByType(data) {
+
   var { type } = data;
+
+  if (data?.front_matter) {
+    type = data.front_matter?.type;
+  }
+
   if (!type) {
     type = "component";
     console.error("Event type could not be parsed. Assuming component.");
   }
-  type = type.toUpperCase();
-  try {
-    PubSub.publish(window.EVENTS[type], {
-      action: 'create',
-      data: data
-    });
-  } catch (error) {
-    console.error('Error publishing event ' + window.EVENTS[type] + ':', error);
+
+  if (type !== "template") {
+    type += "s";
+    state[type] ||= [];
+
+    if (type === "fragments") {
+      state.fragmentsByHash ||= {};
+      state.fragmentsByHash[data?.front_matter?.hash] = data;
+    }
+
+    state[type].push(data);
+  } else {
+    state[type] = data;
   }
 }
 
@@ -305,6 +293,13 @@ function initializeScriptElements(fileName){
   var selector = '[id*="' + kebabCaseName + '"]';
   var elements = document.querySelectorAll(selector);
   elements.forEach(function(element) {
-    initializerFunction(element, element.dataset.id, element.dataset.parentId);
+    const { id, parentId } = element.dataset;
+    state.components ||= [];
+    state.fragmentsByHash ||= {};
+    state[id] ||= {};
+    if (parentId) {
+      state[parentId] ||= {};
+    }
+    initializerFunction(element, id, parentId);
   });
 }
