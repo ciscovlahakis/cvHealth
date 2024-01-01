@@ -1,5 +1,12 @@
 
-window.state = {};
+const { state, on } = createDeepReactiveState();
+window.state = state;
+Object.defineProperty(window, 'state', {
+  value: window.state,
+  writable: false,
+  configurable: false
+});
+window.on = on;
 
 window.onhashchange = function() {
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
@@ -7,10 +14,10 @@ window.onhashchange = function() {
 };
 
 function renderFragmentByHash(hash) {
-  const { fragmentsByHash } = state;
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
-    const htmlContent = fragmentsByHash[hash]?.htmlContent;
+    const fragmentData = getDoc(["fragmentsByHash", hash]);
+    const htmlContent = fragmentData?.htmlContent;
     if (htmlContent) {
       fragmentElement.innerHTML = htmlContent;
       var newContentDiv = fragmentElement.querySelector('div');
@@ -18,7 +25,7 @@ function renderFragmentByHash(hash) {
         const uniqueId = generateUniqueId();
         newContentDiv.setAttribute('data-id', uniqueId);
         newContentDiv.setAttribute('data-parent-id', fragmentsByHash[hash]?.fragmentDataParentId);
-        const frontMatterData = fragmentsByHash[hash]?.front_matter;
+        const frontMatterData = fragmentData?.front_matter;
         const fileName = convertToSnakeCase(hash);
         if (frontMatterData?.hasStyles !== false) {
           loadStyles(fileName);
@@ -109,8 +116,7 @@ function setIdAndFetchComponent(element) {
   var componentName = element.getAttribute('data-component');
   if (!componentName) return;
   if (componentName === '_yield') {
-    console.log(state)
-    componentName = state.template?.page?._yield;
+    componentName = getDoc("template.page")?._yield;
     if (!componentName) {
       console.error("Template could not find a _yield.");
       return;
@@ -255,30 +261,22 @@ function fetchFragment(fragmentName, fragmentDataParentId) {
 }
 
 function setDataByType(data) {
-
   var { type } = data;
-
   if (data?.front_matter) {
     type = data.front_matter?.type;
   }
-
   if (!type) {
     type = "component";
     console.error("Event type could not be parsed. Assuming component.");
   }
-
   if (type !== "template") {
     type += "s";
-    state[type] ||= [];
-
+    addDoc(type, data);
     if (type === "fragments") {
-      state.fragmentsByHash ||= {};
-      state.fragmentsByHash[data?.front_matter?.hash] = data;
+      setDoc(["fragmentsByHash", data?.front_matter?.hash], data);
     }
-
-    state[type].push(data);
   } else {
-    state[type] = data;
+    setDoc(type, data);
   }
 }
 
@@ -294,12 +292,6 @@ function initializeScriptElements(fileName){
   var elements = document.querySelectorAll(selector);
   elements.forEach(function(element) {
     const { id, parentId } = element.dataset;
-    state.components ||= [];
-    state.fragmentsByHash ||= {};
-    state[id] ||= {};
-    if (parentId) {
-      state[parentId] ||= {};
-    }
     initializerFunction(element, id, parentId);
   });
 }
