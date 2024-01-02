@@ -5,17 +5,14 @@ function sidebar(element, dataId, dataParentId) {
   const fragmentsByHashPath = [dataParentId, "fragmentsByHash"];
 
   on(pagePath, (newValue) => {
-    console.log(newValue)
     createHandlerForDropdownComponent(newValue);
   });
 
   on(componentsPath, (newValue) => {
-    console.log(newValue)
     createHandlerForDropdownComponent(newValue);
   });
 
   on(fragmentsByHashPath, (newValue) => {
-    console.log(newValue)
     updateFragments(newValue);
   });
 

@@ -2,7 +2,7 @@
 function createDeepReactiveState(initialState = {}) {
   const listeners = new Map();
 
-  const notifyListeners = (property, value) => {
+  const notifyListeners = (property) => {
     let propertyParts = property.split(".");
     propertyParts.forEach((_, idx) => {
       let propToNotify = propertyParts.slice(0, idx + 1).join(".");
@@ -37,7 +37,7 @@ function createDeepReactiveState(initialState = {}) {
         current[finalKey] = value;
 
         // Notify listeners
-        notifyListeners(property, value);
+        notifyListeners(property);
 
         return true;
       },
@@ -59,7 +59,7 @@ function createDeepReactiveState(initialState = {}) {
   };
 
   return {
-    _state: applyProxy(initialState),
+    state: applyProxy(initialState),
     on,
   };
 }
@@ -78,16 +78,6 @@ function getCollection(ref) {
   const value = getNestedValue(path);
   if (!Array.isArray(value)) {
     throw new Error(`Target at ${path} is not a collection.`);
-  }
-  return value;
-}
-
-function getDoc(ref) {
-  const path = getPath(ref, true);
-  const value = getNestedValue(path);
-  if (typeof value !== "object") {
-    if (!value) return {};
-    throw new Error(`Target at ${path} is not an object.`);
   }
   return value;
 }
@@ -114,16 +104,6 @@ function addDoc(ref, data) {
     throw new Error(`Target at ${path} is not a collection.`);
   }
   state[path].push(data);
-}
-
-function getCollection(ref) {
-  const path = getPath(ref, true);
-  const collection = getNestedValue(path);
-  if (!Array.isArray(collection)) {
-    if (!collection) return [];
-    throw new Error(`Target at ${path} is not a collection.`);
-  }
-  return collection;
 }
 
 function updateCollectionDoc(ref, docId, data) {
@@ -155,14 +135,32 @@ function removeKey(ref) {
   delete state[path];
 }
 
-function inspectProxy(proxy) {
-  const inspectedObject = {};
-  for (const key in proxy) {
-    if (proxy.hasOwnProperty(key)) {
-      inspectedObject[key] = proxy[key];
+function getCollection(...pathSegments) {
+  return getCollectionOrDoc(pathSegments, true);
+}
+
+function getDoc(...pathSegments) {
+  return getCollectionOrDoc(pathSegments, false);
+}
+
+function getCollectionOrDoc(pathSegments, isCollection) {
+  // If the first argument is an array, use it as the path; otherwise, use all arguments as the path
+  const path = Array.isArray(pathSegments[0]) ? pathSegments[0] : pathSegments;
+  const pathStr = getPath(path, true);
+  const value = getNestedValue(pathStr);
+
+  if (isCollection) {
+    if (!Array.isArray(value)) {
+      if (!value) return [];
+      throw new Error(`Target at ${pathStr} is not a collection.`);
+    }
+  } else {
+    if (typeof value !== "object") {
+      if (!value) return {};
+      throw new Error(`Target at ${pathStr} is not an object.`);
     }
   }
-  return JSON.parse(JSON.stringify(inspectedObject));
+  return value;
 }
 
 function getNestedValue(ref) {
@@ -181,4 +179,14 @@ function getPath(ref, asString = false) {
     return asString ? ref.join(".") : ref;
   }
   throw new Error("Invalid ref type. Ref must be a string or an array.");
+}
+
+function inspectProxy(proxy) {
+  const inspectedObject = {};
+  for (const key in proxy) {
+    if (proxy.hasOwnProperty(key)) {
+      inspectedObject[key] = proxy[key];
+    }
+  }
+  return JSON.parse(JSON.stringify(inspectedObject));
 }

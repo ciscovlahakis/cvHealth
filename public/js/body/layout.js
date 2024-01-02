@@ -1,6 +1,6 @@
 
-const { _state, on } = createDeepReactiveState();
-window.state = _state;
+const { state, on } = createDeepReactiveState();
+window.state = state;
 Object.defineProperty(window, 'state', {
   value: window.state,
   writable: false,
@@ -16,7 +16,7 @@ window.onhashchange = function() {
 function renderFragmentByHash(hash) {
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
-    const fragmentData = getDoc(["fragmentsByHash", hash]);
+    const fragmentData = getDoc("fragmentsByHash", hash);
     const htmlContent = fragmentData?.htmlContent;
     if (htmlContent) {
       fragmentElement.innerHTML = htmlContent;
