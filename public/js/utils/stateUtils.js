@@ -7,7 +7,7 @@ function createDeepReactiveState(initialState = {}) {
     propertyParts.forEach((_, idx) => {
       let propToNotify = propertyParts.slice(0, idx + 1).join(".");
       (listeners.get(propToNotify) || []).forEach(({ listener }) => {
-        listener(getNestedValue(state, propToNotify));
+        listener(getNestedValue(propToNotify));
       });
     });
   };
@@ -18,7 +18,7 @@ function createDeepReactiveState(initialState = {}) {
         return Reflect.get(target, property, receiver);
       },
       set(target, property, value) {
-        const segments = property.split(".");
+        const segments = getPath(property);
         let current = target;
 
         // Navigate to the correct target for the property
@@ -45,13 +45,14 @@ function createDeepReactiveState(initialState = {}) {
   };
 
   const on = (property, listener) => {
-    if (!listeners.has(property)) {
-      listeners.set(property, []);
+    const path = getPath(property, true);
+    if (!listeners.has(path)) {
+      listeners.set(path, []);
     }
-    listeners.get(property).push({ listener });
+    listeners.get(path).push({ listener });
 
     // Optionally, call listener immediately with current value
-    const currentValue = getNestedValue(state, property);
+    const currentValue = getNestedValue(path);
     if (currentValue !== undefined) {
       listener(currentValue);
     }
@@ -63,93 +64,95 @@ function createDeepReactiveState(initialState = {}) {
   };
 }
 
-function getNestedValue(obj, path) {
-  return path
-    .split(".")
-    .reduce((current, key) => (current ? current[key] : undefined), obj);
-}
-
 // CRUD operations for documents
 function setDoc(ref, data) {
+  const path = getPath(ref, true);
   if (typeof data !== "object") {
-    throw new Error(`New value for ${ref} is not an object.`);
+    throw new Error(`New value for ${path} is not an object.`);
   }
-  state[ref] = data;
+  state[path] = data;
 }
 
 function getCollection(ref) {
-  const value = getNestedValue(state, ref);
+  const path = getPath(ref, true);
+  const value = getNestedValue(path);
   if (!Array.isArray(value)) {
-    throw new Error(`Target at ${ref} is not a collection.`);
+    throw new Error(`Target at ${path} is not a collection.`);
   }
   return value;
 }
 
-function getDoc(ref, upsert = false) {
-  const value = getNestedValue(state, ref);
+function getDoc(ref) {
+  const path = getPath(ref, true);
+  const value = getNestedValue(path);
   if (typeof value !== "object") {
-    if (!value) {
-        return upsert ? {} : undefined;
-    } else {
-      throw new Error(`Target at ${ref} is not an object.`);
-    }
+    if (!value) return {};
+    throw new Error(`Target at ${path} is not an object.`);
   }
   return value;
 }
 
 function upsertDoc(ref, data) {
-  const doc = getDoc(ref, true);
-  state[ref] = { ...doc, ...data };
+  const path = getPath(ref, true);
+  const doc = getDoc(path);
+  state[path] = { ...doc, ...data };
 }
 
 // CRUD operations for collections
 function setCollection(ref, data) {
+  const path = getPath(ref, true);
   if (!Array.isArray(data)) {
-    throw new Error(`New value for ${ref} is not an array.`);
+    throw new Error(`New value for ${path} is not an array.`);
   }
-  state[ref] = data;
+  state[path] = data;
 }
 
 function addDoc(ref, data) {
-  state[ref] ||= [];
-  if (!Array.isArray(state[ref])) {
-    throw new Error(`Target at ${ref} is not a collection.`);
+  const path = getPath(ref, true);
+  state[path] ||= [];
+  if (!Array.isArray(state[path])) {
+    throw new Error(`Target at ${path} is not a collection.`);
   }
-  state[ref].push(data);
+  state[path].push(data);
 }
 
 function getCollection(ref) {
-  const collection = getNestedValue(state, ref);
+  const path = getPath(ref, true);
+  const collection = getNestedValue(path);
   if (!Array.isArray(collection)) {
-    throw new Error(`Target at ${ref} is not a collection.`);
+    if (!collection) return [];
+    throw new Error(`Target at ${path} is not a collection.`);
   }
   return collection;
 }
 
 function updateCollectionDoc(ref, docId, data) {
-  const collection = getCollection(ref);
+  const path = getPath(ref, true);
+  const collection = getCollection(path);
   const docIndex = collection.findIndex((doc) => doc.id === docId);
   if (docIndex === -1) {
     throw new Error(
-      `Document with id ${docId} not found in collection ${ref}.`
+      `Document with id ${docId} not found in collection ${path}.`
     );
   }
   collection[docIndex] = { ...collection[docIndex], ...data };
 }
 
 function removeCollectionDoc(ref, docId) {
-  const collection = getCollection(ref);
+  const path = getPath(ref, true);
+  const collection = getCollection(path);
   const docIndex = collection.findIndex((doc) => doc.id === docId);
   if (docIndex === -1) {
     throw new Error(
-      `Document with id ${docId} not found in collection ${ref}.`
+      `Document with id ${docId} not found in collection ${path}.`
     );
   }
   collection.splice(docIndex, 1);
 }
 
 function removeKey(ref) {
-  delete state[ref];
+  const path = getPath(ref, true);
+  delete state[path];
 }
 
 function inspectProxy(proxy) {
@@ -160,4 +163,22 @@ function inspectProxy(proxy) {
     }
   }
   return JSON.parse(JSON.stringify(inspectedObject));
+}
+
+function getNestedValue(ref) {
+  const segments = getPath(ref);
+  return segments.reduce(
+    (current, key) => (current ? current[key] : undefined),
+    state
+  );
+}
+
+function getPath(ref, asString = false) {
+  if (typeof ref === "string") {
+    return asString ? ref : ref.split(".");
+  }
+  if (Array.isArray(ref)) {
+    return asString ? ref.join(".") : ref;
+  }
+  throw new Error("Invalid ref type. Ref must be a string or an array.");
 }

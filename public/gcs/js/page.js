@@ -14,5 +14,5 @@ function page(_, dataId) {
 
   on('fragmentsByHash', newValue => {
     setDoc([dataId, "fragmentsByHash"], newValue);
-  }, true);
+  });
 }

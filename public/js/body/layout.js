@@ -10,7 +10,7 @@ window.on = on;
 
 window.onhashchange = function() {
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-  //renderFragmentByHash(decodedHash);
+  renderFragmentByHash(decodedHash);
 };
 
 function renderFragmentByHash(hash) {
@@ -273,7 +273,7 @@ function setDataByType(data) {
     type += "s";
     addDoc(type, data);
     if (type === "fragments") {
-      upsertDoc(`fragmentsByHash.${data?.front_matter?.hash}`, data);
+      upsertDoc(["fragmentsByHash", data?.front_matter?.hash], data);
     }
   } else {
     upsertDoc(type, data);

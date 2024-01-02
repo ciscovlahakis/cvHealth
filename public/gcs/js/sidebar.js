@@ -1,11 +1,8 @@
 
 function sidebar(element, dataId, dataParentId) {
-  //const pagePath = [dataParentId, "page"];
-  //const componentsPath = [dataParentId, "components"];
-  //const fragmentsByHashPath = [dataParentId, "fragmentsByHash"];
-  const pagePath = "template"
-  const componentsPath = "components";
-  const fragmentsByHashPath = "fragmentsByHash";
+  const pagePath = [dataParentId, "page"]
+  const componentsPath = [dataParentId, "components"];
+  const fragmentsByHashPath = [dataParentId, "fragmentsByHash"];
 
   on(pagePath, (newValue) => {
     console.log(newValue)
