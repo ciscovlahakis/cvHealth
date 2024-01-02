@@ -1,6 +1,6 @@
 
-const { state, on } = createDeepReactiveState();
-window.state = state;
+const { _state, on } = createDeepReactiveState();
+window.state = _state;
 Object.defineProperty(window, 'state', {
   value: window.state,
   writable: false,
@@ -10,7 +10,7 @@ window.on = on;
 
 window.onhashchange = function() {
   var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-  renderFragmentByHash(decodedHash);
+  //renderFragmentByHash(decodedHash);
 };
 
 function renderFragmentByHash(hash) {
@@ -116,7 +116,7 @@ function setIdAndFetchComponent(element) {
   var componentName = element.getAttribute('data-component');
   if (!componentName) return;
   if (componentName === '_yield') {
-    componentName = getDoc("template.page")?._yield;
+    componentName = getDoc(`template.page`)?._yield;
     if (!componentName) {
       console.error("Template could not find a _yield.");
       return;
@@ -273,10 +273,10 @@ function setDataByType(data) {
     type += "s";
     addDoc(type, data);
     if (type === "fragments") {
-      setDoc(["fragmentsByHash", data?.front_matter?.hash], data);
+      upsertDoc(`fragmentsByHash.${data?.front_matter?.hash}`, data);
     }
   } else {
-    setDoc(type, data);
+    upsertDoc(type, data);
   }
 }
 

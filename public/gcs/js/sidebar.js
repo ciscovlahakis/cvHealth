@@ -1,17 +1,19 @@
 
 function sidebar(element, dataId, dataParentId) {
-
-  const pagePath = [dataParentId, "page"];
-  const componentsPath = "components";
-  const fragmentsByHashPath = "fragmentsByHash";
+  //const pagePath = [dataParentId, "page"];
   //const componentsPath = [dataParentId, "components"];
   //const fragmentsByHashPath = [dataParentId, "fragmentsByHash"];
+  const pagePath = "template"
+  const componentsPath = "components";
+  const fragmentsByHashPath = "fragmentsByHash";
 
   on(pagePath, (newValue) => {
+    console.log(newValue)
     createHandlerForDropdownComponent(newValue);
   });
 
   on(componentsPath, (newValue) => {
+    console.log(newValue)
     createHandlerForDropdownComponent(newValue);
   });
 
@@ -59,7 +61,6 @@ function sidebar(element, dataId, dataParentId) {
 
   function createDropdownComponent(component) {
     const fragmentsByHash = getDoc(fragmentsByHashPath);
-    console.log(fragmentsByHash)
     if (!component) {
       console.error("createDropdownComponent called with undefined component");
       return;
@@ -85,7 +86,6 @@ function sidebar(element, dataId, dataParentId) {
               fragmentData.name || "Resource Not Found";
             existingFragmentAnchor.href = `#${fragmentHash}`;
           } else {
-            console.log(fragmentData.name);
             // Create and append a new anchor element
             var fragmentAnchor = createAnchorElement(
               fragmentData.name || "Resource Not Found",

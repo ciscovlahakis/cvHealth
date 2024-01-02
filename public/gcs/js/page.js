@@ -13,7 +13,6 @@ function page(_, dataId) {
   });
 
   on('fragmentsByHash', newValue => {
-    console.log(newValue)
     setDoc([dataId, "fragmentsByHash"], newValue);
-  });
+  }, true);
 }

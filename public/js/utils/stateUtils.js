@@ -1,147 +1,129 @@
 
 function createDeepReactiveState(initialState = {}) {
   const listeners = new Map();
-  const pendingListeners = new Map();
-  let notifyScheduled = false;
-  let notifyQueue = new Map();
 
-  const scheduleNotification = (property, value) => {
-    notifyQueue.set(property, value);
-    if (!notifyScheduled) {
-      notifyScheduled = true;
-      Promise.resolve().then(flushNotifications);
-    }
-  };
-
-  const flushNotifications = () => {
-    notifyQueue.forEach((value, property) => {
-      (listeners.get(property) || []).forEach((listener) => listener(value));
+  const notifyListeners = (property, value) => {
+    let propertyParts = property.split(".");
+    propertyParts.forEach((_, idx) => {
+      let propToNotify = propertyParts.slice(0, idx + 1).join(".");
+      (listeners.get(propToNotify) || []).forEach(({ listener }) => {
+        listener(getNestedValue(state, propToNotify));
+      });
     });
-    notifyQueue.clear();
-    notifyScheduled = false;
   };
 
-  const listen = (property, listener) => {
-    if (!listeners.has(property)) {
-      listeners.set(property, []);
-    }
-    listeners.get(property).push(listener);
-  };
-
-  const applyProxy = (target, propertyPath = "") => {
+  const applyProxy = (target) => {
     return new Proxy(target, {
       get(target, property, receiver) {
-        const nextPath = propertyPath
-          ? `${propertyPath}.${property}`
-          : property;
-        return target[property] === undefined
-          ? undefined
-          : Reflect.get(target, property, receiver);
+        return Reflect.get(target, property, receiver);
       },
-      set(target, property, value, receiver) {
-        const fullPath = propertyPath
-          ? `${propertyPath}.${property}`
-          : property;
-        const result = Reflect.set(target, property, value, receiver);
+      set(target, property, value) {
+        const segments = property.split(".");
+        let current = target;
 
-        if (pendingListeners.has(fullPath)) {
-          pendingListeners.get(fullPath).forEach((listener) => {
-            listen(fullPath, listener);
-          });
-          pendingListeners.delete(fullPath);
+        // Navigate to the correct target for the property
+        for (let i = 0; i < segments.length - 1; i++) {
+          const segment = segments[i];
+
+          if (!(segment in current)) {
+            current[segment] = {}; // create a new object if the path does not exist
+          }
+
+          current = current[segment];
         }
 
-        scheduleNotification(fullPath, value);
-        return result;
+        // Set the property on the target
+        const finalKey = segments[segments.length - 1];
+        current[finalKey] = value;
+
+        // Notify listeners
+        notifyListeners(property, value);
+
+        return true;
       },
     });
   };
 
   const on = (property, listener) => {
-    const { current, lastKey } = navigateToRef(property);
-    if (current[lastKey] === undefined) {
-      if (!pendingListeners.has(property)) {
-        pendingListeners.set(property, []);
-      }
-      pendingListeners.get(property).push(listener);
-    } else {
-      listen(property, listener);
-      // Notify the listener with the current state
-      listener(current[lastKey]);
+    if (!listeners.has(property)) {
+      listeners.set(property, []);
+    }
+    listeners.get(property).push({ listener });
+
+    // Optionally, call listener immediately with current value
+    const currentValue = getNestedValue(state, property);
+    if (currentValue !== undefined) {
+      listener(currentValue);
     }
   };
 
   return {
-    state: applyProxy(initialState),
+    _state: applyProxy(initialState),
     on,
   };
 }
 
-// Helper function to navigate to the reference in the state
-function navigateToRef(ref) {
-    const keys = typeof ref === "string" ? ref.split(".") : ref;
-    let current = state;
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (current[keys[i]] === undefined) {
-            current[keys[i]] = {}; // Initialize intermediate segments as empty objects
-        }
-        current = current[keys[i]];
-    }
-    return { current, lastKey: keys[keys.length - 1] };
+function getNestedValue(obj, path) {
+  return path
+    .split(".")
+    .reduce((current, key) => (current ? current[key] : undefined), obj);
 }
 
 // CRUD operations for documents
 function setDoc(ref, data) {
-  const { current, lastKey } = navigateToRef(ref);
-  current[lastKey] = data;
-}
-
-function getDoc(ref) {
-  const { current, lastKey } = navigateToRef(ref);
-  return current[lastKey];
-}
-
-function updateDoc(ref, data) {
-  const { current, lastKey } = navigateToRef(ref);
-  if (typeof current[lastKey] !== "object" || Array.isArray(current[lastKey])) {
-    throw new Error(`Target at ${ref} is not a suitable object for update.`);
+  if (typeof data !== "object") {
+    throw new Error(`New value for ${ref} is not an object.`);
   }
-  current[lastKey] = { ...current[lastKey], ...data };
+  state[ref] = data;
 }
 
-function deleteDoc(ref) {
-  const { current, lastKey } = navigateToRef(ref);
-  delete current[lastKey];
+function getCollection(ref) {
+  const value = getNestedValue(state, ref);
+  if (!Array.isArray(value)) {
+    throw new Error(`Target at ${ref} is not a collection.`);
+  }
+  return value;
+}
+
+function getDoc(ref, upsert = false) {
+  const value = getNestedValue(state, ref);
+  if (typeof value !== "object") {
+    if (!value) {
+        return upsert ? {} : undefined;
+    } else {
+      throw new Error(`Target at ${ref} is not an object.`);
+    }
+  }
+  return value;
+}
+
+function upsertDoc(ref, data) {
+  const doc = getDoc(ref, true);
+  state[ref] = { ...doc, ...data };
 }
 
 // CRUD operations for collections
 function setCollection(ref, data) {
-  const { current, lastKey } = navigateToRef(ref);
-
   if (!Array.isArray(data)) {
     throw new Error(`New value for ${ref} is not an array.`);
   }
-
-  current[lastKey] = data;
+  state[ref] = data;
 }
 
 function addDoc(ref, data) {
-  const { current, lastKey } = navigateToRef(ref);
-  if (current[lastKey] === undefined) {
-    current[lastKey] = [];
-  }
-  if (!Array.isArray(current[lastKey])) {
+  state[ref] ||= [];
+  if (!Array.isArray(state[ref])) {
     throw new Error(`Target at ${ref} is not a collection.`);
   }
-  current[lastKey].push(data);
+  state[ref].push(data);
 }
 
 function getCollection(ref) {
-  const { current, lastKey } = navigateToRef(ref);
-  if (!Array.isArray(current[lastKey])) {
+  const collection = getNestedValue(state, ref);
+  if (!Array.isArray(collection)) {
     throw new Error(`Target at ${ref} is not a collection.`);
   }
-  return current[lastKey];
+  return collection;
 }
 
 function updateCollectionDoc(ref, docId, data) {
@@ -166,6 +148,10 @@ function removeCollectionDoc(ref, docId) {
   collection.splice(docIndex, 1);
 }
 
+function removeKey(ref) {
+  delete state[ref];
+}
+
 function inspectProxy(proxy) {
   const inspectedObject = {};
   for (const key in proxy) {
@@ -173,5 +159,5 @@ function inspectProxy(proxy) {
       inspectedObject[key] = proxy[key];
     }
   }
-  return inspectedObject;
+  return JSON.parse(JSON.stringify(inspectedObject));
 }
