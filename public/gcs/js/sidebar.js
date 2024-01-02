@@ -2,7 +2,7 @@
 function sidebar(element, dataId, dataParentId) {
   const pagePath = [dataParentId, "page"]
   const componentsPath = [dataParentId, "components"];
-  const fragmentsByHashPath = [dataParentId, "fragmentsByHash"];
+  const fragmentsPath = [dataParentId, "fragments"];
 
   on(pagePath, (newValue) => {
     createHandlerForDropdownComponent(newValue);
@@ -12,19 +12,19 @@ function sidebar(element, dataId, dataParentId) {
     createHandlerForDropdownComponent(newValue);
   });
 
-  on(fragmentsByHashPath, (newValue) => {
-    updateFragments(newValue);
-  });
+  on(fragmentsPath, (newValue) => {
+   updateFragments(newValue);
+  }, "hash");
 
-  function createHandlerForDropdownComponent(components) {
+  function createHandlerForDropdownComponent(components, fragmentsByHash) {
     if (Array.isArray(components)) {
       components.forEach((component) => {
         if (shouldCreateDropdown(component)) {
-          createDropdownComponent(component);
+          createDropdownComponent(component, fragmentsByHash);
         }
       });
     } else {
-      createDropdownComponent(components);
+      createDropdownComponent(components, fragmentsByHash);
     }
   }
 
@@ -41,20 +41,19 @@ function sidebar(element, dataId, dataParentId) {
 
     // Check 'page' and 'components' for relevant fragments
     if (page && page.fragments && hasRelevantFragment(page.fragments)) {
-      createHandlerForDropdownComponent(page);
+      createHandlerForDropdownComponent(page, fragmentsByHash);
     }
 
     if (components) {
       components.forEach((component) => {
         if (component.fragments && hasRelevantFragment(component.fragments)) {
-          createHandlerForDropdownComponent(component);
+          createHandlerForDropdownComponent(component, fragmentsByHash);
         }
       });
     }
   }
 
-  function createDropdownComponent(component) {
-    const fragmentsByHash = getDoc(fragmentsByHashPath);
+  function createDropdownComponent(component, fragmentsByHash) {
     if (!component) {
       console.error("createDropdownComponent called with undefined component");
       return;
@@ -62,12 +61,11 @@ function sidebar(element, dataId, dataParentId) {
     var dropdown = document.createElement("div");
     dropdown.className = "dropdown";
     dropdown.id = "dropdown-" + (component.name || "").replace(/\s+/g, "-");
-
     var existingDropdown = document.getElementById(dropdown.id);
     if (existingDropdown) {
       // Re-populate the dropdown with updated fragment data
       component.fragments.forEach(function (fragmentHash) {
-        var fragmentData = fragmentsByHash[fragmentHash]?.front_matter;
+        var fragmentData = fragmentsByHash?.[fragmentHash]?.front_matter;
         if (fragmentData) {
           var fragmentAnchorId = "fragment-" + fragmentHash;
           var existingFragmentAnchor = existingDropdown.querySelector(

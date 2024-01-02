@@ -1,16 +1,28 @@
 
 function createDeepReactiveState(initialState = {}) {
   const listeners = new Map();
+  const transformedListeners = new Map();
 
-  const notifyListeners = (property) => {
+  function transformCollection(collection, key, caller) {
+    const transformed = {};
+    collection.forEach((item) => {
+      if (key in item) {
+        transformed[item[key]] = item;
+      }
+    });
+    return transformed;
+  }
+
+  function notifyListeners(property, isTransformed = false) {
     let propertyParts = property.split(".");
     propertyParts.forEach((_, idx) => {
       let propToNotify = propertyParts.slice(0, idx + 1).join(".");
-      (listeners.get(propToNotify) || []).forEach(({ listener }) => {
+      let relevantListeners = isTransformed ? transformedListeners : listeners;
+      (relevantListeners.get(propToNotify) || []).forEach(({ listener }) => {
         listener(getNestedValue(propToNotify));
       });
     });
-  };
+  }
 
   const applyProxy = (target) => {
     return new Proxy(target, {
@@ -18,45 +30,73 @@ function createDeepReactiveState(initialState = {}) {
         return Reflect.get(target, property, receiver);
       },
       set(target, property, value) {
-        const segments = getPath(property);
-        let current = target;
+        const isTransformedProperty = property.includes("By");
 
-        // Navigate to the correct target for the property
-        for (let i = 0; i < segments.length - 1; i++) {
-          const segment = segments[i];
+        if (!isTransformedProperty) {
+          const segments = getPath(property);
+          let current = target;
 
-          if (!(segment in current)) {
-            current[segment] = {}; // create a new object if the path does not exist
+          // Navigate to the correct target for the property
+          for (let i = 0; i < segments.length - 1; i++) {
+            const segment = segments[i];
+
+            if (!(segment in current)) {
+              current[segment] = {}; // create a new object if the path does not exist
+            }
+
+            current = current[segment];
           }
 
-          current = current[segment];
+          // Set the property on the target
+          const finalKey = segments[segments.length - 1];
+          current[finalKey] = value;
+
+          if (Array.isArray(value)) {
+            transformedListeners.forEach((_, key) => {
+              if (key.startsWith(`${property}By`)) {
+                const transformKey = key.split("By")[1];
+                const transformedKey = `${property}By${transformKey}`;
+                current[`${finalKey}By${transformKey}`] = transformCollection(
+                  value,
+                  decapitalize(transformKey)
+                ); // Use original transformKey for transformation
+                notifyListeners(transformedKey, true); // Notify listeners of the transformed data
+              }
+            });
+          }
+          notifyListeners(getPath(property, true));
+        } else {
+          Reflect.set(target, property, value);
         }
-
-        // Set the property on the target
-        const finalKey = segments[segments.length - 1];
-        current[finalKey] = value;
-
-        // Notify listeners
-        notifyListeners(property);
-
         return true;
       },
     });
   };
 
-  const on = (property, listener) => {
+  function on(property, listener, transformKey = null) {
     const path = getPath(property, true);
-    if (!listeners.has(path)) {
-      listeners.set(path, []);
+    const relevantPath = transformKey
+      ? `${path}By${capitalize(transformKey)}`
+      : path;
+    const relevantListeners = transformKey ? transformedListeners : listeners;
+    if (!relevantListeners.has(relevantPath)) {
+      relevantListeners.set(relevantPath, []);
     }
-    listeners.get(path).push({ listener });
+    relevantListeners.get(relevantPath).push({ listener });
 
-    // Optionally, call listener immediately with current value
-    const currentValue = getNestedValue(path);
+    let currentValue = getNestedValue(relevantPath);
+    if (transformKey && currentValue === undefined) {
+      // If the transformed data does not exist yet, create and store it
+      const originalValue = getNestedValue(path);
+      if (Array.isArray(originalValue)) {
+        //currentValue = transformCollection(originalValue, transformKey);
+        //state[relevantPath] = currentValue;
+      }
+    }
     if (currentValue !== undefined) {
       listener(currentValue);
     }
-  };
+  }
 
   return {
     state: applyProxy(initialState),
@@ -103,7 +143,8 @@ function addDoc(ref, data) {
   if (!Array.isArray(state[path])) {
     throw new Error(`Target at ${path} is not a collection.`);
   }
-  state[path].push(data);
+  state[path] = [...state[path], data];
+  //state[path].push(data);
 }
 
 function updateCollectionDoc(ref, docId, data) {

@@ -254,6 +254,7 @@ function fetchFragment(fragmentName, fragmentDataParentId) {
       return response.json();
     })
     .then(data => {
+      data.hash = data.front_matter?.hash
       data.fragmentDataParentId = fragmentDataParentId;
       setDataByType(data);
     })
@@ -272,9 +273,6 @@ function setDataByType(data) {
   if (type !== "template") {
     type += "s";
     addDoc(type, data);
-    if (type === "fragments") {
-      upsertDoc(["fragmentsByHash", data?.front_matter?.hash], data);
-    }
   } else {
     upsertDoc(type, data);
   }

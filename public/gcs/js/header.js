@@ -118,14 +118,14 @@ function header(element, dataId, dataParentId) {
     });
   }
 
-  if (dataParentId) {
-    PubSub.subscribe(dataParentId, async function(data) {
-      var collection = data?.page?.data?.collection;
-      if (!collection) return;
-      indexName = collection;
-      setUpSearch();
-      initialSearch();
-      await updateBreadcrumbs(data);
-    });
-  }
+  // if (dataParentId) {
+  //   PubSub.subscribe(dataParentId, async function(data) {
+  //     var collection = data?.page?.data?.collection;
+  //     if (!collection) return;
+  //     indexName = collection;
+  //     setUpSearch();
+  //     initialSearch();
+  //     await updateBreadcrumbs(data);
+  //   });
+  // }
 }

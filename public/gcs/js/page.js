@@ -11,8 +11,4 @@ function page(_, dataId) {
   on('fragments', newValue => {
     setCollection([dataId, "fragments"], newValue);
   });
-
-  on('fragmentsByHash', newValue => {
-    setDoc([dataId, "fragmentsByHash"], newValue);
-  });
 }
