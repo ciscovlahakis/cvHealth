@@ -1,7 +1,7 @@
 
 function page(_, dataId) {
-  on('template', newValue => {
-    setDoc([dataId, "page"], newValue?.page);
+  on('page', newValue => {
+    setDoc([dataId, "page"], newValue);
   });
 
   on('components', newValue => {

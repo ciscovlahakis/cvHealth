@@ -37,7 +37,7 @@ function renderFragmentByHash(hash) {
       }
     } else {
       fragmentElement.innerHTML = '';
-      console.error("Fragment not found for hash: " + hash, "\nFragments data: ", fragmentsData);
+      console.error("Fragment not found for hash: " + hash);
     }
   } else {
     console.error("The fragment element with ID '_fragment' does not exist.");
@@ -116,9 +116,9 @@ function setIdAndFetchComponent(element) {
   var componentName = element.getAttribute('data-component');
   if (!componentName) return;
   if (componentName === '_yield') {
-    componentName = getDoc(`template.page`)?._yield;
+    componentName = getDoc("page")?._yield;
     if (!componentName) {
-      console.error("Template could not find a _yield.");
+      console.error("Could not find a _yield in page data.");
       return;
     }
   }
@@ -254,8 +254,9 @@ function fetchFragment(fragmentName, fragmentDataParentId) {
       return response.json();
     })
     .then(data => {
-      data.hash = data.front_matter?.hash
+      data = {...data, ...data.front_matter };
       data.fragmentDataParentId = fragmentDataParentId;
+      delete data.front_matter;
       setDataByType(data);
     })
     .catch(error => console.error(`Error fetching fragment (name, file): ${fragmentName} ${fileName}`, error));
@@ -274,7 +275,9 @@ function setDataByType(data) {
     type += "s";
     addDoc(type, data);
   } else {
-    upsertDoc(type, data);
+    type = "page";
+    const { page } = data;
+    upsertDoc(type, page);
   }
 }
 

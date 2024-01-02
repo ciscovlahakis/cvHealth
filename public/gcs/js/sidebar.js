@@ -58,6 +58,9 @@ function sidebar(element, dataId, dataParentId) {
       console.error("createDropdownComponent called with undefined component");
       return;
     }
+    if (!fragmentsByHash) {
+      fragmentsByHash = getDoc(dataParentId, "fragmentsByHash");
+    }
     var dropdown = document.createElement("div");
     dropdown.className = "dropdown";
     dropdown.id = "dropdown-" + (component.name || "").replace(/\s+/g, "-");
@@ -65,7 +68,7 @@ function sidebar(element, dataId, dataParentId) {
     if (existingDropdown) {
       // Re-populate the dropdown with updated fragment data
       component.fragments.forEach(function (fragmentHash) {
-        var fragmentData = fragmentsByHash?.[fragmentHash]?.front_matter;
+        var fragmentData = fragmentsByHash?.[fragmentHash];
         if (fragmentData) {
           var fragmentAnchorId = "fragment-" + fragmentHash;
           var existingFragmentAnchor = existingDropdown.querySelector(
@@ -141,7 +144,7 @@ function sidebar(element, dataId, dataParentId) {
     if (fragmentsByHash) {
       if (component.fragments && component.fragments.length > 0) {
         component.fragments.forEach(function (fragmentHash) {
-          var fragmentData = fragmentsByHash[fragmentHash]?.front_matter;
+          var fragmentData = fragmentsByHash[fragmentHash];
 
           if (fragmentData) {
             var fragmentAnchor = createAnchorElement(

@@ -89,8 +89,7 @@ function createDeepReactiveState(initialState = {}) {
       // If the transformed data does not exist yet, create and store it
       const originalValue = getNestedValue(path);
       if (Array.isArray(originalValue)) {
-        //currentValue = transformCollection(originalValue, transformKey);
-        //state[relevantPath] = currentValue;
+        currentValue = transformCollection(originalValue, transformKey);
       }
     }
     if (currentValue !== undefined) {
@@ -144,7 +143,6 @@ function addDoc(ref, data) {
     throw new Error(`Target at ${path} is not a collection.`);
   }
   state[path] = [...state[path], data];
-  //state[path].push(data);
 }
 
 function updateCollectionDoc(ref, docId, data) {
