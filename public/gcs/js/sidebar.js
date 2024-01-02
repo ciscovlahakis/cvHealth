@@ -37,7 +37,7 @@ function sidebar(element, dataId, dataParentId) {
     }
 
     const page = getDoc(pagePath);
-    const components = getCollection(componentsPath);
+    const components = getColl(componentsPath);
 
     // Check 'page' and 'components' for relevant fragments
     if (page && page.fragments && hasRelevantFragment(page.fragments)) {

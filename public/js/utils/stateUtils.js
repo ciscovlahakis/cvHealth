@@ -3,9 +3,9 @@ function createDeepReactiveState(initialState = {}) {
   const listeners = new Map();
   const transformedListeners = new Map();
 
-  function transformCollection(collection, key, caller) {
+  function transformCollection(coll, key) {
     const transformed = {};
-    collection.forEach((item) => {
+    coll.forEach((item) => {
       if (key in item) {
         transformed[item[key]] = item;
       }
@@ -112,7 +112,7 @@ function setDoc(ref, data) {
   state[path] = data;
 }
 
-function getCollection(ref) {
+function getColl(ref) {
   const path = getPath(ref, true);
   const value = getNestedValue(path);
   if (!Array.isArray(value)) {
@@ -128,7 +128,7 @@ function upsertDoc(ref, data) {
 }
 
 // CRUD operations for collections
-function setCollection(ref, data) {
+function setColl(ref, data) {
   const path = getPath(ref, true);
   if (!Array.isArray(data)) {
     throw new Error(`New value for ${path} is not an array.`);
@@ -145,28 +145,28 @@ function addDoc(ref, data) {
   state[path] = [...state[path], data];
 }
 
-function updateCollectionDoc(ref, docId, data) {
+function updateCollDoc(ref, docId, data) {
   const path = getPath(ref, true);
-  const collection = getCollection(path);
-  const docIndex = collection.findIndex((doc) => doc.id === docId);
+  const coll = getColl(path);
+  const docIndex = coll.findIndex((doc) => doc.id === docId);
   if (docIndex === -1) {
     throw new Error(
       `Document with id ${docId} not found in collection ${path}.`
     );
   }
-  collection[docIndex] = { ...collection[docIndex], ...data };
+  coll[docIndex] = { ...coll[docIndex], ...data };
 }
 
-function removeCollectionDoc(ref, docId) {
+function removeCollDoc(ref, docId) {
   const path = getPath(ref, true);
-  const collection = getCollection(path);
-  const docIndex = collection.findIndex((doc) => doc.id === docId);
+  const coll = getColl(path);
+  const docIndex = coll.findIndex((doc) => doc.id === docId);
   if (docIndex === -1) {
     throw new Error(
       `Document with id ${docId} not found in collection ${path}.`
     );
   }
-  collection.splice(docIndex, 1);
+  coll.splice(docIndex, 1);
 }
 
 function removeKey(ref) {
@@ -174,21 +174,21 @@ function removeKey(ref) {
   delete state[path];
 }
 
-function getCollection(...pathSegments) {
-  return getCollectionOrDoc(pathSegments, true);
+function getColl(...pathSegments) {
+  return getCollOrDoc(pathSegments, true);
 }
 
 function getDoc(...pathSegments) {
-  return getCollectionOrDoc(pathSegments, false);
+  return getCollOrDoc(pathSegments, false);
 }
 
-function getCollectionOrDoc(pathSegments, isCollection) {
+function getCollOrDoc(pathSegments, isColl) {
   // If the first argument is an array, use it as the path; otherwise, use all arguments as the path
   const path = Array.isArray(pathSegments[0]) ? pathSegments[0] : pathSegments;
   const pathStr = getPath(path, true);
   const value = getNestedValue(pathStr);
 
-  if (isCollection) {
+  if (isColl) {
     if (!Array.isArray(value)) {
       if (!value) return [];
       throw new Error(`Target at ${pathStr} is not a collection.`);
