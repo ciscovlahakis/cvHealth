@@ -1,13 +1,17 @@
 
 function editItems(_, dataId, dataParentId) {
 
-  state[dataId].form_mode = "update";
+  ["collection", "fields", "rowClicked", "onChildChanged"].forEach((x) => {
+    on([dataParentId, x], () => {
+      const props = getDoc(dataParentId);
+      const { collection, fields, rowClicked, onChildChanged } = props;
+      if (onChildChanged) {
+        onChildChanged({ childId: dataId, "columnIcon": "fas fa-edit" });
+      }
+      upsertDoc(dataId, { collection, fields });
+      setDoc(`${dataId}.editItem`, rowClicked);
+    }, dataId);
+  });
 
-  const { collection, fields, item } = state[dataParentId];
-
-  state[dataId].collection = collection;
-  state[dataId].fields = fields;
-  state[dataId].editItem = JSON.parse(editItem);
-
-  state[dataParentId].columnIcon = "fas fa-edit";
+  upsertDoc(dataId, { "formMode": "update" });
 }

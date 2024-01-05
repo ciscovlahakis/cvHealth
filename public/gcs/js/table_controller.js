@@ -9,13 +9,18 @@ function tableController(_, dataId, dataParentId) {
 
   const onChildChanged = (childData) => {
     const _childId = getDoc(dataId)?.childId;
-    const { columnIcon, rowClicked, childId } = childData || {};
-    if (!childId || _childId !== childId) {
-      upsertDoc(dataId, { columnIcon, rowClicked, childId });
+    const { columnIcon, childId } = childData || {};
+    if (_childId !== childId) {
+      upsertDoc(dataId, { columnIcon, childId });
     }
   }
 
-  upsertDoc(dataId, { onChildChanged });
+  const onRowClicked = data => {
+    const { rowClicked } = data || {};
+    setDoc(`${dataId}.rowClicked`, JSON.parse(rowClicked || {}));
+  }
+
+  upsertDoc(dataId, { onChildChanged, onRowClicked });
 
   async function fetchCollectionFields(collectionName) {
     if (!collectionName) return;

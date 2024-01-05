@@ -223,7 +223,6 @@ function loadFilesSetFragmentsAndSetDataByType(fileName, frontMatterData, fragme
 }
 
 function loadStyles(fileName) {
-  console.log(fileName)
   const stylesFilePath = `/public/gcs/styles/${fileName}.css`;
   fetch(stylesFilePath)
     .then(response => {
@@ -312,14 +311,11 @@ function initializeScriptElements(fileName){
   var kebabCaseName = convertToKebabCase(scriptName);
   var selector = '[id^="' + kebabCaseName + '-id-"]';
   var elements = document.querySelectorAll(selector);
-  //console.log(kebabCaseName, elements)
   elements.forEach(function(element) {
-    var lastHyphenIndex = element.id.lastIndexOf('-'); // Finds the last hyphen in the id
-    var idSuffix = element.id.substring(lastHyphenIndex + 1); // Extracts the part of the id after the last hyphen
+    var lastHyphenIndex = element.id.lastIndexOf('-');
+    var idSuffix = element.id.substring(lastHyphenIndex + 1);
     const { id, parentId } = element.dataset;
-    //console.log(kebabCaseName, id, idSuffix)
     if (idSuffix === id) {
-      //console.log(fileName, document, elements, id, parentId)
       initializerFunction(element, id, parentId);
     }
   });

@@ -35,7 +35,7 @@ function form(element, dataId, dataParentId) {
         input.type = 'text'; // Assuming the input type is text
         input.id = field.name;
         input.name = field.name;
-        input.value = editItem ? editItem[field.name] : '';
+        input.value = editItem ? editItem[field.name] || '' : '';
         input.required = formMode === 'create';
         formGroup.appendChild(input);
 

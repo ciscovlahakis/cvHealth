@@ -6,7 +6,7 @@ function table(_, dataId, dataParentId) {
   });
 
   function renderTable(props) {
-    const { fields, columnIcon, onChildChanged } = props;
+    const { fields, columnIcon, onRowClicked } = props;
     if (fields && Array.isArray(fields)) {
       var resultsContainer = document.getElementById("results");
       if (resultsContainer) {
@@ -19,8 +19,8 @@ function table(_, dataId, dataParentId) {
               targetElement = targetElement.parentElement;
             }
             if (targetElement && targetElement.id !== 'template-row') {
-              if (onChildChanged) {
-                onChildChanged({
+              if (onRowClicked) {
+                onRowClicked({
                   rowClicked: targetElement.dataset?.data
                 });
               }
