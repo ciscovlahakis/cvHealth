@@ -9,7 +9,7 @@ function addItems(_, dataId, dataParentId) {
         onChildChanged({ childId: dataId });
       }
       upsertDoc(dataId, { collection, fields });
-    });
+    }, dataId);
   });
 
   upsertDoc(dataId, { "formMode": "create" });

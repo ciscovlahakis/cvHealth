@@ -7,7 +7,7 @@ function editItems(_, dataId, dataParentId) {
 
   state[dataId].collection = collection;
   state[dataId].fields = fields;
-  state[dataId].item = item;
+  state[dataId].editItem = JSON.parse(editItem);
 
   state[dataParentId].columnIcon = "fas fa-edit";
 }

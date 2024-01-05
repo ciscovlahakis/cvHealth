@@ -1,18 +1,16 @@
 
 function sidebar(element, dataId, dataParentId) {
-  const pagePath = [dataParentId, "page"]
-  const componentsPath = [dataParentId, "components"];
-  const fragmentsPath = [dataParentId, "fragments"];
 
-  on(pagePath, (newValue) => {
-    createHandlerForDropdownComponent(newValue);
-  }, dataId);
+  const paths = {
+    "page": [dataParentId, "page"],
+    "components": [dataParentId, "components"]
+  };
 
-  on(componentsPath, (newValue) => {
-    createHandlerForDropdownComponent(newValue);
-  }, dataId);
+  Object.values(paths).forEach((x) => {
+    on(x, (newValue) => createHandlerForDropdownComponent(newValue), dataId);
+  });
 
-  on(fragmentsPath, (newValue) => {
+  on([dataParentId, "fragments"], (newValue) => {
     updateFragments(newValue);
   }, dataId, "hash");
 
@@ -38,8 +36,8 @@ function sidebar(element, dataId, dataParentId) {
       );
     }
 
-    const page = getDoc(pagePath);
-    const components = getColl(componentsPath);
+    const page = getDoc(paths.page);
+    const components = getColl(paths.components);
 
     // Check 'page' and 'components' for relevant fragments
     if (page && page.fragments && hasRelevantFragment(page.fragments)) {

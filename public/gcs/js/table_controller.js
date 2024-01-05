@@ -1,8 +1,7 @@
 
 function tableController(element, dataId, dataParentId) {
 
-  const pagePath = [dataParentId, "page"];
-  on(pagePath, async newValue => {
+  on([dataParentId, "page"], async newValue => {
     const { collection } = newValue;
     const fields = await fetchCollectionData(collection);
     upsertDoc(dataId, { collection, fields });
