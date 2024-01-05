@@ -8,36 +8,38 @@ Object.defineProperty(window, 'state', {
 });
 window.on = on;
 
+on("fragments", () => {
+  renderFragmentByHash();
+}, "LAYOUT", "hash");
+
 window.onhashchange = function() {
-  var decodedHash = decodeURIComponent(window.location.hash.substring(1));
-  renderFragmentByHash(decodedHash);
+  renderFragmentByHash();
 };
 
-function renderFragmentByHash(hash) {
+function renderFragmentByHash() {
+  var hash = decodeURIComponent(window.location.hash.substring(1));
   var fragmentElement = document.getElementById('_fragment');
   if (fragmentElement) {
     const fragmentData = getDoc("fragmentsByHash", hash);
-    const htmlContent = fragmentData?.htmlContent;
+    const { htmlContent, fragmentDataParentId, hasStyles, hasScript } = fragmentData;
     if (htmlContent) {
       fragmentElement.innerHTML = htmlContent;
       var newContentDiv = fragmentElement.querySelector('div');
       if (newContentDiv) {
         const uniqueId = generateUniqueId();
         newContentDiv.setAttribute('data-id', uniqueId);
-        newContentDiv.setAttribute('data-parent-id', fragmentsByHash[hash]?.fragmentDataParentId);
-        const frontMatterData = fragmentData?.front_matter;
+        newContentDiv.setAttribute('data-parent-id', fragmentDataParentId);
         const fileName = convertToSnakeCase(hash);
-        if (frontMatterData?.hasStyles !== false) {
+        if (hasStyles !== false) {
           loadStyles(fileName);
         }
-        if (frontMatterData?.hasScript !== false) {
+        if (hasScript !== false) {
           loadAndExecuteScript(fileName);
         }
-        setFragments(frontMatterData, uniqueId);
       }
     } else {
       fragmentElement.innerHTML = '';
-      console.error("Fragment not found for hash: " + hash);
+      //console.error("Fragment not found for hash: " + hash);
     }
   } else {
     console.error("The fragment element with ID '_fragment' does not exist.");
@@ -143,16 +145,16 @@ function fetchComponent(componentName, placeholder, fragmentDataParentId) {
       return response.json();
     })
     .then(data => {
-      replacePlaceholderHtml(placeholder, data.html_content);
-      loadFilesSetFragmentsAndSetDataByType(componentName, data.front_matter, fragmentDataParentId);
+      replacePlaceholderHtml(placeholder, data.htmlContent);
+      loadFilesSetFragmentsAndSetDataByType(componentName, data.frontMatter, fragmentDataParentId);
     })
     .catch(error => console.error(`Error fetching component: ${componentName}`, error));
 }
 
-function replacePlaceholderHtml(placeholder, html_content) {
+function replacePlaceholderHtml(placeholder, htmlContent) {
   // Create a temporary div to parse the HTML content
   const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html_content;
+  tempDiv.innerHTML = htmlContent;
   // Grab the outermost div from the parsed HTML
   const outerDiv = tempDiv.querySelector('div');
   if (outerDiv) {
@@ -254,9 +256,9 @@ function fetchFragment(fragmentName, fragmentDataParentId) {
       return response.json();
     })
     .then(data => {
-      data = {...data, ...data.front_matter };
+      data = {...data, ...data.frontMatter };
       data.fragmentDataParentId = fragmentDataParentId;
-      delete data.front_matter;
+      delete data.frontMatter;
       setDataByType(data);
     })
     .catch(error => console.error(`Error fetching fragment (name, file): ${fragmentName} ${fileName}`, error));
@@ -264,8 +266,8 @@ function fetchFragment(fragmentName, fragmentDataParentId) {
 
 function setDataByType(data) {
   var { type } = data;
-  if (data?.front_matter) {
-    type = data.front_matter?.type;
+  if (data?.frontMatter) {
+    type = data.frontMatter?.type;
   }
   if (!type) {
     type = "component";

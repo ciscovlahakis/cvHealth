@@ -1,12 +1,19 @@
 
-function header(element, dataId, dataParentId) {
-  var searchInput = document.querySelector("input[name='search']");
-  var activityIndicator = document.getElementById('activityIndicator');
-  var indexName;
+function header(_, dataId, dataParentId) {
+  const pagePath = [dataParentId, "page"];
+  on(pagePath, async newValue => {
+    const { collection, route } = newValue;
+    if (!collection) return;
+    setUpSearch(collection);
+    initialSearch(collection);
+    await updateBreadcrumbs(route, newValue);
+  }, dataId);
 
   // Function to set up the search input event listener
-  function setUpSearch() {
-    searchInput.addEventListener("keyup", function(event) {
+  function setUpSearch(indexName) {
+    const searchInput = document.querySelector("input[name='search']");
+    const activityIndicator = document.getElementById('activityIndicator');
+    searchInput?.addEventListener("keyup", function(event) {
       var searchTerm = event.target.value.trim();
       if (indexName && indexName.trim() !== '') {
         var url = "/search/" + indexName + (searchTerm ? "?term=" + encodeURIComponent(searchTerm) : "");
@@ -18,7 +25,7 @@ function header(element, dataId, dataParentId) {
   }
 
   // Function to perform the initial fetch of search results
-  function initialSearch() {
+  function initialSearch(indexName) {
     if (indexName && indexName.trim() !== '') {
       performSearch("/search/" + indexName, "");
     } else {
@@ -26,31 +33,31 @@ function header(element, dataId, dataParentId) {
     }
   }
 
-  async function build_breadcrumbs(route, page_data) {
-    var route_components = route === "/" ? [""] : ["/"].concat(route.split("/").slice(1));
+  async function buildBreadcrumbs(route, pageData) {
+    var routeComponents = route === "/" ? [""] : ["/"].concat(route.split("/").slice(1));
     var breadcrumbs = [];
 
-    for (var index = 0; index < route_components.length; index++) {
-      var component = route_components[index];
-      var breadcrumb_route = route_components.slice(0, index + 1).join("/") || "/";
+    for (var index = 0; index < routeComponents.length; index++) {
+      var component = routeComponents[index];
+      var breadcrumbRoute = routeComponents.slice(0, index + 1).join("/") || "/";
       
-      var breadcrumb_page_data = null;
-      if (component === page_data.route) {
-          breadcrumb_page_data = page_data;
+      var breadcrumbPageData = null;
+      if (component === pageData.route) {
+          breadcrumbPageData = pageData;
       } else {
         try {
-          var response = await fetch(`/api/collection/pages?field=route&value=${breadcrumb_route}`);
+          var response = await fetch(`/api/collection/pages?field=route&value=${breadcrumbRoute}`);
           if (!response.ok) {
             throw new Error('Network response was not ok');
           }
-          breadcrumb_page_data = await response.json();
+          breadcrumbPageData = await response.json();
         } catch (error) {
           console.error('There has been a problem with your fetch operation:', error);
         }
       }
-      if (breadcrumb_page_data) {
-        const { name, icon, img_src, route } = breadcrumb_page_data;
-        breadcrumbs.push({ name, icon, img_src, route });
+      if (breadcrumbPageData) {
+        const { name, icon, imgSrc, route } = breadcrumbPageData;
+        breadcrumbs.push({ name, icon, imgSrc, route });
       }
     }
     
@@ -58,7 +65,7 @@ function header(element, dataId, dataParentId) {
   }
 
   async function updateBreadcrumbs(data) {
-    var breadcrumbs = await build_breadcrumbs(window.location.pathname, data);
+    var breadcrumbs = await buildBreadcrumbs(window.location.pathname, data);
     var breadcrumbContainer = document.getElementById('breadcrumbs');
     breadcrumbContainer.innerHTML = ''; // Clear existing breadcrumbs
 
@@ -70,12 +77,12 @@ function header(element, dataId, dataParentId) {
       var breadcrumbContent = document.createElement('span');
       breadcrumbContent.className = 'breadcrumb breadcrumb-content';
 
-      const { name, icon, img_src } = breadcrumb;
+      const { name, icon, imgSrc } = breadcrumb;
       
       // Check if the breadcrumb has an image source
-      if (img_src) {
+      if (imgSrc) {
         var img = document.createElement('img');
-        img.src = img_src;
+        img.src = imgSrc;
         img.alt = 'Thumbnail';
         img.className = 'breadcrumb-thumbnail';
         if (name) {
@@ -117,15 +124,4 @@ function header(element, dataId, dataParentId) {
       breadcrumbContainer.appendChild(breadcrumbElement);
     });
   }
-
-  // if (dataParentId) {
-  //   PubSub.subscribe(dataParentId, async function(data) {
-  //     var collection = data?.page?.data?.collection;
-  //     if (!collection) return;
-  //     indexName = collection;
-  //     setUpSearch();
-  //     initialSearch();
-  //     await updateBreadcrumbs(data);
-  //   });
-  // }
 }

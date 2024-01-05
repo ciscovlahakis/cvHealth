@@ -18,8 +18,8 @@ get "/components/:component_name" do
   content = get_rendered_content(component_name)
 
   json_response = {
-    "html_content" => content[:html_content],
-    "front_matter" => content[:front_matter]
+    "htmlContent" => content[:html_content],
+    "frontMatter" => content[:front_matter]
   }.to_json
 
   content_type :json

@@ -15,19 +15,18 @@ window.firebaseInitialized = new Promise((resolve, reject) => {
 
 function setupFirestoreListener(collectionName, searchTerm) {
   window.firebaseInitialized.then(function() {
-    var collectionRef = window.db.collection(collectionName);
-
+    const collectionRef = window.db.collection(collectionName);
     collectionRef.onSnapshot(function(snapshot) {
-      var firestoreResults = [];
+      const data = [];
       snapshot.forEach(function(doc) {
-        firestoreResults.push(
+        data.push(
           {
             ...doc.data(),
             id: doc.id,
           }
         );
       });
-      PubSub.publish(EVENTS.SEARCH_RESULTS, { searchTerm: searchTerm, results: firestoreResults });
+      setDoc("searchResults", { searchTerm: searchTerm, results: data });
     }, function(error) {
       console.error("Error listening to Firestore changes:", error);
     });

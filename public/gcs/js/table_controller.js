@@ -1,53 +1,34 @@
 
 function tableController(element, dataId, dataParentId) {
 
-  // const state = {};
+  const pagePath = [dataParentId, "page"];
+  on(pagePath, async newValue => {
+    const { collection } = newValue;
+    const fields = await fetchCollectionData(collection);
+    upsertDoc(dataId, { fields });
+  }, dataId);
 
-  // function publish(id, data) {
-  //   state[id] ||= {};
-  //   Object.assign(state[id], data);
-  //   PubSub.publish(id, state[id]);
-  // }
+  const onChildChanged = (childData) => {
+    childData ||= {};
+    const { columnIcon, rowClicked } = childData;
+    upsertDoc(dataId, { columnIcon, rowClicked });
+  }
 
-  // PubSub.subscribe(dataParentId, async function(data) {
-  //   var collection = data?.page?.data?.collection;
-  //   var fields = await fetchCollectionData(collection);
+  upsertDoc(dataId, { onChildChanged });
 
-  //   publish(dataId, {
-  //     collection,
-  //     fields
-  //   });
-  // });
-
-  // publish(dataId, {
-  //   onChildChanged: (childData) => {
-  //     childData ||= {};
-
-  //     const {
-  //       columnIcon,
-  //       rowClicked
-  //     } = childData;
-
-  //     publish(dataId, {
-  //       columnIcon,
-  //       itemData: rowClicked
-  //     });
-  //   }
-  // });
-
-  // // Fetch the collection's fields
-  // async function fetchCollectionData(collectionName) {
-  //   if (!collectionName) return;
-  //   try {
-  //     var response = await fetch(`/api/collection/collections?field=name&value=${collectionName}`);
-  //     if (!response.ok) {
-  //       throw new Error('Network response was not ok');
-  //     }
-  //     var collection_data = await response.json();
-  //     return collection_data.fields;
-  //   } catch (error) {
-  //     console.error('There has been a problem with your fetch operation:', error);
-  //     return null;
-  //   }
-  // }
+  // Fetch the collection's fields
+  async function fetchCollectionData(collectionName) {
+    if (!collectionName) return;
+    try {
+      var response = await fetch(`/api/collection/collections?field=name&value=${collectionName}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      var collection_data = await response.json();
+      return collection_data.fields;
+    } catch (error) {
+      console.error('There has been a problem with your fetch operation:', error);
+      return null;
+    }
+  }
 }
