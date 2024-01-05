@@ -6,15 +6,15 @@ function sidebar(element, dataId, dataParentId) {
 
   on(pagePath, (newValue) => {
     createHandlerForDropdownComponent(newValue);
-  });
+  }, dataId);
 
   on(componentsPath, (newValue) => {
     createHandlerForDropdownComponent(newValue);
-  });
+  }, dataId);
 
   on(fragmentsPath, (newValue) => {
-   updateFragments(newValue);
-  }, "hash");
+    updateFragments(newValue);
+  }, dataId, "hash");
 
   function createHandlerForDropdownComponent(components, fragmentsByHash) {
     if (Array.isArray(components)) {
@@ -29,6 +29,8 @@ function sidebar(element, dataId, dataParentId) {
   }
 
   function updateFragments(fragmentsByHash) {
+    if (!fragmentsByHash) return;
+
     // Function to check if any hash in the fragments array is in fragmentsByHash
     function hasRelevantFragment(fragments) {
       return fragments.some((fragment) =>

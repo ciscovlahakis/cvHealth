@@ -2,8 +2,31 @@
 function createDeepReactiveState(initialState = {}) {
   const listeners = new Map();
   const transformedListeners = new Map();
+  const componentCollectionParentMap = new Map();
 
-  function transformCollection(coll, key) {
+  function findBasePath(path, componentId) {
+    if (!path || !componentId) return;
+
+    const pathArray = getPath(path);
+    const pathString = getPath(path, true);
+
+    if (pathArray.length === 1) {
+      return pathArray; // Direct state property
+    }
+
+    const parentComponentId = componentCollectionParentMap
+      .get(componentId)
+      ?.get(pathString);
+
+    if (parentComponentId) {
+      const newPath = pathArray.slice(1);
+      return findBasePath(newPath, parentComponentId);
+    }
+
+    return pathArray; // Original path if no parent is found
+  }
+
+  function transformColl(coll, key) {
     const transformed = {};
     coll.forEach((item) => {
       if (key in item) {
@@ -13,10 +36,10 @@ function createDeepReactiveState(initialState = {}) {
     return transformed;
   }
 
-  function notifyListeners(property, isTransformed = false) {
-    let propertyParts = property.split(".");
-    propertyParts.forEach((_, idx) => {
-      let propToNotify = propertyParts.slice(0, idx + 1).join(".");
+  function notifyListeners(path, isTransformed = false) {
+    let pathParts = path.split(".");
+    pathParts.forEach((_, idx) => {
+      let propToNotify = pathParts.slice(0, idx + 1).join(".");
       let relevantListeners = isTransformed ? transformedListeners : listeners;
       (relevantListeners.get(propToNotify) || []).forEach(({ listener }) => {
         listener(getNestedValue(propToNotify));
@@ -26,75 +49,106 @@ function createDeepReactiveState(initialState = {}) {
 
   const applyProxy = (target) => {
     return new Proxy(target, {
-      get(target, property, receiver) {
-        return Reflect.get(target, property, receiver);
+      get(target, path, receiver) {
+        return Reflect.get(target, path, receiver);
       },
-      set(target, property, value) {
-        const isTransformedProperty = property.includes("By");
-
-        if (!isTransformedProperty) {
-          const segments = getPath(property);
-          let current = target;
-
-          // Navigate to the correct target for the property
-          for (let i = 0; i < segments.length - 1; i++) {
-            const segment = segments[i];
-
-            if (!(segment in current)) {
-              current[segment] = {}; // create a new object if the path does not exist
-            }
-
-            current = current[segment];
-          }
-
-          // Set the property on the target
-          const finalKey = segments[segments.length - 1];
-          current[finalKey] = value;
-
-          if (Array.isArray(value)) {
-            transformedListeners.forEach((_, key) => {
-              if (key.startsWith(`${property}By`)) {
-                const transformKey = key.split("By")[1];
-                const transformedKey = `${property}By${transformKey}`;
-                current[`${finalKey}By${transformKey}`] = transformCollection(
-                  value,
-                  decapitalize(transformKey)
-                ); // Use original transformKey for transformation
-                notifyListeners(transformedKey, true); // Notify listeners of the transformed data
-              }
-            });
-          }
-          notifyListeners(getPath(property, true));
-        } else {
-          Reflect.set(target, property, value);
+      set(target, path, value) {
+        const isTransformedPath = path.includes("By");
+        if (isTransformedPath) {
+          Reflect.set(target, path, value);
+          return true;
         }
+
+        const pathArray = getPath(path);
+        let current = target;
+
+        for (let i = 0; i < pathArray.length - 1; i++) {
+          const pathSegment = pathArray[i];
+          if (!(pathSegment in current)) {
+            current[pathSegment] = {};
+          }
+          current = current[pathSegment];
+        }
+
+        const finalKey = pathArray[pathArray.length - 1];
+        current[finalKey] = value;
+
+        if (Array.isArray(value)) {
+          transformedListeners.forEach((listeners, key) => {
+            if (key.startsWith(`${path}By`)) {
+              const transformKey = key.split("By")[1];
+              const transformedValue = transformColl(
+                value,
+                decapitalize(transformKey)
+              );
+              const transformedProperty = `${path}By${transformKey}`;
+              state[transformedProperty] = transformedValue;
+
+              listeners.forEach(({ listener }) => {
+                listener(transformedValue);
+              });
+            }
+          });
+        }
+
+        const pathString = getPath(path, true);
+        notifyListeners(pathString);
+
         return true;
       },
     });
   };
 
-  function on(property, listener, transformKey = null) {
-    const path = getPath(property, true);
-    const relevantPath = transformKey
-      ? `${path}By${capitalize(transformKey)}`
-      : path;
+  function on(path, listener, componentId, transformKey = null) {
+    if (!path || (typeof path !== 'string' && !Array.isArray(path))) {
+      throw new Error(`${path} must be a string or array.`);
+    }
+    if (!listener || typeof listener !== 'function') {
+      throw new Error(`${listener} must be a function.`);
+    }
+    if (!componentId || typeof componentId !== 'string') {
+      throw new Error(`${componentId} must be a string.`);
+    }
+
+    const pathArray = getPath(path);
+    let relevantPath = getPath(path, true);
+
+    // The first element is considered the parent component ID for nested paths
+    let parentComponentId;
+    if (pathArray && pathArray.length && pathArray.length > 1) {
+      parentComponentId = pathArray[0];
+    }
+
+    if (!componentCollectionParentMap.has(componentId)) {
+      componentCollectionParentMap.set(componentId, new Map());
+    }
+
+    componentCollectionParentMap
+      .get(componentId)
+      .set(relevantPath, parentComponentId);
+
+    let currentValue = getNestedValue(relevantPath);
+
+    if (transformKey) {
+      const basePath = findBasePath(pathArray, componentId);
+      const basePathString = getPath(basePath, true);
+      relevantPath = `${basePathString}By${capitalize(transformKey)}`;
+      if (currentValue === undefined) {
+        const originalValue = getNestedValue(basePathString);
+        if (Array.isArray(originalValue)) {
+          currentValue = transformColl(originalValue, transformKey);
+          state[relevantPath] = currentValue; // Store transformed data
+        }
+      }
+    }
+
     const relevantListeners = transformKey ? transformedListeners : listeners;
     if (!relevantListeners.has(relevantPath)) {
       relevantListeners.set(relevantPath, []);
     }
-    relevantListeners.get(relevantPath).push({ listener });
+    relevantListeners.get(relevantPath).push({ listener, componentId });
 
-    let currentValue = getNestedValue(relevantPath);
-    if (transformKey && currentValue === undefined) {
-      // If the transformed data does not exist yet, create and store it
-      const originalValue = getNestedValue(path);
-      if (Array.isArray(originalValue)) {
-        currentValue = transformCollection(originalValue, transformKey);
-      }
-    }
-    if (currentValue !== undefined) {
-      listener(currentValue);
-    }
+    listener(currentValue);
   }
 
   return {
@@ -106,7 +160,7 @@ function createDeepReactiveState(initialState = {}) {
 // CRUD operations for documents
 function setDoc(ref, data) {
   const path = getPath(ref, true);
-  if (typeof data !== "object") {
+  if (typeof data !== "object" && data !== undefined) {
     throw new Error(`New value for ${path} is not an object.`);
   }
   state[path] = data;
@@ -130,7 +184,7 @@ function upsertDoc(ref, data) {
 // CRUD operations for collections
 function setColl(ref, data) {
   const path = getPath(ref, true);
-  if (!Array.isArray(data)) {
+  if (!Array.isArray(data) && data !== undefined) {
     throw new Error(`New value for ${path} is not an array.`);
   }
   state[path] = data;
