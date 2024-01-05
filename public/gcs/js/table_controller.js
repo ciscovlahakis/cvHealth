@@ -5,13 +5,13 @@ function tableController(element, dataId, dataParentId) {
   on(pagePath, async newValue => {
     const { collection } = newValue;
     const fields = await fetchCollectionData(collection);
-    upsertDoc(dataId, { fields });
+    upsertDoc(dataId, { collection, fields });
   }, dataId);
 
   const onChildChanged = (childData) => {
     childData ||= {};
-    const { columnIcon, rowClicked } = childData;
-    upsertDoc(dataId, { columnIcon, rowClicked });
+    const { columnIcon, rowClicked, childId } = childData;
+    upsertDoc(dataId, { columnIcon, rowClicked, childId });
   }
 
   upsertDoc(dataId, { onChildChanged });

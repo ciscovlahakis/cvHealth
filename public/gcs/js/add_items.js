@@ -1,36 +1,16 @@
 
-function addItems(element, dataId, dataParentId) {
+function addItems(_, dataId, dataParentId) {
 
-  const state = {};
+  ["collection", "fields", "onChildChanged"].forEach((x) => {
+    on([dataParentId, x], () => {
+      const props = getDoc(dataParentId);
+      const { collection, fields, onChildChanged, childId } = props;
+      if (childId !== dataId) {
+        onChildChanged({ childId: dataId });
+      }
+      upsertDoc(dataId, { collection, fields });
+    });
+  });
 
-  // function publish(id, data) {
-  //   state[id] ||= {};
-  //   Object.assign(state[id], data);
-  //   PubSub.publish(id, state[id]);
-  // }
-
-  // PubSub.subscribe(dataParentId, function(data) {
-
-  //   const { 
-  //     collection,
-  //     fields,
-  //     onChildChanged
-  //   } = data;
-    
-  //   if (!state.onChildChanged) {
-  //     if (onChildChanged) {
-  //       state.onChildChanged = onChildChanged;
-  //       onChildChanged();
-  //     }
-  //   }
-    
-  //   publish(dataId, {
-  //     collection,
-  //     fields
-  //   });
-  // });
-
-  // publish(dataId, {
-  //   "form_mode": "create"
-  // });
+  upsertDoc(dataId, { "formMode": "create" });
 }
