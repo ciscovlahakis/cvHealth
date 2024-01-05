@@ -5,7 +5,9 @@ function addItems(_, dataId, dataParentId) {
     on([dataParentId, x], () => {
       const props = getDoc(dataParentId);
       const { collection, fields, onChildChanged } = props;
-      onChildChanged({ childId: dataId });
+      if (onChildChanged) {
+        onChildChanged({ childId: dataId });
+      }
       upsertDoc(dataId, { collection, fields });
     }, dataId);
   });

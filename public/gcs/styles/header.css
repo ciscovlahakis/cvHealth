@@ -1,4 +1,4 @@
-#header {
+[id^="header-id-"] {
   padding-left: calc(var(--padding) /2);
   padding-right: calc(var(--padding) /2);
   margin-top: calc(var(--padding) /2);

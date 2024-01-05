@@ -29,6 +29,10 @@ function renderFragmentByHash() {
         const uniqueId = generateUniqueId();
         newContentDiv.setAttribute('data-id', uniqueId);
         newContentDiv.setAttribute('data-parent-id', fragmentDataParentId);
+        // Modify the id of the element
+        var currentId = newContentDiv.id;
+        var newId = currentId + '-id-' + uniqueId;
+        newContentDiv.id = newId;
         const fileName = convertToSnakeCase(hash);
         if (hasStyles !== false) {
           loadStyles(fileName);
@@ -82,6 +86,10 @@ function processTemplate() {
 
   const uniqueId = generateUniqueId();
   templateElement.setAttribute('data-id', uniqueId);
+  // Modify the id of the element
+  var currentId = templateElement.id;
+  var newId = currentId + '-id-' + uniqueId;
+  templateElement.id = newId;
 
   // Replace main-container with template
   templateContainer.removeAttribute("id"); // Set id to template's
@@ -172,20 +180,30 @@ function replacePlaceholderHtml(placeholder, htmlContent) {
           // Check if the child is an element node before setting attributes
           var fileName;
           if (child.nodeType === Node.ELEMENT_NODE) {
-            child.setAttribute('data-id', outerDiv.getAttribute('data-id'));
+            const dataId = outerDiv.getAttribute('data-id');
+            child.setAttribute('data-id', dataId);
             child.setAttribute('data-parent-id', outerDiv.getAttribute('data-parent-id'));
             fileName = child.getAttribute('id');
+            // Modify the id of the element
+            var currentId = child.id;
+            var newId = currentId + '-id-' + dataId;
+            child.id = newId;
           }
           if (fileName) {
             loadAndExecuteScript(fileName);
           }
           newDataYieldElement.appendChild(child);
         });
-        outerDiv.removeAttribute('data-id');
-        outerDiv.removeAttribute('data-parent-id');
       }
     }
     // Replace placeholder with the new content and return the new element
+    // Modify the id of the element
+    var currentId = outerDiv.id;
+    if (currentId) {
+      var dataId = outerDiv.getAttribute('data-id');
+      var newId = currentId + '-id-' + dataId;
+      outerDiv.id = newId;
+    }
     placeholder.replaceWith(outerDiv);
   } else {
     console.error('The HTML content does not have an outer div.');
@@ -205,6 +223,7 @@ function loadFilesSetFragmentsAndSetDataByType(fileName, frontMatterData, fragme
 }
 
 function loadStyles(fileName) {
+  console.log(fileName)
   const stylesFilePath = `/public/gcs/styles/${fileName}.css`;
   fetch(stylesFilePath)
     .then(response => {
@@ -291,10 +310,17 @@ function initializeScriptElements(fileName){
     return;
   }
   var kebabCaseName = convertToKebabCase(scriptName);
-  var selector = '[id*="' + kebabCaseName + '"]';
+  var selector = '[id^="' + kebabCaseName + '-id-"]';
   var elements = document.querySelectorAll(selector);
+  //console.log(kebabCaseName, elements)
   elements.forEach(function(element) {
+    var lastHyphenIndex = element.id.lastIndexOf('-'); // Finds the last hyphen in the id
+    var idSuffix = element.id.substring(lastHyphenIndex + 1); // Extracts the part of the id after the last hyphen
     const { id, parentId } = element.dataset;
-    initializerFunction(element, id, parentId);
+    //console.log(kebabCaseName, id, idSuffix)
+    if (idSuffix === id) {
+      //console.log(fileName, document, elements, id, parentId)
+      initializerFunction(element, id, parentId);
+    }
   });
 }

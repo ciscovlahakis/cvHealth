@@ -1,8 +1,6 @@
 
 function form(element, dataId, dataParentId) {
 
-  console.log(dataId)
-
   ["collection", "fields", "formMode", "editItem"].forEach((x) => {
     on([dataParentId, x], () => renderForm(getDoc(dataParentId)), dataId);
   });

@@ -1,5 +1,6 @@
+
 document.addEventListener('DOMContentLoaded', function() {
-  var form = document.getElementById('upload-form');
+  var form = document.getElementById('upload');
   
   form.addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the default form submission

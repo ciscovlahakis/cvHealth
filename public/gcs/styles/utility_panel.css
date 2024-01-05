@@ -1,4 +1,4 @@
-#utility-panel {
+[id^="utility-panel-id-"] {
   position: fixed;
   bottom: 20px;
   right: 20px;

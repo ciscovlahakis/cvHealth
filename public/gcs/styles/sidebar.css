@@ -1,4 +1,4 @@
-#sidebar {
+[id^="sidebar-id-"] {
   width: 20vw;
   height: 100vh;
   background-color: black;
@@ -9,7 +9,7 @@
   flex-direction: column;
 }
 
-#sidebar .tab {
+[id^="sidebar-id-"] .tab {
   display: flex;
   text-decoration: none;
   color: white;
@@ -22,12 +22,12 @@
   justify-content: flex-start;
 }
 
-#sidebar .tab:hover,
-#sidebar .tab.active {
+[id^="sidebar-id-"] .tab:hover,
+[id^="sidebar-id-"] .tab.active {
   background-color: #343a40;
 }
 
-#sidebar .tab i {
+[id^="sidebar-id-"] .tab i {
   font-size: 1em;
   margin-right: 6px;
 }
@@ -52,10 +52,10 @@
   display: flex;
 }
 
-#sidebar .tab.dropdown-item {
+[id^="sidebar-id-"] .tab.dropdown-item {
   padding-left: 27px;
 }
 
-#sidebar .tab.dropdown-toggle {
+[id^="sidebar-id-"] .tab.dropdown-toggle {
   padding-left: 10px;
 }
