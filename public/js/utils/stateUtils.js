@@ -161,7 +161,7 @@ function createDeepReactiveState(initialState = {}) {
 function setDoc(ref, data) {
   const path = getPath(ref, true);
   if (typeof data !== "object" && data !== undefined) {
-    throw new Error(`New value for ${path} is not an object.`);
+    throw new Error(`New value for ${path} is not an object: ${data}`);
   }
   state[path] = data;
 }

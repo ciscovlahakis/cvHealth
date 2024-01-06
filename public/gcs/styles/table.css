@@ -12,17 +12,17 @@
   width: 100%;
 }
 
+.grid-row:hover {
+  cursor: pointer;
+  background-color: #ddd;
+}
+
 .grid-row .content-cell {
   background-color: #fff;
   padding: 15px;
   transition: all 0.3s;
   min-width: 100px;
   min-height: 20px;
-}
-
-.grid-row .content-cell:hover {
-  background-color: #ddd;
-  cursor: pointer;
 }
 
 .grid-row .header {
@@ -46,11 +46,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.grid-row .icon-column:hover {
-  background-color: #ddd;
-  cursor: pointer;
 }
 
 .grid-table i {

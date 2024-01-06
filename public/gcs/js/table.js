@@ -3,6 +3,7 @@ function table(_, dataId, dataParentId) {
 
   ["fields", "columnIcon", "onChildChanged"].forEach((x) => {
     on([dataParentId, x], () => renderTable(getDoc(dataParentId)), dataId);
+    console.log(state)
   });
 
   function renderTable(props) {

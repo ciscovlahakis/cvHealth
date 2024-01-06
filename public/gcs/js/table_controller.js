@@ -12,6 +12,7 @@ function tableController(_, dataId, dataParentId) {
     const { columnIcon, childId } = childData || {};
     if (_childId !== childId) {
       upsertDoc(dataId, { columnIcon, childId });
+      console.log(state)
     }
   }
 
