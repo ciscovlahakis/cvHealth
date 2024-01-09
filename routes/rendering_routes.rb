@@ -1,32 +1,47 @@
 # frozen_string_literal: true
 
 require "sinatra/reloader"
-require 'erb'
 
-get "/favicon.ico" do
+get '/favicon.ico' do
 end
 
-get "/__sinatra__" do
+get '/__sinatra__' do
 end
 
-get "/__sinatra__500.png" do
+get '/__sinatra__500.png' do
 end
 
-# Serve individual components
-get "/components/:component_name" do
-  component_name = params.fetch("component_name")
-  content = get_rendered_content(component_name)
+get '/move/:src/:dest' do
+  move(params[:src], params[:dest])
+end
 
-  json_response = {
-    "htmlContent" => content[:html_content],
-    "frontMatter" => content[:front_matter]
-  }.to_json
+get '/html/:name' do
+  component_name = params[:name]
+  content_type :text
+  get_html(component_name)
+end
+
+get '/db/:coll/:field/:value' do
+  coll_name = params[:coll]
+  field = params[:field]
+  value = params[:value]
+
+  if value == "SLASH"
+    value = '/'
+  end
+
+  doc_data = fetch_doc_data(coll_name, {field: field, value: value})
+
+  if doc_data.nil?
+    halt(404, "Doc not found").tap {
+      logger.error "No data found for #{coll_name} with #{field}: #{value}"
+    }
+  end
 
   content_type :json
-  json_response
+  doc_data.to_json
 end
 
-# Serve main page
 get "/*" do |path|
   # Handle the request for a static file
   if path.start_with?("public/gcs/")
@@ -39,25 +54,5 @@ get "/*" do |path|
       halt(404, "File not found")
     end
   end
-
-  page_data = fetch_document_data("pages", {:field => "route", :value => "/#{path}"})
-  return halt(404, "Page not found").tap {
-    logger.error "No page data found for route: /#{path}"
-  } if page_data.nil?
-
-  template_name = page_data.fetch(:template, nil)
-  return halt(404, "Template not specified").tap {
-    logger.error "No template found: #{template_name}"
-  } if template_name.nil?
-
-  content = get_rendered_content(template_name)
-  template = content[:html_content]
-  front_matter = content[:front_matter]
-  front_matter.store(:page, page_data)
-  front_matter = front_matter.to_json
-
-  erb :layout, :locals => {
-    :template => template,
-    :front_matter => front_matter
-  }
+  erb :layout
 end

@@ -1,6 +1,7 @@
 
-function createDeepReactiveState(initialState = {}) {
+export function createDeepReactiveState(initialState = {}) {
   const listeners = new Map();
+  const callbacks = new Map();
   const transformedListeners = new Map();
   const componentCollectionParentMap = new Map();
 
@@ -47,6 +48,34 @@ function createDeepReactiveState(initialState = {}) {
     });
   }
 
+  function onStateChange(path, callback, actionType) {
+    if (!callbacks[path]) {
+      callbacks[path] = { "added": [], "modified": [], "removed": [] };
+    }
+  
+    if (callbacks[path][actionType]) {
+      callbacks[path][actionType].push(callback);
+
+      if (actionType === 'added') {
+        // Immediately call the callback with the current state
+        const currentValue = getNestedValue(path);
+        if (currentValue !== undefined) {
+          callback(currentValue);
+        }
+      }
+    } else {
+      console.error(`Invalid action type: ${actionType}`);
+    }
+  }
+
+  function invokeCallbacks(path, actionType) {
+    if (callbacks[path] && callbacks[path][actionType]) {
+      callbacks[path][actionType].forEach(callback => {
+        callback();
+      });
+    }
+  }
+
   const applyProxy = (target) => {
     return new Proxy(target, {
       get(target, path, receiver) {
@@ -56,11 +85,15 @@ function createDeepReactiveState(initialState = {}) {
         const isTransformedPath = path.includes("By");
         if (isTransformedPath) {
           Reflect.set(target, path, value);
+          invokeCallbacks(path, 'transformed'); // Corrected function call
           return true;
         }
 
         const pathArray = getPath(path);
         let current = target;
+
+        // Determine if the operation is an addition or update
+        const isAddition = !current.hasOwnProperty(pathArray[0]);
 
         for (let i = 0; i < pathArray.length - 1; i++) {
           const pathSegment = pathArray[i];
@@ -93,7 +126,19 @@ function createDeepReactiveState(initialState = {}) {
 
         const pathString = getPath(path, true);
         notifyListeners(pathString);
-
+      
+        // Determine if the operation is a deletion
+        const isDeletion = value === null || value === undefined;
+      
+        // Invoke state change callbacks
+        if (isAddition) {
+          invokeCallbacks(pathString, 'added');
+        } else if (isDeletion) {
+          invokeCallbacks(pathString, 'removed');
+        } else {
+          invokeCallbacks(pathString, 'modified');
+        }
+      
         return true;
       },
     });
@@ -154,11 +199,12 @@ function createDeepReactiveState(initialState = {}) {
   return {
     state: applyProxy(initialState),
     on,
+    onStateChange
   };
 }
 
 // CRUD operations for documents
-function setDoc(ref, data) {
+export function setDoc(ref, data) {
   const path = getPath(ref, true);
   if (typeof data !== "object" && data !== undefined) {
     throw new Error(`New value for ${path} is not an object: ${data}`);
@@ -166,19 +212,11 @@ function setDoc(ref, data) {
   state[path] = data;
 }
 
-function getColl(ref) {
-  const path = getPath(ref, true);
-  const value = getNestedValue(path);
-  if (!Array.isArray(value)) {
-    throw new Error(`Target at ${path} is not a collection.`);
-  }
-  return value;
-}
-
-function upsertDoc(ref, data) {
+export function upsertDoc(ref, data) {
   const path = getPath(ref, true);
   const doc = getDoc(path);
   state[path] = { ...doc, ...data };
+  return state[path];
 }
 
 // CRUD operations for collections
@@ -232,7 +270,7 @@ function getColl(...pathSegments) {
   return getCollOrDoc(pathSegments, true);
 }
 
-function getDoc(...pathSegments) {
+export function getDoc(...pathSegments) {
   return getCollOrDoc(pathSegments, false);
 }
 

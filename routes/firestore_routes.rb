@@ -43,14 +43,14 @@ get "/firestore_config" do
   end
 end
 
-get "/api/collection/:name" do
+get "/api/:coll/:name" do
   begin
-    collection_name = params['name']
+    coll_name = params['name']
     field_value = {
       field: params['field'],
       value: params['value']
     }.compact
-    data = fetch_document_data(collection_name, field_value.empty? ? nil : field_value)
+    data = fetch_doc_data(coll_name, field_value.empty? ? nil : field_value)
     success_response(data)
   rescue StandardError => e
     error_response(500, e.message)
